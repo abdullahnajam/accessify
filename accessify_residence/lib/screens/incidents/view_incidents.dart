@@ -1,3 +1,7 @@
+import 'package:accessify/model/incident_model.dart';
+import 'package:accessify/screens/incidents/create_incident.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -8,6 +12,70 @@ class ViewIncidents extends StatefulWidget {
 }
 
 class _ViewIncidentsState extends State<ViewIncidents> {
+  static String timeAgoSinceDate(String dateString, {bool numericDates = true}) {
+    DateTime date = DateTime.parse(dateString);
+    final date2 = DateTime.now();
+    final difference = date2.difference(date);
+
+    if ((difference.inDays / 365).floor() >= 2) {
+      return '${(difference.inDays / 365).floor()} years ago';
+    } else if ((difference.inDays / 365).floor() >= 1) {
+      return (numericDates) ? '1 year ago' : 'Last year';
+    } else if ((difference.inDays / 30).floor() >= 2) {
+      return '${(difference.inDays / 365).floor()} months ago';
+    } else if ((difference.inDays / 30).floor() >= 1) {
+      return (numericDates) ? '1 month ago' : 'Last month';
+    } else if ((difference.inDays / 7).floor() >= 2) {
+      return '${(difference.inDays / 7).floor()} weeks ago';
+    } else if ((difference.inDays / 7).floor() >= 1) {
+      return (numericDates) ? '1 week ago' : 'Last week';
+    } else if (difference.inDays >= 2) {
+      return '${difference.inDays} days ago';
+    } else if (difference.inDays >= 1) {
+      return (numericDates) ? '1 day ago' : 'Yesterday';
+    } else if (difference.inHours >= 2) {
+      return '${difference.inHours} hours ago';
+    } else if (difference.inHours >= 1) {
+      return (numericDates) ? '1 hour ago' : 'An hour ago';
+    } else if (difference.inMinutes >= 2) {
+      return '${difference.inMinutes} minutes ago';
+    } else if (difference.inMinutes >= 1) {
+      return (numericDates) ? '1 minute ago' : 'A minute ago';
+    } else if (difference.inSeconds >= 3) {
+      return '${difference.inSeconds} seconds ago';
+    } else {
+      return 'Just now';
+    }
+  }
+
+  Future<List<IncidentModel>> getEmpList() async {
+    List<IncidentModel> list=new List();
+    User user=FirebaseAuth.instance.currentUser;
+    final databaseReference = FirebaseDatabase.instance.reference();
+    await databaseReference.child("reports").once().then((DataSnapshot dataSnapshot){
+      if(dataSnapshot.value!=null){
+        var KEYS= dataSnapshot.value.keys;
+        var DATA=dataSnapshot.value;
+
+        for(var individualKey in KEYS) {
+          IncidentModel incidentModel = new IncidentModel(
+            individualKey,
+            DATA[individualKey]['title'],
+            DATA[individualKey]['description'],
+            DATA[individualKey]['photo'],
+            DATA[individualKey]['time'],
+            DATA[individualKey]['location'],
+            DATA[individualKey]['type'],
+            DATA[individualKey]['userId'],
+          );
+          print("key ${incidentModel.id}");
+          list.add(incidentModel);
+
+        }
+      }
+    });
+    return list;
+  }
   @override
   Widget build(BuildContext context) {
     return  Scaffold(
@@ -95,109 +163,139 @@ class _ViewIncidentsState extends State<ViewIncidents> {
                             fontWeight: FontWeight.w700,
                             fontSize: 16.0),
                       ),
-                      IconButton(icon: Icon(Icons.add), onPressed: null)
+                      IconButton(icon: Icon(Icons.add), onPressed:() {
+                      Navigator.push(context, new MaterialPageRoute(
+                      builder: (context) => CreateIncident()));
+                      })
                     ],
                   )
               ),
 
+              FutureBuilder<List<IncidentModel>>(
+                future: getEmpList(),
+                builder: (context,snapshot){
+                  if (snapshot.hasData) {
+                    if (snapshot.data != null && snapshot.data.length>0) {
+                      return ListView.builder(
+                        shrinkWrap: true,
+                        //scrollDirection: Axis.horizontal,
+                        itemCount: snapshot.data.length,
+                        itemBuilder: (BuildContext context,int index){
+                          return Padding(
+                              padding: const EdgeInsets.only(top: 1.0),
+                              child: InkWell(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(10),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.grey.withOpacity(0.5),
+                                        spreadRadius:1,
+                                        blurRadius: 2,
+                                        offset: Offset(0, 1), // changes position of shadow
+                                      ),
+                                    ],
+                                  ),
+                                  margin: EdgeInsets.all(5),
+                                  child: Column(
+                                    children: <Widget>[
+                                      Container(
+                                        height: 200,
+                                        decoration: BoxDecoration(
+                                            image:  DecorationImage(
+                                              image: NetworkImage(snapshot.data[index].photo),
+                                              fit: BoxFit.cover,
+                                            ),
+                                            borderRadius: BorderRadius.only(topRight: Radius.circular(10),topLeft:  Radius.circular(10))
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: EdgeInsets.all(5),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Text(snapshot.data[index].title,style: TextStyle(fontSize:18,fontWeight: FontWeight.w700,color: Colors.black),),
 
-              _card(Icons.home_outlined, "My Residence", () {}),
-              _card(Icons.car_repair, "My Vehicle", () {}),
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  flex: 4,
+                                                  child: Text(snapshot.data[index].description,style: TextStyle(fontSize:14,fontWeight: FontWeight.w300),),
+                                                ),
+                                                Expanded(
+                                                  flex: 1,
+                                                  child: Container(
+                                                    padding: EdgeInsets.all(3),
+                                                    alignment: Alignment.center,
+                                                    decoration: BoxDecoration(
+                                                        border: Border.all(color: kPrimaryColor),
+                                                        borderRadius: BorderRadius.circular(20)
+                                                    ),
+                                                    child: Text(snapshot.data[index].type,textAlign: TextAlign.center,style: TextStyle(fontSize:13,fontWeight: FontWeight.w300,color: kPrimaryLightColor),),
+                                                  ),
+                                                )
 
+                                              ],
+                                            ),
+
+                                            Divider(color: Colors.grey,),
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Icon(Icons.place,color: Colors.white,size: 16,),
+                                                    Text("",style: TextStyle(fontSize:14,fontWeight: FontWeight.w300),),
+                                                  ],
+                                                ),
+                                                Row(
+                                                  children: [
+                                                    Icon(Icons.access_time,color: Colors.grey,size: 16,),
+                                                    Text(timeAgoSinceDate(snapshot.data[index].time),style: TextStyle(fontSize:14,fontWeight: FontWeight.w300),),
+                                                  ],
+                                                ),
+                                              ],
+                                            )
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                          );
+                        },
+                      );
+                    }
+                    else {
+                      return new Center(
+                        child: Container(
+                            margin: EdgeInsets.only(top: 100),
+                            child: Text("You currently don't have any employees")
+                        ),
+                      );
+                    }
+                  }
+                  else if (snapshot.hasError) {
+                    return Text('Error : ${snapshot.error}');
+                  } else {
+                    return new Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+                },
+              ),
               SizedBox(
                 height: 20.0,
               )
+
             ],
           ),
         ),
       ),
     );
   }
-  Widget _card(IconData _icon, String title, GestureTapCallback onTap) {
-    return Padding(
-        padding: const EdgeInsets.only(top: 1.0),
-        child: InkWell(
-          onTap: onTap,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.5),
-                  spreadRadius:1,
-                  blurRadius: 2,
-                  offset: Offset(0, 1), // changes position of shadow
-                ),
-              ],
-            ),
-            margin: EdgeInsets.all(5),
-            child: Column(
-              children: <Widget>[
-                Container(
-                  height: 200,
-                  decoration: BoxDecoration(
-                      image: const DecorationImage(
-                        image: NetworkImage('https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Car_crash_1.jpg/1024px-Car_crash_1.jpg'),
-                        fit: BoxFit.cover,
-                      ),
-                      borderRadius: BorderRadius.only(topRight: Radius.circular(10),topLeft:  Radius.circular(10))
-                  ),
-                ),
-                Container(
-                    padding: EdgeInsets.all(5),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text("My Report Title",style: TextStyle(fontSize:18,fontWeight: FontWeight.w700,color: Colors.black),),
-
-                        Row(
-                          children: [
-                            Expanded(
-                              flex: 4,
-                              child: Text("Brief title description",style: TextStyle(fontSize:14,fontWeight: FontWeight.w300),),
-                            ),
-                            Expanded(
-                              flex: 1,
-                              child: Container(
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                    border: Border.all(color: kPrimaryColor),
-                                    borderRadius: BorderRadius.circular(20)
-                                ),
-                                child: Text("Incident",textAlign: TextAlign.center,style: TextStyle(fontSize:13,fontWeight: FontWeight.w300,color: kPrimaryLightColor),),
-                              ),
-                            )
-
-                          ],
-                        ),
-
-                        Divider(color: Colors.grey,),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(Icons.place,color: Colors.grey,size: 16,),
-                                Text("Location",style: TextStyle(fontSize:14,fontWeight: FontWeight.w300),),
-                              ],
-                            ),
-                            Row(
-                              children: [
-                                Icon(Icons.access_time,color: Colors.grey,size: 16,),
-                                Text("1 hour ago",style: TextStyle(fontSize:14,fontWeight: FontWeight.w300),),
-                              ],
-                            ),
-                          ],
-                        )
-                      ],
-                    ),
-                ),
-              ],
-            ),
-          ),
-        )
-    );
-  }
 }
+

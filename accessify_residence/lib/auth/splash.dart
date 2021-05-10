@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:accessify/auth/sign_in/sign_in_screen.dart';
+import 'package:accessify/screens/home.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../constants.dart';
@@ -31,7 +33,17 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   void navigationPage() {
-    Navigator.pushNamed(context, SignInScreen.routeName);
+    FirebaseAuth.instance.authStateChanges().listen((User user) {
+      if (user == null) {
+        print('User is currently signed out!');
+        Navigator.pushNamed(context, SignInScreen.routeName);
+      }
+      else {
+        print('User is signed in!');
+        Navigator.pushNamed(context, Home.routeName);
+      }
+    });
+
 
   }
 

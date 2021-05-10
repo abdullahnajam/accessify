@@ -1,4 +1,9 @@
 import 'package:accessify/constants.dart';
+import 'package:accessify/screens/my_home/employee.dart';
+import 'package:accessify/screens/my_home/frequent.dart';
+import 'package:accessify/screens/my_home/pets.dart';
+import 'package:accessify/screens/my_home/residence.dart';
+import 'package:accessify/screens/my_home/vehicle.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 class MyHome extends StatefulWidget {
@@ -93,11 +98,26 @@ class _MyHomeState extends State<MyHome> {
               ),
 
 
-              _card(Icons.home_outlined, "My Residence", () {}),
-              _card(Icons.car_repair, "My Vehicle", () {}),
-              _card(Icons.people, "My Employees", () {}),
-              _card(Icons.pets, "My Pets", () {}),
-              _card(Icons.card_travel, "My Frequent Visitors", () {}),
+              _card(Icons.home_outlined, "My Residence", () {
+                Navigator.push(context, new MaterialPageRoute(
+                    builder: (context) => MyResidence()));
+              }),
+              _card(Icons.car_repair, "My Vehicle", () {
+                Navigator.push(context, new MaterialPageRoute(
+                    builder: (context) => MyVehicle()));
+              }),
+              _card(Icons.people, "My Employees", () {
+                Navigator.push(context, new MaterialPageRoute(
+                    builder: (context) => MyEmployees()));
+              }),
+              _card(Icons.pets, "My Pets", () {
+                Navigator.push(context, new MaterialPageRoute(
+                    builder: (context) => MyPets()));
+              }),
+              _card(Icons.card_travel, "My Frequent Visitors", () {
+                Navigator.push(context, new MaterialPageRoute(
+                    builder: (context) => MyFrequents()));
+              }),
               SizedBox(
                 height: 20.0,
               )

@@ -1,4 +1,8 @@
 import 'package:accessify/constants.dart';
+import 'package:accessify/screens/access_control/delivery/view_delivery_list.dart';
+import 'package:accessify/screens/access_control/employee/view_employee_frequent_list.dart';
+import 'package:accessify/screens/access_control/guest/view_guest_list.dart';
+import 'package:accessify/screens/access_control/taxi/view_taxi_list.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 class AccessControl extends StatefulWidget {
@@ -105,10 +109,22 @@ class _AccessControlState extends State<AccessControl> {
               ),
 
 
-              _card(Icons.delivery_dining, "Delivery Service", () {}),
-              _card(Icons.local_taxi, "My Taxi", () {}),
-              _card(Icons.people, "Guest", () {}),
-              _card(Icons.card_travel, "Frecuent / Employee", () {}),
+              _card(Icons.delivery_dining, "Delivery Service", () {
+                Navigator.push(context, new MaterialPageRoute(
+                    builder: (context) => DeliveryAccess()));
+              }),
+              _card(Icons.local_taxi, "My Taxi", () {
+                Navigator.push(context, new MaterialPageRoute(
+                    builder: (context) => TaxiAccess()));
+              }),
+              _card(Icons.people, "Guest", () {
+                Navigator.push(context, new MaterialPageRoute(
+                    builder: (context) => GuestAccess()));
+              }),
+              _card(Icons.card_travel, "Frecuent / Employee", () {
+                Navigator.push(context, new MaterialPageRoute(
+                    builder: (context) => EmployeeFrequentAccess()));
+              }),
               _card(Icons.event, "Event", () {}),
               SizedBox(
                 height: 20.0,
