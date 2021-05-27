@@ -1,3 +1,6 @@
+import 'package:permission_handler/permission_handler.dart';
+import 'package:qrscan/qrscan.dart' as scanner;
+import 'package:flutter/services.dart';
 import 'package:guard/components/default_button.dart';
 import 'package:guard/constants.dart';
 import 'package:flutter/cupertino.dart';
@@ -14,7 +17,11 @@ class _AccessControlState extends State<AccessControl> {
   void _openDrawer () {
     _drawerKey.currentState.openDrawer();
   }
-  showDeliveryServiceDailog(){
+
+  String qrcode;
+  showDialog(){
+    final idNumberController=TextEditingController();
+    final plateController=TextEditingController();
     showGeneralDialog(
         barrierColor: Colors.black.withOpacity(0.5),
         transitionBuilder: (context, a1, a2, widget) {
@@ -22,117 +29,117 @@ class _AccessControlState extends State<AccessControl> {
           return Transform(
             transform: Matrix4.translationValues(0.0, curvedValue * 200, 0.0),
             child: Opacity(
-              opacity: a1.value,
-              child: Card(
-                  shape: RoundedRectangleBorder(
-                    side: BorderSide(color: Colors.white70, width: 1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                margin: EdgeInsets.only(
-                  top: MediaQuery.of(context).size.height*0.2,
-                  bottom: MediaQuery.of(context).size.height*0.25,
-                  left: MediaQuery.of(context).size.width*0.1,
-                  right: MediaQuery.of(context).size.width*0.1,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      child: Stack(
-                        children: [
-                          Container(
-                            margin:EdgeInsets.only(top: 5),
-                            child: Text(
-                              "Register",
-                              style: TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 20.0),
-                            ),
-                            alignment: Alignment.center,
-                          ),
-                          GestureDetector(
-                            onTap: ()=>Navigator.pop(context),
-                            child: Container(
-                              alignment: Alignment.topRight,
-                              margin: EdgeInsets.all(10),
-                              child: Icon(Icons.close,size: 24,),
-                            ),
-                          ),
-                        ],
-                      ),
+                opacity: a1.value,
+                child: Card(
+                    shape: RoundedRectangleBorder(
+                      side: BorderSide(color: Colors.white70, width: 1),
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                    SizedBox(height: 20,),
-                    Container(
-                      height: 60,
-                      width: MediaQuery.of(context).size.width*0.7,
-                      child: TextFormField(
-                        keyboardType: TextInputType.text,
-
-                        decoration: InputDecoration(
-                          hintText: "ID Number",
-                          // If  you are using latest version of flutter then lable text and hint text shown like this
-                          // if you r using flutter less then 1.20.* then maybe this is not working properly
-                          floatingLabelBehavior: FloatingLabelBehavior.always,
-                        ),
-                      ),
+                    margin: EdgeInsets.only(
+                      top: MediaQuery.of(context).size.height*0.2,
+                      bottom: MediaQuery.of(context).size.height*0.25,
+                      left: MediaQuery.of(context).size.width*0.1,
+                      right: MediaQuery.of(context).size.width*0.1,
                     ),
-                    SizedBox(height: 20,),
-                    Container(
-                      height: 60,
-                      width: MediaQuery.of(context).size.width*0.7,
-                      child: TextFormField(
-                        keyboardType: TextInputType.text,
-
-                        decoration: InputDecoration(
-                          hintText: "Vehicle Plate",
-                          // If  you are using latest version of flutter then lable text and hint text shown like this
-                          // if you r using flutter less then 1.20.* then maybe this is not working properly
-                          floatingLabelBehavior: FloatingLabelBehavior.always,
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 10,),
-
-                    Container(
-                      margin:EdgeInsets.only(top: 5),
-                      child: Text(
-                        "Photo Evidence",
-                        style: TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 18.0),
-                      ),
-                      alignment: Alignment.center,
-                    ),
-                    SizedBox(height: 10,),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Container(
-                          child: Image.asset('assets/images/add.png',width: 60,height: 60,),
+                          child: Stack(
+                            children: [
+                              Container(
+                                margin:EdgeInsets.only(top: 5),
+                                child: Text(
+                                  "Register",
+                                  style: TextStyle(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 20.0),
+                                ),
+                                alignment: Alignment.center,
+                              ),
+                              GestureDetector(
+                                onTap: ()=>Navigator.pop(context),
+                                child: Container(
+                                  alignment: Alignment.topRight,
+                                  margin: EdgeInsets.all(10),
+                                  child: Icon(Icons.close,size: 24,),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
+                        SizedBox(height: 20,),
                         Container(
-                          child: Image.asset('assets/images/addImg.jpg',width: 60,height: 60,),
+                          height: 60,
+                          width: MediaQuery.of(context).size.width*0.7,
+                          child: TextFormField(
+                            keyboardType: TextInputType.text,
+                            controller: idNumberController,
+                            decoration: InputDecoration(
+                              hintText: "ID Number",
+                              // If  you are using latest version of flutter then lable text and hint text shown like this
+                              // if you r using flutter less then 1.20.* then maybe this is not working properly
+                              floatingLabelBehavior: FloatingLabelBehavior.always,
+                            ),
+                          ),
                         ),
+                        SizedBox(height: 20,),
                         Container(
-                          child: Image.asset('assets/images/addImg.jpg',width: 60,height: 60,),
+                          height: 60,
+                          width: MediaQuery.of(context).size.width*0.7,
+                          child: TextFormField(
+                            keyboardType: TextInputType.text,
+                            controller: plateController,
+                            decoration: InputDecoration(
+                              hintText: "Vehicle Plate",
+                              // If  you are using latest version of flutter then lable text and hint text shown like this
+                              // if you r using flutter less then 1.20.* then maybe this is not working properly
+                              floatingLabelBehavior: FloatingLabelBehavior.always,
+                            ),
+                          ),
                         ),
+                        SizedBox(height: 10,),
+
+                        Container(
+                          margin:EdgeInsets.only(top: 5),
+                          child: Text(
+                            "Photo Evidence",
+                            style: TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 18.0),
+                          ),
+                          alignment: Alignment.center,
+                        ),
+                        SizedBox(height: 10,),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              child: Image.asset('assets/images/add.png',width: 60,height: 60,),
+                            ),
+                            Container(
+                              child: Image.asset('assets/images/addImg.jpg',width: 60,height: 60,),
+                            ),
+                            Container(
+                              child: Image.asset('assets/images/addImg.jpg',width: 60,height: 60,),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 20,),
+                        Container(
+                          child: DefaultButton(
+                            text: "Continue",
+                            press: () {
+                              Navigator.pop(context);
+                            },
+                          ),
+                          margin: EdgeInsets.all(10),
+                        )
                       ],
-                    ),
-                    SizedBox(height: 20,),
-                    Container(
-                      child: DefaultButton(
-                        text: "Continue",
-                        press: () {
-                          Navigator.pop(context);
-                        },
-                      ),
-                      margin: EdgeInsets.all(10),
                     )
-                  ],
                 )
-              )
             ),
           );
         },
@@ -142,6 +149,19 @@ class _AccessControlState extends State<AccessControl> {
         context: context,
         pageBuilder: (context, animation1, animation2) {
         });
+  }
+
+  showDeliveryServiceDailog()async{
+
+    await Permission.camera.request();
+    String barcode = await scanner.scan();
+    if (barcode == null) {
+      print('nothing return.');
+    } else {
+      print('qr code $barcode');
+      showDialog();
+    }
+
   }
   showUnRegisteredDailog(){
     showGeneralDialog(
@@ -455,8 +475,7 @@ class _AccessControlState extends State<AccessControl> {
               ),
 
 
-              _card(Icons.delivery_dining, "Delivery Service", () =>showDeliveryServiceDailog()),
-              _card(Icons.local_taxi, "My Taxi", () =>showDeliveryServiceDailog()),
+
               _card(Icons.people, "Guest", () =>showDeliveryServiceDailog()),
               _card(Icons.card_travel, "Frecuent / Employee", () =>showDeliveryServiceDailog()),
               _card(Icons.event, "Event", () =>showDeliveryServiceDailog()),

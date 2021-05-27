@@ -1,4 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:guard/auth/sign_in/sign_in_screen.dart';
 import 'package:guard/data/img.dart';
 import 'package:guard/data/my_colors.dart';
 import 'package:guard/screens/access_control/access_control.dart';
@@ -150,7 +152,12 @@ class MenuDrawerState extends State<MenuDrawer> {
               ),
             ),
             Container(height: 10),
-            InkWell(onTap: (){},
+            InkWell(onTap: () async{
+              await FirebaseAuth.instance.signOut().whenComplete((){
+                Navigator.pushReplacement(
+                    context, MaterialPageRoute(builder: (BuildContext context) => SignInScreen()));
+              });
+            },
               child: Container(height: 40, padding: EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
                   children: <Widget>[

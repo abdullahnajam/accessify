@@ -1,3 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:guard/screens/home.dart';
 import 'package:flutter/material.dart';
 import 'package:guard/components/custom_surfix_icon.dart';
@@ -18,6 +21,7 @@ class _SignUpFormState extends State<SignUpForm> {
   final _formKey = GlobalKey<FormState>();
   String email;
   String password;
+  String name;
   String conform_password;
   bool remember = false;
   final List<String> errors = [];
@@ -44,6 +48,8 @@ class _SignUpFormState extends State<SignUpForm> {
         children: [
           buildEmailFormField(),
           SizedBox(height: getProportionateScreenHeight(30)),
+          buildNameFormField(),
+          SizedBox(height: getProportionateScreenHeight(30)),
           buildPasswordFormField(),
           SizedBox(height: getProportionateScreenHeight(30)),
           buildConformPassFormField(),
@@ -51,11 +57,51 @@ class _SignUpFormState extends State<SignUpForm> {
           SizedBox(height: getProportionateScreenHeight(40)),
           DefaultButton(
             text: "Continue",
-            press: () {
+            press: () async {
               if (_formKey.currentState.validate()) {
                 _formKey.currentState.save();
                 // if all are valid then go to success screen
-                Navigator.pushNamed(context, Home.routeName);
+                try {
+                  UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+                      email: email,
+                      password: password
+                  ).whenComplete(() {
+                    FirebaseAuth.instance
+                        .authStateChanges()
+                        .listen((User user) {
+                      if (user == null) {
+                        print('User is currently signed out!');
+                      } else {
+                        print('User is signed in!');
+
+                        final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
+                        _firebaseMessaging.subscribeToTopic('guard');
+                        _firebaseMessaging.getToken().then((token) {
+                          print(token);
+                          User user=FirebaseAuth.instance.currentUser;
+                          final databaseReference = FirebaseDatabase.instance.reference();
+                          databaseReference.child("users").child(user.uid).set({
+                            'token':token,
+                            'name': name,
+                            'email': user.email,
+                            'type': "guard",
+                            'isActive': true
+                          }).then((value) => Navigator.pushNamed(context, Home.routeName));
+
+                        });
+
+                      }
+                    });
+                  });
+                } on FirebaseAuthException catch (e) {
+                  if (e.code == 'weak-password') {
+                    print('The password provided is too weak.');
+                  } else if (e.code == 'email-already-in-use') {
+                    print('The account already exists for that email.');
+                  }
+                } catch (e) {
+                  print(e);
+                }
               }
             },
           ),
@@ -129,7 +175,33 @@ class _SignUpFormState extends State<SignUpForm> {
       ),
     );
   }
-
+  TextFormField buildNameFormField() {
+    return TextFormField(
+      keyboardType: TextInputType.text,
+      onSaved: (newValue) => name = newValue,
+      onChanged: (value) {
+        if (value.isNotEmpty) {
+          removeError(error: kNamelNullError);
+        }
+        return null;
+      },
+      validator: (value) {
+        if (value.isEmpty) {
+          addError(error: kNamelNullError);
+          return "";
+        }
+        return null;
+      },
+      decoration: InputDecoration(
+        labelText: "Name",
+        hintText: "Enter your name",
+        // If  you are using latest version of flutter then lable text and hint text shown like this
+        // if you r using flutter less then 1.20.* then maybe this is not working properly
+        floatingLabelBehavior: FloatingLabelBehavior.always,
+        suffixIcon: CustomSurffixIcon(svgIcon: "assets/images/Mail.png"),
+      ),
+    );
+  }
   TextFormField buildEmailFormField() {
     return TextFormField(
       keyboardType: TextInputType.emailAddress,

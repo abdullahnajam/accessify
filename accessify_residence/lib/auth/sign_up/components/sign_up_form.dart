@@ -1,5 +1,7 @@
 import 'package:accessify/screens/home.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:accessify/components/custom_surfix_icon.dart';
 import 'package:accessify/components/default_button.dart';
@@ -18,6 +20,7 @@ class SignUpForm extends StatefulWidget {
 class _SignUpFormState extends State<SignUpForm> {
   final _formKey = GlobalKey<FormState>();
   String email;
+  String name;
   String password;
   String conform_password;
   bool remember = false;
@@ -47,6 +50,8 @@ class _SignUpFormState extends State<SignUpForm> {
           SizedBox(height: getProportionateScreenHeight(30)),
           buildPasswordFormField(),
           SizedBox(height: getProportionateScreenHeight(30)),
+          buildNameFormField(),
+          SizedBox(height: getProportionateScreenHeight(30)),
           buildConformPassFormField(),
           FormError(errors: errors),
           SizedBox(height: getProportionateScreenHeight(40)),
@@ -68,7 +73,21 @@ class _SignUpFormState extends State<SignUpForm> {
                         print('User is currently signed out!');
                       } else {
                         print('User is signed in!');
-                        Navigator.pushNamed(context, Home.routeName);
+                        final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
+                        _firebaseMessaging.subscribeToTopic('resident');
+                        _firebaseMessaging.getToken().then((token) {
+                          print(token);
+                          User user=FirebaseAuth.instance.currentUser;
+                          final databaseReference = FirebaseDatabase.instance.reference();
+                          databaseReference.child("users").child(user.uid).set({
+                            'token':token,
+                            'name': name,
+                            'email': user.email,
+                            'type': "resident",
+                            'isActive': true
+                          }).then((value) => Navigator.pushNamed(context, Home.routeName));
+
+                        });
                       }
                     });
                   });
@@ -119,6 +138,33 @@ class _SignUpFormState extends State<SignUpForm> {
         // if you r using flutter less then 1.20.* then maybe this is not working properly
         floatingLabelBehavior: FloatingLabelBehavior.always,
         suffixIcon: CustomSurffixIcon(svgIcon: "assets/images/Lock.png"),
+      ),
+    );
+  }
+  TextFormField buildNameFormField() {
+    return TextFormField(
+      keyboardType: TextInputType.text,
+      onSaved: (newValue) => name = newValue,
+      onChanged: (value) {
+        if (value.isNotEmpty) {
+          removeError(error: kNamelNullError);
+        }
+        return null;
+      },
+      validator: (value) {
+        if (value.isEmpty) {
+          addError(error: kNamelNullError);
+          return "";
+        }
+        return null;
+      },
+      decoration: InputDecoration(
+        labelText: "Name",
+        hintText: "Enter your name",
+        // If  you are using latest version of flutter then lable text and hint text shown like this
+        // if you r using flutter less then 1.20.* then maybe this is not working properly
+        floatingLabelBehavior: FloatingLabelBehavior.always,
+        suffixIcon: CustomSurffixIcon(svgIcon: "assets/images/Mail.png"),
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'size_config.dart';
 
+const serverToken="AAAAO-nylpM:APA91bEoAIIpHaWsJJL_wogtFDG4yZKe_ahcFfVWOVW_ODdBcqayZq4ixa0k4-A6KPghn9ICwC8o3gWv7R0QyM4mZT_18vXdMlMwlXgPoSiSSJEZhsp7JVfHZl0QpLlCUsaLZ3cDymPz";
 const kPrimaryColor = Color(0xFF0e3f9d);
 const kPrimaryLightColor = Color(0xFF648ee4);
 const kPrimaryGradientColor = LinearGradient(
@@ -26,6 +27,7 @@ const defaultDuration = Duration(milliseconds: 250);
 final RegExp emailValidatorRegExp =
     RegExp(r"^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z]+");
 const String kEmailNullError = "Please Enter your email";
+const String kNameNullError = "Please Enter your name";
 const String kInvalidEmailError = "Please Enter Valid Email";
 const String kPassNullError = "Please Enter your password";
 const String kShortPassError = "Password is too short";

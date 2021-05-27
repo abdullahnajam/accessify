@@ -1,7 +1,10 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:guard/components/default_button.dart';
 import 'package:guard/constants.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:guard/model/user_model.dart';
 import 'package:guard/navigator/menu_drawer.dart';
 class Members extends StatefulWidget {
   @override
@@ -27,6 +30,64 @@ class _MembersState extends State<Members> with SingleTickerProviderStateMixin{
     super.dispose();
     _tabController.dispose();
   }
+  Future<List<UserModel>> getActiveUserList() async {
+    List<UserModel> list=[];
+    final databaseReference = FirebaseDatabase.instance.reference();
+    await databaseReference.child("users").once().then((DataSnapshot dataSnapshot){
+      if(dataSnapshot.value!=null){
+        var KEYS= dataSnapshot.value.keys;
+        var DATA=dataSnapshot.value;
+
+        for(var individualKey in KEYS) {
+          UserModel userModel = new UserModel(
+            individualKey,
+            DATA[individualKey]['name'],
+            DATA[individualKey]['email'],
+            DATA[individualKey]['type'],
+            DATA[individualKey]['isActive'],
+              DATA[individualKey]['token']
+          );
+          print("key ${userModel.id}");
+          if(userModel.isActive==true  && userModel.type=="resident"){
+            list.add(userModel);
+          }
+
+
+        }
+      }
+    });
+    return list;
+  }
+
+  Future<List<UserModel>> getInActiveUserList() async {
+    List<UserModel> list=[];
+    final databaseReference = FirebaseDatabase.instance.reference();
+    await databaseReference.child("users").once().then((DataSnapshot dataSnapshot){
+      if(dataSnapshot.value!=null){
+        var KEYS= dataSnapshot.value.keys;
+        var DATA=dataSnapshot.value;
+
+        for(var individualKey in KEYS) {
+          UserModel userModel = new UserModel(
+              individualKey,
+              DATA[individualKey]['username'],
+              DATA[individualKey]['email'],
+              DATA[individualKey]['type'],
+              DATA[individualKey]['isActive'],
+              DATA[individualKey]['token']
+          );
+          print("key ${userModel.id}");
+          if(userModel.isActive==false && userModel.type=="resident"){
+            list.add(userModel);
+          }
+
+
+        }
+      }
+    });
+    return list;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -149,17 +210,74 @@ class _MembersState extends State<Members> with SingleTickerProviderStateMixin{
                             height: MediaQuery.of(context).size.height*0.74,
 
                             child: TabBarView(children: <Widget>[
-                              ListView(
-                                children: [
-                                  _card ('username', () { }),
-                                  _card ('username', () { })
-                                ],
+                              Container(
+                                child: FutureBuilder<List<UserModel>>(
+                                  future: getActiveUserList(),
+                                  builder: (context,snapshot){
+                                    if (snapshot.hasData) {
+                                      if (snapshot.data != null && snapshot.data.length>0) {
+                                        return ListView.builder(
+                                          shrinkWrap: true,
+                                          //scrollDirection: Axis.horizontal,
+                                          itemCount: snapshot.data.length,
+                                          itemBuilder: (BuildContext context,int index){
+                                            return _card (snapshot.data[index].username, () { });
+                                          },
+                                        );
+                                      }
+                                      else {
+                                        return new Center(
+                                          child: Container(
+                                              margin: EdgeInsets.only(top: 100),
+                                              child: Text("You currently don't have any active user")
+                                          ),
+                                        );
+                                      }
+                                    }
+                                    else if (snapshot.hasError) {
+                                      return Text('Error : ${snapshot.error}');
+                                    } else {
+                                      return new Center(
+                                        child: CircularProgressIndicator(),
+                                      );
+                                    }
+                                  },
+                                ),
                               ),
-                             ListView(
-                               children: [
-                                 _card ('username', () { })
-                               ],
-                             )
+                              Container(
+                                child: FutureBuilder<List<UserModel>>(
+                                  future: getInActiveUserList(),
+                                  builder: (context,snapshot){
+                                    if (snapshot.hasData) {
+                                      if (snapshot.data != null && snapshot.data.length>0) {
+                                        return ListView.builder(
+                                          shrinkWrap: true,
+                                          //scrollDirection: Axis.horizontal,
+                                          itemCount: snapshot.data.length,
+                                          itemBuilder: (BuildContext context,int index){
+                                            return _card (snapshot.data[index].username, () { });
+                                          },
+                                        );
+                                      }
+                                      else {
+                                        return new Center(
+                                          child: Container(
+                                              margin: EdgeInsets.only(top: 100),
+                                              child: Text("You currently don't have any inactive users")
+                                          ),
+                                        );
+                                      }
+                                    }
+                                    else if (snapshot.hasError) {
+                                      return Text('Error : ${snapshot.error}');
+                                    } else {
+                                      return new Center(
+                                        child: CircularProgressIndicator(),
+                                      );
+                                    }
+                                  },
+                                ),
+                              ),
 
                             ])
                         )

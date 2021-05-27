@@ -47,6 +47,9 @@ dependencies:
   qr_flutter: ^3.0.0
   share: ^0.6.5
   progress_dialog: ^1.2.4
+  firebase_messaging: ^7.0.3
+  overlay_support: ^1.0.0
+  http: any
 
 dev_dependencies:
   flutter_test:

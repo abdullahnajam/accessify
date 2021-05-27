@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui';
 import 'package:accessify/constants.dart';
 import 'package:accessify/model/employee_model.dart';
+import 'package:accessify/model/user_model.dart';
 import 'package:accessify/screens/home.dart';
 import 'package:date_format/date_format.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -20,6 +22,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:progress_dialog/progress_dialog.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share/share.dart';
+import 'package:http/http.dart' as http;
 class CreateEmployeeFrequent extends StatefulWidget {
   @override
   _CreateEmployeeFrequentState createState() => _CreateEmployeeFrequentState();
@@ -38,12 +41,79 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
 
   GlobalKey globalKey = new GlobalKey();
 
+  UserModel userModel;
+
+  getUserData()async{
+    User user=FirebaseAuth.instance.currentUser;
+    final databaseReference = FirebaseDatabase.instance.reference();
+    await databaseReference.child("users").child(user.uid).once().then((DataSnapshot dataSnapshot){
+      if(dataSnapshot.value!=null){
+        print(dataSnapshot.value);
+        userModel = new UserModel(
+            user.uid,
+            dataSnapshot.value['name'],
+            dataSnapshot.value['email'],
+            dataSnapshot.value['type'],
+            dataSnapshot.value['isActive']
+        );
+        print("username = ${userModel.username}");
+      }
+    });
+  }
+
+
+  @override
+  void initState() {
+    getUserData();
+  }
+  sendNotification() async{
+    String url='https://fcm.googleapis.com/fcm/send';
+
+
+    await http.post(
+      'https://fcm.googleapis.com/fcm/send',
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Authorization': 'key=$serverToken',
+      },
+      body: jsonEncode(
+        <String, dynamic>{
+          'notification': <String, dynamic>{
+            'body': 'Employee/Frequent Access',
+            'title': 'Employee/Frequent Access control requested by ${userModel.username}'
+          },
+          'priority': 'high',
+          'data': <String, dynamic>{
+            'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+            'id': '1',
+            'status': 'done'
+          },
+          'to': "/topics/guard",
+        },
+      ),
+    ).whenComplete(()  {
+      User user=FirebaseAuth.instance.currentUser;
+      final databaseReference = FirebaseDatabase.instance.reference();
+      databaseReference.child("notifications").child("guard").push().set({
+
+        'isOpened': false,
+        'type':"Employee/Frequent",
+        'date':DateTime.now().toString(),
+        'body':'Employee/Frequent Access from ${userModel.username}',
+        'title':"Employee/Frequent Access",
+        'icon':'https://www.kindpng.com/picc/m/255-2553833_employee-icon-png-white-employee-icon-png-transparent.png',
+        'userId':user.uid
+      });
+
+    });
+  }
+
   String photoUrl;
   EmployeeModel emp;
   String nameText="Add Employee";
 
   File file;
-  String key="dummy";
+  String qrKey=DateTime.now().millisecondsSinceEpoch.toString();
 
   Future<void> _add() async {
     try {
@@ -425,8 +495,12 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
                         RepaintBoundary(
                           key: globalKey,
                           child: QrImage(
-                            data: key,
+                            data: qrKey,
                             size: 200,
+                            embeddedImage: AssetImage('assets/images/logo.png'),
+                            embeddedImageStyle: QrEmbeddedImageStyle(
+                              size: Size(50, 50),
+                            ),
                             backgroundColor: Colors.white,
                           ),
                         ),
@@ -573,7 +647,7 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
       setState(() {
         photoUrl = downloadUrl;
       });
-      databaseReference.child("access_control").child("employee").push().set({
+      databaseReference.child("access_control").child("employee").child(qrKey).set({
         'emp': nameText,
         'fromDate':startDate,
         'expDate':time,

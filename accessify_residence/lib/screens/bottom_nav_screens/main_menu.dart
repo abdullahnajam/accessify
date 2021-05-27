@@ -5,8 +5,10 @@ import 'package:accessify/screens/home.dart';
 import 'package:accessify/screens/incidents/view_incidents.dart';
 import 'package:accessify/screens/my_home/my_home.dart';
 import 'package:accessify/screens/reservation/view_reservation_list.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:overlay_support/overlay_support.dart';
 
 class MainMenuScreen extends StatefulWidget {
   @override
@@ -18,6 +20,47 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
 
   void _openDrawer () {
     _drawerKey.currentState.openDrawer();
+  }
+  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
+  String _message = '';
+
+
+
+  void getMessage() {
+    _firebaseMessaging.configure(
+        onMessage: (Map<String, dynamic> message) async {
+          print('received message');
+          setState(() => _message = message["notification"]["body"]);
+          showOverlayNotification((context) {
+            return Card(
+              margin: EdgeInsets.all(10),
+              child: SafeArea(
+                child: ListTile(
+                  title: Text(message['notification']['title']),
+                  subtitle: Text(message['notification']['body']),
+                  trailing: IconButton(
+                      icon: Icon(Icons.close),
+                      onPressed: () {
+                        OverlaySupportEntry.of(context).dismiss();
+                      }),
+                ),
+              ),
+            );
+          }, duration: Duration(milliseconds: 4000));
+        }, onResume: (Map<String, dynamic> message) async {
+      print('on resume $message');
+      setState(() => _message = message["notification"]["body"]);
+    }, onLaunch: (Map<String, dynamic> message) async {
+      print('on launch $message');
+      setState(() => _message = message["notification"]["body"]);
+    });
+  }
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    getMessage();
+
   }
   @override
   Widget build(BuildContext context) {

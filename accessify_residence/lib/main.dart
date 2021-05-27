@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:accessify/routes.dart';
 import 'package:accessify/auth/splash.dart';
 import 'package:accessify/theme.dart';
+import 'package:overlay_support/overlay_support.dart';
 
 void main() async{
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,14 +14,15 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Flutter Demo',
-      theme: theme(),
-      // home: SplashScreen(),
-      // We use routeName so that we dont need to remember the name
-      initialRoute: SplashScreen.routeName,
-      routes: routes,
+    return OverlaySupport(
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: theme(),
+        // home: SplashScreen(),
+        // We use routeName so that we dont need to remember the name
+        initialRoute: SplashScreen.routeName,
+        routes: routes,
+      ),
     );
   }
 }

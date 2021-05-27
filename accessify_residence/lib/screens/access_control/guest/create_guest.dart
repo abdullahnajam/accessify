@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui';
 import 'package:accessify/constants.dart';
+import 'package:accessify/model/user_model.dart';
 import 'package:accessify/screens/home.dart';
 import 'package:date_format/date_format.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -19,6 +21,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:progress_dialog/progress_dialog.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share/share.dart';
+import 'package:http/http.dart' as http;
 class CreateGuest extends StatefulWidget {
   @override
   _CreateGuestState createState() => _CreateGuestState();
@@ -30,6 +33,73 @@ class _CreateGuestState extends State<CreateGuest> {
   var vehicleController=TextEditingController();
   var emailController=TextEditingController();
 
+  UserModel userModel;
+
+  getUserData()async{
+    User user=FirebaseAuth.instance.currentUser;
+    final databaseReference = FirebaseDatabase.instance.reference();
+    await databaseReference.child("users").child(user.uid).once().then((DataSnapshot dataSnapshot){
+      if(dataSnapshot.value!=null){
+        print(dataSnapshot.value);
+        userModel = new UserModel(
+            user.uid,
+            dataSnapshot.value['name'],
+            dataSnapshot.value['email'],
+            dataSnapshot.value['type'],
+            dataSnapshot.value['isActive']
+        );
+        print("username = ${userModel.username}");
+      }
+    });
+  }
+
+
+  @override
+  void initState() {
+    getUserData();
+  }
+  sendNotification() async{
+    String url='https://fcm.googleapis.com/fcm/send';
+
+
+    await http.post(
+      'https://fcm.googleapis.com/fcm/send',
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Authorization': 'key=$serverToken',
+      },
+      body: jsonEncode(
+        <String, dynamic>{
+          'notification': <String, dynamic>{
+            'body': 'Guest Access',
+            'title': 'Guest Access control requested by ${userModel.username}'
+          },
+          'priority': 'high',
+          'data': <String, dynamic>{
+            'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+            'id': '1',
+            'status': 'done'
+          },
+          'to': "/topics/guard",
+        },
+      ),
+    ).whenComplete(()  {
+      User user=FirebaseAuth.instance.currentUser;
+      final databaseReference = FirebaseDatabase.instance.reference();
+      databaseReference.child("notifications").child("guard").push().set({
+
+        'isOpened': false,
+        'type':"Guest",
+        'date':DateTime.now().toString(),
+        'body':'Guest Service Access from ${userModel.username}',
+        'title':"Guest Service Access",
+        'icon':'https://img.flaticon.com/icons/png/512/185/185527.png?size=1200x630f&pad=10,10,10,10&ext=png&bg=FFFFFFFF',
+        'userId':user.uid
+      });
+
+    });
+  }
+
   String time=formatDate(DateTime.now(), [hh, ':', nn]);
   String startDate = formatDate(DateTime.now(), [dd, '-', mm, '-', yyyy]);
 
@@ -38,7 +108,7 @@ class _CreateGuestState extends State<CreateGuest> {
   String photoUrl;
 
   File file;
-  String key="dummy";
+  String key=DateTime.now().millisecondsSinceEpoch.toString();
 
   Future<void> _add() async {
     try {
@@ -198,6 +268,10 @@ class _CreateGuestState extends State<CreateGuest> {
                           child: QrImage(
                             data: key,
                             size: 200,
+                            embeddedImage: AssetImage('assets/images/logo.png'),
+                            embeddedImageStyle: QrEmbeddedImageStyle(
+                              size: Size(50, 50),
+                            ),
                             backgroundColor: Colors.white,
                           ),
                         ),
@@ -344,7 +418,7 @@ class _CreateGuestState extends State<CreateGuest> {
       setState(() {
         photoUrl = downloadUrl;
       });
-      databaseReference.child("access_control").child("guest").push().set({
+      databaseReference.child("access_control").child("guest").child(key).set({
         'name': nameController.text,
         'date':startDate,
         'hour':time,
@@ -355,6 +429,7 @@ class _CreateGuestState extends State<CreateGuest> {
         'qr':photoUrl
       }).then((value) {
         pr.hide();
+        sendNotification();
         _showSuccessDailog();
       })
           .catchError((error, stackTrace) {

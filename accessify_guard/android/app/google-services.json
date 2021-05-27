@@ -1,0 +1,69 @@
+{
+  "project_info": {
+    "project_number": "257328060051",
+    "firebase_url": "https://accesfy-882e6-default-rtdb.firebaseio.com",
+    "project_id": "accesfy-882e6",
+    "storage_bucket": "accesfy-882e6.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:257328060051:android:b6dadc98168d2c04c71f66",
+        "android_client_info": {
+          "package_name": "com.accessify.guard"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "257328060051-8ep5jk2aj0usmpkodgm809shsua9dosv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDYCoz5lVzmW-zw1MfisVjPixgvQirVucU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "257328060051-8ep5jk2aj0usmpkodgm809shsua9dosv.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:257328060051:android:186ee8cdb119fc06c71f66",
+        "android_client_info": {
+          "package_name": "com.communityapp.accessify"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "257328060051-8ep5jk2aj0usmpkodgm809shsua9dosv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDYCoz5lVzmW-zw1MfisVjPixgvQirVucU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "257328060051-8ep5jk2aj0usmpkodgm809shsua9dosv.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
