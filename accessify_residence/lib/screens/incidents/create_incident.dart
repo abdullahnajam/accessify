@@ -60,6 +60,7 @@ class _CreateIncidentState extends State<CreateIncident> {
       final String downloadUrl = await snapshot.ref.getDownloadURL();
       setState(() {
         photoUrl = downloadUrl;
+        print("photo url $photoUrl");
       });
     }
   }

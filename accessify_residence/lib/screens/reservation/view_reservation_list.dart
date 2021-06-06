@@ -1,3 +1,7 @@
+import 'package:accessify/model/reservation_model.dart';
+import 'package:accessify/screens/reservation/create_reservation.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -8,6 +12,147 @@ class ViewReservations extends StatefulWidget {
 }
 
 class _ViewReservationsState extends State<ViewReservations> {
+  Future<void> _showInfoDailog(ReservationModel model) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: true, // user must tap button!
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: const BorderRadius.all(
+              Radius.circular(30.0),
+            ),
+          ),
+          insetAnimationDuration: const Duration(seconds: 1),
+          insetAnimationCurve: Curves.fastOutSlowIn,
+          elevation: 2,
+
+          child: Container(
+            decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(30)
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GestureDetector(
+                  onTap: ()=>Navigator.pop(context),
+                  child: Container(
+                    margin: EdgeInsets.only(right: 10,top: 10),
+                    child: Icon(Icons.close),
+                    alignment: Alignment.centerRight,
+                  ),
+                ),
+                Container(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text("Reservation Information",textAlign: TextAlign.center,style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
+                        SizedBox(height: 10,),
+                        Text("Facility Name",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Text("${model.facilityName}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+
+
+                        SizedBox(height: 10,),
+                        Text("Date",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Text("${model.date}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+
+                        SizedBox(height: 10,),
+                        Text("Guests",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Text("${model.totalGuests}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+
+                        SizedBox(height: 10,),
+                        Text("Hours",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Text("${model.hourStart}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+
+
+
+
+                        SizedBox(height: 10,),
+                        Text("QR Code",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Container(
+                          height: 100,
+                          width: 100,
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              image: DecorationImage(
+                                  image: NetworkImage(model.qr),
+                                  fit: BoxFit.cover
+                              )
+                          ),
+                        )
+
+
+
+
+                      ],
+                    )
+
+                ),
+                Container(
+                  margin: EdgeInsets.only(top:20,left: 20,right: 20,bottom: 20),
+                  child: Divider(color: Colors.grey,),
+                ),
+                GestureDetector(
+                  onTap: (){
+                    Navigator.pop(context);
+                  },
+                  child: Container(
+                    alignment: Alignment.center,
+                    width: double.maxFinite,
+                    height: 40,
+                    margin: EdgeInsets.only(left: 40,right: 40),
+                    child:Text("CLOSE",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
+                    decoration: BoxDecoration(
+                        color: kPrimaryColor,
+                        borderRadius: BorderRadius.circular(30)
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  height: 15,
+                )
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+  Future<List<ReservationModel>> getReservedDates() async {
+    List<ReservationModel> list=new List();
+    User user=FirebaseAuth.instance.currentUser;
+    final databaseReference = FirebaseDatabase.instance.reference();
+    await databaseReference.child("reservation").once().then((DataSnapshot dataSnapshot){
+      if(dataSnapshot.value!=null){
+        var KEYS= dataSnapshot.value.keys;
+        var DATA=dataSnapshot.value;
+
+        for(var individualKey in KEYS) {
+          ReservationModel reservationModel = new ReservationModel(
+            individualKey,
+            DATA[individualKey]['date'],
+            DATA[individualKey]['facilityName'],
+            DATA[individualKey]['facilityId'],
+            DATA[individualKey]['totalGuests'],
+            DATA[individualKey]['hourStart'],
+            DATA[individualKey]['hourEnd'],
+            DATA[individualKey]['user'],
+            DATA[individualKey]['dateNoFormat'],
+            DATA[individualKey]['qr'],
+          );
+          if(reservationModel.userId==user.uid){
+            list.add(reservationModel);
+          }
+
+          //DateTime parsedDate = DateTime.parse(reservationModel.dateNoFormat);
+
+        }
+      }
+    });
+
+    return list;
+  }
   @override
   Widget build(BuildContext context) {
     return  Scaffold(
@@ -95,14 +240,48 @@ class _ViewReservationsState extends State<ViewReservations> {
                           fontWeight: FontWeight.w700,
                           fontSize: 16.0),
                     ),
-                    IconButton(icon: Icon(Icons.add), onPressed: null)
+                    IconButton(icon: Icon(Icons.add), onPressed: (){
+                      Navigator.push(context, new MaterialPageRoute(
+                          builder: (context) => CreateReservation()));
+                    })
                   ],
                 )
               ),
+              FutureBuilder<List<ReservationModel>>(
+                future: getReservedDates(),
+                builder: (context,snapshot){
+                  if (snapshot.hasData) {
+                    if (snapshot.data != null && snapshot.data.length>0) {
+                      return ListView.builder(
+                        shrinkWrap: true,
+                        //scrollDirection: Axis.horizontal,
+                        itemCount: snapshot.data.length,
+                        itemBuilder: (BuildContext context,int index){
+                          return _card(snapshot.data[index]);
+                        },
+                      );
+                    }
+                    else {
+                      return new Center(
+                        child: Container(
+                            margin: EdgeInsets.only(top: 100),
+                            child: Text("You currently don't have any reservation")
+                        ),
+                      );
+                    }
+                  }
+                  else if (snapshot.hasError) {
+                    return Text('Error : ${snapshot.error}');
+                  } else {
+                    return new Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+                },
+              ),
 
 
-              _card(Icons.home_outlined, "My Residence", () {}),
-              _card(Icons.car_repair, "My Vehicle", () {}),
+
               
               SizedBox(
                 height: 20.0,
@@ -113,11 +292,13 @@ class _ViewReservationsState extends State<ViewReservations> {
       ),
     );
   }
-  Widget _card(IconData _icon, String title, GestureTapCallback onTap) {
+  Widget _card(ReservationModel reservation) {
     return Padding(
         padding: const EdgeInsets.only(top: 1.0),
         child: InkWell(
-          onTap: onTap,
+          onTap: (){
+            _showInfoDailog(reservation);
+          },
           child: Container(
             height: 70,
             decoration: BoxDecoration(
@@ -143,9 +324,9 @@ class _ViewReservationsState extends State<ViewReservations> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text("Place Name",style: TextStyle(fontWeight: FontWeight.w700,color: Colors.black),),
-                        Text("21/03/2020",style: TextStyle(fontWeight: FontWeight.w500,fontSize: 12),),
-                        Text("11:00 AM - 01:00 PM",style: TextStyle(fontWeight: FontWeight.w500,fontSize: 12),),
+                        Text(reservation.facilityName,style: TextStyle(fontWeight: FontWeight.w700,color: Colors.black),),
+                        Text(reservation.date,style: TextStyle(fontWeight: FontWeight.w500,fontSize: 12),),
+                        Text(reservation.hourStart,style: TextStyle(fontWeight: FontWeight.w500,fontSize: 12),),
                       ],
                     ),
                   ),
@@ -165,7 +346,7 @@ class _ViewReservationsState extends State<ViewReservations> {
                               Text("My Name",style: TextStyle(fontWeight: FontWeight.w700,color: Colors.black),),
                               Row(
                                 children: [
-                                  Text("21",style: TextStyle(fontWeight: FontWeight.w500,fontSize: 12),),
+                                  Text(reservation.totalGuests,style: TextStyle(fontWeight: FontWeight.w500,fontSize: 12),),
                                   SizedBox(width: 5,),
                                   Icon(Icons.people,color: Colors.grey,size: 18,),
 

@@ -1,8 +1,13 @@
+import 'package:firebase_database/firebase_database.dart';
 import 'package:guard/components/default_button.dart';
 import 'package:guard/constants.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:guard/model/inventory/asset_model.dart';
+import 'package:guard/model/inventory/supply_model.dart';
 import 'package:guard/navigator/menu_drawer.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:qrscan/qrscan.dart' as scanner;
 class Inventory extends StatefulWidget {
   @override
   _InventoryState createState() => _InventoryState();
@@ -16,6 +21,64 @@ class _InventoryState extends State<Inventory> with SingleTickerProviderStateMix
     super.initState();
 
   }
+  Future<List<AssetModel>> getAssets() async {
+    List<AssetModel> list=new List();
+    final databaseReference = FirebaseDatabase.instance.reference();
+    await databaseReference.child("inventory").child("asset").once().then((DataSnapshot dataSnapshot){
+      if(dataSnapshot.value!=null){
+        var KEYS= dataSnapshot.value.keys;
+        var DATA=dataSnapshot.value;
+
+        for(var individualKey in KEYS) {
+          AssetModel assetModel = new AssetModel(
+            individualKey,
+            DATA[individualKey]['assignedTo'],
+            DATA[individualKey]['condition'],
+            DATA[individualKey]['datePurchased'],
+            DATA[individualKey]['description'],
+            DATA[individualKey]['lastScanDate'],
+            DATA[individualKey]['location'],
+            DATA[individualKey]['photo'],
+            DATA[individualKey]['serialNumber'],
+            DATA[individualKey]['warranty'],
+          );
+          list.add(assetModel);
+
+        }
+      }
+    });
+
+    return list;
+  }
+  Future<List<SupplyModel>> getSupply() async {
+    List<SupplyModel> list=new List();
+    final databaseReference = FirebaseDatabase.instance.reference();
+    await databaseReference.child("inventory").child("supply").once().then((DataSnapshot dataSnapshot){
+      if(dataSnapshot.value!=null){
+        var KEYS= dataSnapshot.value.keys;
+        var DATA=dataSnapshot.value;
+
+        for(var individualKey in KEYS) {
+          SupplyModel assetModel = new SupplyModel(
+            individualKey,
+            DATA[individualKey]['assignedTo'],
+            DATA[individualKey]['condition'],
+            DATA[individualKey]['datePurchased'],
+            DATA[individualKey]['description'],
+            DATA[individualKey]['lastScanDate'],
+            DATA[individualKey]['location'],
+            DATA[individualKey]['photo'],
+            DATA[individualKey]['serialNumber'],
+            DATA[individualKey]['warranty'],
+          );
+          list.add(assetModel);
+
+        }
+      }
+    });
+
+    return list;
+  }
   final GlobalKey<ScaffoldState> _drawerKey = GlobalKey();
 
   void _openDrawer () {
@@ -27,9 +90,43 @@ class _InventoryState extends State<Inventory> with SingleTickerProviderStateMix
     super.dispose();
     _tabController.dispose();
   }
+  scanAsset()async{
+
+    await Permission.camera.request();
+    String barcode = await scanner.scan();
+    if (barcode == null) {
+      print('nothing return.');
+    } else {
+      print('qr code $barcode');
+    }
+
+  }
+  scanSupply()async{
+
+    await Permission.camera.request();
+    String barcode = await scanner.scan();
+    if (barcode == null) {
+      print('nothing return.');
+    } else {
+      print('qr code $barcode');
+    }
+
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: kPrimaryColor,
+        onPressed: (){
+          if(_tabController==0){
+            scanAsset();
+          }
+          else{
+            scanSupply();
+          }
+        },
+        child: Icon(Icons.qr_code_scanner_outlined),
+      ),
       key: _drawerKey,
       drawer: MenuDrawer(),
       body: Container(
@@ -149,90 +246,146 @@ class _InventoryState extends State<Inventory> with SingleTickerProviderStateMix
                             height: MediaQuery.of(context).size.height*0.74,
 
                             child: TabBarView(children: <Widget>[
-                              ListView(
-                                children: [
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.grey,
-                                          offset: Offset(0.0, 1.0), //(x,y)
-                                          blurRadius: 2.0,
+                              FutureBuilder<List<AssetModel>>(
+                                future: getAssets(),
+                                builder: (context,snapshot){
+                                  if (snapshot.hasData) {
+                                    if (snapshot.data != null && snapshot.data.length>0) {
+                                      return ListView.builder(
+                                        shrinkWrap: true,
+                                        //scrollDirection: Axis.horizontal,
+                                        itemCount: snapshot.data.length,
+                                        itemBuilder: (BuildContext context,int index){
+                                          return Container(
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.grey,
+                                                  offset: Offset(0.0, 1.0), //(x,y)
+                                                  blurRadius: 2.0,
+                                                ),
+                                              ],
+                                            ),
+
+                                            margin: EdgeInsets.all(10),
+                                            padding: EdgeInsets.all(10),
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(snapshot.data[index].description,style: TextStyle(fontSize: 16,fontWeight: FontWeight.w600),),
+
+
+                                                  ],
+                                                ),
+                                                Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(snapshot.data[index].lastScanDate,style: TextStyle(fontSize: 15,fontWeight: FontWeight.w300),),
+                                                    Text(snapshot.data[index].condition,style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+                                                    //Text("Approved",style: TextStyle(color:Colors.green,fontSize: 13,fontWeight: FontWeight.w300),),
+
+                                                  ],
+                                                ),
+
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    }
+                                    else {
+                                      return new Center(
+                                        child: Container(
+                                            margin: EdgeInsets.only(top: 100),
+                                            child: Text("You currently don't have any assets")
                                         ),
-                                      ],
-                                    ),
-
-                                    margin: EdgeInsets.all(10),
-                                    padding: EdgeInsets.all(10),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text("Comments",style: TextStyle(fontSize: 16,fontWeight: FontWeight.w600),),
-
-
-                                          ],
-                                        ),
-                                        Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text("12/12/21",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w300),),
-                                            Text("Condition",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-                                            //Text("Approved",style: TextStyle(color:Colors.green,fontSize: 13,fontWeight: FontWeight.w300),),
-
-                                          ],
-                                        ),
-
-                                      ],
-                                    ),
-                                  ),
-                                ],
+                                      );
+                                    }
+                                  }
+                                  else if (snapshot.hasError) {
+                                    return Text('Error : ${snapshot.error}');
+                                  } else {
+                                    return new Center(
+                                      child: CircularProgressIndicator(),
+                                    );
+                                  }
+                                },
                               ),
-                              ListView(
-                                children: [
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.grey,
-                                          offset: Offset(0.0, 1.0), //(x,y)
-                                          blurRadius: 2.0,
+                              FutureBuilder<List<SupplyModel>>(
+                                future: getSupply(),
+                                builder: (context,snapshot){
+                                  if (snapshot.hasData) {
+                                    if (snapshot.data != null && snapshot.data.length>0) {
+                                      return ListView.builder(
+                                        shrinkWrap: true,
+                                        //scrollDirection: Axis.horizontal,
+                                        itemCount: snapshot.data.length,
+                                        itemBuilder: (BuildContext context,int index){
+                                          return Container(
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.grey,
+                                                  offset: Offset(0.0, 1.0), //(x,y)
+                                                  blurRadius: 2.0,
+                                                ),
+                                              ],
+                                            ),
+
+                                            margin: EdgeInsets.all(10),
+                                            padding: EdgeInsets.all(10),
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(snapshot.data[index].description,style: TextStyle(fontSize: 16,fontWeight: FontWeight.w600),),
+
+
+                                                  ],
+                                                ),
+                                                Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(snapshot.data[index].lastScanDate,style: TextStyle(fontSize: 15,fontWeight: FontWeight.w300),),
+                                                    Text(snapshot.data[index].condition,style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+                                                    //Text("Approved",style: TextStyle(color:Colors.green,fontSize: 13,fontWeight: FontWeight.w300),),
+
+                                                  ],
+                                                ),
+
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    }
+                                    else {
+                                      return new Center(
+                                        child: Container(
+                                            margin: EdgeInsets.only(top: 50),
+                                            child: Text("You currently don't have any supplies")
                                         ),
-                                      ],
-                                    ),
-
-                                    margin: EdgeInsets.all(10),
-                                    padding: EdgeInsets.all(10),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text("Comments",style: TextStyle(fontSize: 16,fontWeight: FontWeight.w600),),
-
-
-                                          ],
-                                        ),
-                                        Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text("12/12/21",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w300),),
-                                            Text("Condition",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-                                            //Text("Approved",style: TextStyle(color:Colors.green,fontSize: 13,fontWeight: FontWeight.w300),),
-
-                                          ],
-                                        ),
-
-                                      ],
-                                    ),
-                                  ),
-                                ],
+                                      );
+                                    }
+                                  }
+                                  else if (snapshot.hasError) {
+                                    return Text('Error : ${snapshot.error}');
+                                  } else {
+                                    return new Center(
+                                      child: CircularProgressIndicator(),
+                                    );
+                                  }
+                                },
                               ),
+
+
 
                             ])
                         )

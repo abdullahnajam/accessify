@@ -1,4 +1,5 @@
 import 'package:accessify/auth/sign_in/sign_in_screen.dart';
+import 'package:accessify/screens/coupon/view_coupons.dart';
 import 'package:accessify/screens/payments/my_payments.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -56,7 +57,11 @@ class MenuDrawerState extends State<MenuDrawer> {
               ),
             ),
             Container(height: 8),
-            InkWell(onTap: (){},
+            InkWell(onTap: ()
+            {Navigator.push(context, new MaterialPageRoute(
+                builder: (context) => ViewCoupons()));
+
+            },
               child: Container(height: 40, padding: EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
                   children: <Widget>[

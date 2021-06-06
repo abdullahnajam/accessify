@@ -50,6 +50,8 @@ dependencies:
   firebase_messaging: ^7.0.3
   overlay_support: ^1.0.0
   http: any
+  stripe_payment: ^1.0.6
+  syncfusion_flutter_calendar: ^18.4.46
 
 dev_dependencies:
   flutter_test:

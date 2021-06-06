@@ -54,7 +54,7 @@ class _AccessControlState extends State<Notifications> {
       return 'Just now';
     }
   }
-  String qrcode;
+
 
   openDailog(){
     showDialog(
@@ -318,6 +318,8 @@ class _AccessControlState extends State<Notifications> {
         pageBuilder: (context, animation1, animation2) {
         });
   }
+
+  String qrcode;
 
   showDeliveryServiceDailog()async{
 

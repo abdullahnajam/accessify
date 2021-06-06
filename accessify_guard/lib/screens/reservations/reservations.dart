@@ -1,7 +1,9 @@
+import 'package:firebase_database/firebase_database.dart';
 import 'package:guard/components/default_button.dart';
 import 'package:guard/constants.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:guard/model/reservation_model.dart';
 import 'package:guard/navigator/menu_drawer.dart';
 class Reservations extends StatefulWidget {
   @override
@@ -9,23 +11,43 @@ class Reservations extends StatefulWidget {
 }
 
 class _ReservationsState extends State<Reservations> with SingleTickerProviderStateMixin{
-  TabController _tabController;
-  @override
-  void initState() {
-    _tabController = TabController(length: 3, vsync: this);
-    super.initState();
+  Future<List<ReservationModel>> getReservedDates() async {
+    List<ReservationModel> list=new List();
+    final databaseReference = FirebaseDatabase.instance.reference();
+    await databaseReference.child("reservation").once().then((DataSnapshot dataSnapshot){
+      if(dataSnapshot.value!=null){
+        var KEYS= dataSnapshot.value.keys;
+        var DATA=dataSnapshot.value;
 
+        for(var individualKey in KEYS) {
+          ReservationModel reservationModel = new ReservationModel(
+            individualKey,
+            DATA[individualKey]['date'],
+            DATA[individualKey]['facilityName'],
+            DATA[individualKey]['facilityId'],
+            DATA[individualKey]['totalGuests'],
+            DATA[individualKey]['hourStart'],
+            DATA[individualKey]['hourEnd'],
+            DATA[individualKey]['user'],
+            DATA[individualKey]['dateNoFormat'],
+            DATA[individualKey]['qr'],
+          );
+          list.add(reservationModel);
+
+        }
+      }
+    });
+
+    return list;
   }
   final GlobalKey<ScaffoldState> _drawerKey = GlobalKey();
+
+
 
   void _openDrawer () {
     _drawerKey.currentState.openDrawer();
   }
-  @override
-  void dispose() {
-    super.dispose();
-    _tabController.dispose();
-  }
+
   showApproveDailogBox(){
     showGeneralDialog(
         barrierColor: Colors.black.withOpacity(0.5),
@@ -362,275 +384,85 @@ class _ReservationsState extends State<Reservations> with SingleTickerProviderSt
                   )
                 ],
               ),
+              FutureBuilder<List<ReservationModel>>(
+                future: getReservedDates(),
+                builder: (context,snapshot){
+                  if (snapshot.hasData) {
+                    if (snapshot.data != null && snapshot.data.length>0) {
+                      return ListView.builder(
+                        shrinkWrap: true,
+                        //scrollDirection: Axis.horizontal,
+                        itemCount: snapshot.data.length,
+                        itemBuilder: (BuildContext context,int index){
+                          return GestureDetector(
 
-              DefaultTabController(
-                  length: 3, // length of tabs
-                  initialIndex: 0,
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: <Widget>[
-                        Container(
-                          color: Colors.white,
-                          child: TabBar(
-                            labelStyle: TextStyle(fontSize: 18,fontWeight: FontWeight.w500),
-                            indicatorColor: kPrimaryColor,
-                            indicator: UnderlineTabIndicator(
-                              borderSide: BorderSide(width: 4.0,color: kPrimaryColor),
-                            ),
-                            labelColor:kPrimaryColor,
-                            unselectedLabelColor: Colors.grey,
-                            tabs: [
-                              Tab(text: 'Events'),
-                              Tab(text: 'Ongoing'),
-                              Tab(text: 'Ended'),
-                            ],
-                          ),
-                        ),
-                        Container( //height of TabBarView
-                            height: MediaQuery.of(context).size.height*0.74,
-
-                            child: TabBarView(children: <Widget>[
-                              ListView(
-                                children: [
-                                 GestureDetector(
-                                   onTap: ()=>showApproveDailogBox(),
-                                   child: Container(
-                                     decoration: BoxDecoration(
-                                       color: Colors.white,
-                                       boxShadow: [
-                                         BoxShadow(
-                                           color: Colors.grey,
-                                           offset: Offset(0.0, 1.0), //(x,y)
-                                           blurRadius: 2.0,
-                                         ),
-                                       ],
-                                     ),
-
-                                     margin: EdgeInsets.all(10),
-                                     padding: EdgeInsets.all(10),
-                                     child: Row(
-                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                       children: [
-                                         Column(
-                                           crossAxisAlignment: CrossAxisAlignment.start,
-                                           children: [
-                                             Text("Facility Name",style: TextStyle(fontSize: 16,fontWeight: FontWeight.w600),),
-                                             Text("12/12/21",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-
-                                           ],
-                                         ),
-                                         Column(
-                                           crossAxisAlignment: CrossAxisAlignment.start,
-                                           children: [
-                                             Row(
-                                               children: [
-                                                 Icon(Icons.people_outline,color: Colors.grey,),
-                                                 Text("24",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-
-                                               ],
-                                             ),
-                                             Text("Queued",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-
-                                           ],
-                                         ),
-
-                                       ],
-                                     ),
-                                   ),
-                                 ),
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.grey,
-                                          offset: Offset(0.0, 1.0), //(x,y)
-                                          blurRadius: 2.0,
-                                        ),
-                                      ],
-                                    ),
-
-                                    margin: EdgeInsets.all(10),
-                                    padding: EdgeInsets.all(10),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text("Facility Name",style: TextStyle(fontSize: 16,fontWeight: FontWeight.w600),),
-                                            Text("12/12/21",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-
-                                          ],
-                                        ),
-                                        Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Icon(Icons.people_outline,color: Colors.grey,),
-                                                Text("24",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-
-                                              ],
-                                            ),
-                                            Text("Approved",style: TextStyle(color:Colors.green,fontSize: 13,fontWeight: FontWeight.w300),),
-
-                                          ],
-                                        ),
-
-                                      ],
-                                    ),
-                                  ),
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.grey,
-                                          offset: Offset(0.0, 1.0), //(x,y)
-                                          blurRadius: 2.0,
-                                        ),
-                                      ],
-                                    ),
-
-                                    margin: EdgeInsets.all(10),
-                                    padding: EdgeInsets.all(10),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text("Facility Name",style: TextStyle(fontSize: 16,fontWeight: FontWeight.w600),),
-                                            Text("12/12/21",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-
-                                          ],
-                                        ),
-                                        Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Icon(Icons.people_outline,color: Colors.grey,),
-                                                Text("24",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-
-                                              ],
-                                            ),
-                                            Text("Rejected",style: TextStyle(color:Colors.red,fontSize: 13,fontWeight: FontWeight.w300),),
-
-                                          ],
-                                        ),
-
-                                      ],
-                                    ),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.grey,
+                                    offset: Offset(0.0, 1.0), //(x,y)
+                                    blurRadius: 2.0,
                                   ),
                                 ],
                               ),
-                              ListView(
+
+                              margin: EdgeInsets.all(10),
+                              padding: EdgeInsets.all(10),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.grey,
-                                          offset: Offset(0.0, 1.0), //(x,y)
-                                          blurRadius: 2.0,
-                                        ),
-                                      ],
-                                    ),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(snapshot.data[index].facilityName,style: TextStyle(fontSize: 16,fontWeight: FontWeight.w600),),
+                                      Text(snapshot.data[index].date,style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
 
-                                    margin: EdgeInsets.all(10),
-                                    padding: EdgeInsets.all(10),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text("Facility Name",style: TextStyle(fontSize: 16,fontWeight: FontWeight.w600),),
-                                            Text("12/12/21",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-
-                                          ],
-                                        ),
-                                        Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Icon(Icons.people_outline,color: Colors.grey,),
-                                                Text("24",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-
-                                              ],
-                                            ),
-
-
-                                          ],
-                                        ),
-
-                                      ],
-                                    ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                              ListView(
-                                children: [
-                                  GestureDetector(
-                                    onTap: (){
-                                      showReviewDailogBox();
-                                    },
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.grey,
-                                            offset: Offset(0.0, 1.0), //(x,y)
-                                            blurRadius: 2.0,
-                                          ),
-                                        ],
-                                      ),
-
-                                      margin: EdgeInsets.all(10),
-                                      padding: EdgeInsets.all(10),
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
                                         children: [
-                                          Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text("Facility Name",style: TextStyle(fontSize: 16,fontWeight: FontWeight.w600),),
-                                              Text("12/12/21",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-
-                                            ],
-                                          ),
-                                          Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Row(
-                                                children: [
-                                                  Icon(Icons.people_outline,color: Colors.grey,),
-                                                  Text("24",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-
-                                                ],
-                                              ),
-
-
-                                            ],
-                                          ),
+                                          Icon(Icons.people_outline,color: Colors.grey,),
+                                          Text(snapshot.data[index].totalGuests,style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
 
                                         ],
                                       ),
-                                    ),
-                                  )
+                                      Text(snapshot.data[index].hourStart,style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+
+                                    ],
+                                  ),
+
                                 ],
                               ),
-
-                            ])
-                        )
-
-                      ])
+                            ),
+                          );
+                        },
+                      );
+                    }
+                    else {
+                      return new Center(
+                        child: Container(
+                            margin: EdgeInsets.only(top: 100),
+                            child: Text("You currently don't have any reservation")
+                        ),
+                      );
+                    }
+                  }
+                  else if (snapshot.hasError) {
+                    return Text('Error : ${snapshot.error}');
+                  } else {
+                    return new Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+                },
               ),
+
+
               SizedBox(
                 height: 20.0,
               )

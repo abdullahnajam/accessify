@@ -236,6 +236,7 @@ class _DeliveryAccessState extends State<DeliveryAccess> with SingleTickerProvid
                                     if (snapshot.hasData) {
                                       if (snapshot.data != null && snapshot.data.length>0) {
                                         return ListView.builder(
+                                          physics: NeverScrollableScrollPhysics(),
                                           shrinkWrap: true,
                                           //scrollDirection: Axis.horizontal,
                                           itemCount: snapshot.data.length,
