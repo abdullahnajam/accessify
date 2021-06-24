@@ -86,7 +86,8 @@ class _CreateTaxiState extends State<CreateTaxi> {
       databaseReference.child("notifications").child("guard").push().set({
 
         'isOpened': false,
-        'type':"Taxi",
+        'type':"taxi",
+        'name':nameController.text,
         'date':DateTime.now().toString(),
         'body':'Taxi Access from ${userModel.username}',
         'title':"Taxi Access",

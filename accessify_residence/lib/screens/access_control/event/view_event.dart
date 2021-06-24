@@ -1,19 +1,46 @@
-import 'package:accessify/constants.dart';
-import 'package:accessify/model/resident_model.dart';
-import 'package:accessify/screens/my_home/create_resident.dart';
-import 'package:accessify/screens/my_home/edit_resident.dart';
+import 'package:accessify/model/access/event.dart';
+import 'package:accessify/screens/access_control/event/create_event.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-class MyResidence extends StatefulWidget {
+import 'package:flutter/rendering.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share/share.dart';
+import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui';
+import '../../../constants.dart';
+class ViewEvents extends StatefulWidget {
   @override
-  _MyResidenceState createState() => _MyResidenceState();
+  _ViewEventsState createState() => _ViewEventsState();
 }
 
-class _MyResidenceState extends State<MyResidence> {
+class _ViewEventsState extends State<ViewEvents> {
+  Future<void> _captureAndSharePng() async {
+    try {
+      RenderRepaintBoundary boundary = globalKey.currentContext.findRenderObject();
+      var image = await boundary.toImage();
+      ByteData byteData = await image.toByteData(format: ImageByteFormat.png);
+      Uint8List pngBytes = byteData.buffer.asUint8List();
 
-  Future<void> _showInfoDailog(ResidentsModel resident) async {
+      final tempDir = await getTemporaryDirectory();
+      String path='${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}.png';
+      File file = await new File('${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}.png').create();
+      await file.writeAsBytes(pngBytes);
+      print(file.path);
+      print(path);
+
+      Share.shareFiles([path],text: 'QR Code for accesfy');
+
+
+
+    }  catch(e) {
+      print(e.toString());
+    }
+  }
+  GlobalKey globalKey = new GlobalKey();
+  Future<void> _showInfoDailog(EventModel model) async {
     return showDialog<void>(
       context: context,
       barrierDismissible: true, // user must tap button!
@@ -39,7 +66,7 @@ class _MyResidenceState extends State<MyResidence> {
                 GestureDetector(
                   onTap: ()=>Navigator.pop(context),
                   child: Container(
-                    margin: EdgeInsets.only(right: 10,top: 10,left: 30),
+                    margin: EdgeInsets.only(right: 10,top: 10),
                     child: Icon(Icons.close),
                     alignment: Alignment.centerRight,
                   ),
@@ -48,33 +75,41 @@ class _MyResidenceState extends State<MyResidence> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("Resident Information",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
+                        Text("Event Information",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
                         SizedBox(height: 10,),
-                        Text("Name",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
-                        Text("${resident.firstName} ${resident.lastName}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+                        Text("Description",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Text("${model.name}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
 
                         SizedBox(height: 10,),
-                        Text("Relation",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
-                        Text("${resident.relation}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-
-
-                        SizedBox(height: 10,),
-                        Text("Email",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
-                        Text("${resident.email}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+                        Text("Location",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Text("${model.location}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
 
                         SizedBox(height: 10,),
-                        Text("Phone Number",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
-                        Text("${resident.phone}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-
-                        SizedBox(height: 10,),
-                        Text("Passcode",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
-                        Text("${resident.passcode}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+                        Text("Date",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Text("${model.date}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
 
 
                         SizedBox(height: 10,),
-                        Text("Age",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
-                        Text("${resident.age}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+                        Text("Start Time",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Text("${model.startTime}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
 
+
+                        SizedBox(height: 10,),
+                        Text("QR Code",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        RepaintBoundary(
+                          key: globalKey,
+                          child: Container(
+                            height: 100,
+                            width: 100,
+                            decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                                image: DecorationImage(
+                                    image: NetworkImage(model.qr),
+                                    fit: BoxFit.cover
+                                )
+                            ),
+                          ),
+                        ),
                         SizedBox(height: 10,),
                         Text("Actions",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
                         Container(
@@ -83,20 +118,20 @@ class _MyResidenceState extends State<MyResidence> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               IconButton(icon: Icon(Icons.delete_forever_outlined), onPressed: ()async{
-                                User user=FirebaseAuth.instance.currentUser;
                                 final databaseReference = FirebaseDatabase.instance.reference();
-                                await databaseReference.child("home").child("residents").child(user.uid).child(resident.id).remove().then((value) {
+                                await databaseReference.child("access_control").child("event").child(model.id).remove().then((value) {
                                   Navigator.pop(context);
-                                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => MyResidence()));
+                                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => ViewEvents()));
                                 });
                               }),
-                              IconButton(icon: Icon(Icons.edit_outlined), onPressed: (){
-                                Navigator.pop(context);
-                                Navigator.push(context, MaterialPageRoute(builder: (BuildContext context) => EditResident(resident)));
+                              IconButton(icon: Icon(Icons.share_outlined), onPressed: (){
+                                _captureAndSharePng();
                               })
                             ],
                           ),
                         )
+
+
 
 
                       ],
@@ -134,28 +169,29 @@ class _MyResidenceState extends State<MyResidence> {
     );
   }
 
-  Future<List<ResidentsModel>> getPartnersList() async {
-    List<ResidentsModel> list=new List();
+  Future<List<EventModel>> getEventList() async {
+    List<EventModel> list=new List();
     User user=FirebaseAuth.instance.currentUser;
     final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("home").child("residents").child(user.uid).once().then((DataSnapshot dataSnapshot){
+    await databaseReference.child("access_control").child("event").once().then((DataSnapshot dataSnapshot){
       if(dataSnapshot.value!=null){
         var KEYS= dataSnapshot.value.keys;
         var DATA=dataSnapshot.value;
 
         for(var individualKey in KEYS) {
-          ResidentsModel residentsModel = new ResidentsModel(
+          EventModel eventModel = new EventModel(
             individualKey,
-            DATA[individualKey]['firstName'],
-            DATA[individualKey]['lastName'],
-            DATA[individualKey]['relation'],
-            DATA[individualKey]['age'],
-            DATA[individualKey]['phone'],
-            DATA[individualKey]['email'],
-            DATA[individualKey]['passcode'],
+            DATA[individualKey]['name'],
+            DATA[individualKey]['location'],
+            DATA[individualKey]['date'],
+            DATA[individualKey]['startTime'],
+            DATA[individualKey]['guests'],
+            DATA[individualKey]['qr'],
+            DATA[individualKey]['userId'],
           );
-          print("key ${residentsModel.id}");
-          list.add(residentsModel);
+          if(user.uid==eventModel.userId){
+            list.add(eventModel);
+          }
 
         }
       }
@@ -210,7 +246,7 @@ class _MyResidenceState extends State<MyResidence> {
                               height: 5.0,
                             ),
                             Text(
-                              "My Residents",
+                              "My Events",
                               style: TextStyle(
                                   color: Colors.black,
                                   fontWeight: FontWeight.w800,
@@ -219,7 +255,7 @@ class _MyResidenceState extends State<MyResidence> {
                             SizedBox(height: 10,),
                             Container(
                               child: Text(
-                                "Your can view and add your residents here",
+                                "Your can view and add your events here",
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                     color: Colors.black38,
@@ -237,43 +273,41 @@ class _MyResidenceState extends State<MyResidence> {
                 ],
               ),
               Padding(
-                padding:
-                const EdgeInsets.only(left: 25.0, top: 40.0, bottom: 10.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      "Click To Explore",
-                      style: TextStyle(
-                          fontFamily: "Sofia",
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16.0),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.add),
-                      onPressed: (){
-                        Navigator.push(context, new MaterialPageRoute(
-                            builder: (context) => CreateResident()));
-                      },
-                    )
-                  ],
-                )
+                  padding:
+                  const EdgeInsets.only(left: 25.0, top: 40.0, bottom: 10.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Click To Explore",
+                        style: TextStyle(
+                            fontFamily: "Sofia",
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16.0),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.add),
+                        onPressed: (){
+                          Navigator.push(context, new MaterialPageRoute(
+                              builder: (context) => CreateEvent()));
+                        },
+                      )
+                    ],
+                  )
               ),
 
 
-              FutureBuilder<List<ResidentsModel>>(
-                future: getPartnersList(),
+              FutureBuilder<List<EventModel>>(
+                future: getEventList(),
                 builder: (context,snapshot){
                   if (snapshot.hasData) {
                     if (snapshot.data != null && snapshot.data.length>0) {
                       return ListView.builder(
-                        physics: NeverScrollableScrollPhysics(),
                         shrinkWrap: true,
-                        //scrollDirection: Axis.horizontal,
+                        physics: NeverScrollableScrollPhysics(),
                         itemCount: snapshot.data.length,
                         itemBuilder: (BuildContext context,int index){
-                          return Container(
-                              color: Colors.white,
+                          return Padding(
                               padding: const EdgeInsets.only(top: 15.0),
                               child: InkWell(
                                 onTap: (){
@@ -292,28 +326,21 @@ class _MyResidenceState extends State<MyResidence> {
                                         child: Align(
                                             alignment: Alignment.centerLeft,
                                             child: Padding(
-                                              padding: const EdgeInsets.only(left: 80.0),
-                                              child: Column(
-                                                mainAxisAlignment: MainAxisAlignment.center,
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    "${snapshot.data[index].firstName} ${snapshot.data[index].lastName}",
-                                                    style: TextStyle(
-                                                        fontFamily: "Sofia",
-                                                        fontWeight: FontWeight.w400,
-                                                        fontSize: 18,color: Colors.black),
-                                                  ),
-                                                  SizedBox(height: 3,),
-                                                  Text(
-                                                    "${snapshot.data[index].relation}",
-                                                    style: TextStyle(
-                                                        fontFamily: "Sofia",
-                                                        fontWeight: FontWeight.w200,
-                                                        fontSize: 13,color: Colors.black),
-                                                  ),
-                                                ],
-                                              )
+                                                padding: const EdgeInsets.only(left: 80.0),
+                                                child: Column(
+                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      "${snapshot.data[index].name}",
+                                                      style: TextStyle(
+                                                          fontFamily: "Sofia",
+                                                          fontWeight: FontWeight.w500,
+                                                          fontSize: 16,color: Colors.black),
+                                                    ),
+
+                                                  ],
+                                                )
                                             )),
                                       ),
                                     ),
@@ -337,7 +364,7 @@ class _MyResidenceState extends State<MyResidence> {
                                           ),
                                           child: Center(
                                             child: Icon(
-                                              Icons.person_outline,
+                                              Icons.event_available_outlined,
                                               color: Colors.white,
                                               size: 26.0,
                                             ),
@@ -345,7 +372,6 @@ class _MyResidenceState extends State<MyResidence> {
                                         ),
                                       ),
                                     ),
-
                                   ],
                                 ),
                               )
@@ -357,7 +383,7 @@ class _MyResidenceState extends State<MyResidence> {
                       return new Center(
                         child: Container(
                             margin: EdgeInsets.only(top: 100),
-                            child: Text("You currently don't have any residents")
+                            child: Text("You currently don't have any events")
                         ),
                       );
                     }
@@ -378,68 +404,6 @@ class _MyResidenceState extends State<MyResidence> {
           ),
         ),
       ),
-    );
-  }
-  Widget _card(IconData _icon, String title, GestureTapCallback onTap) {
-    return Padding(
-        padding: const EdgeInsets.only(top: 15.0),
-        child: InkWell(
-          onTap: onTap,
-          child: Stack(
-            children: <Widget>[
-              Padding(
-                padding: const EdgeInsets.only(left: 30.0, right: 20.0, top: 0.0),
-                child: Container(
-                  height: 55.0,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                      borderRadius: BorderRadius.all(Radius.circular(70.0)),
-                      color: Colors.white),
-                  child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 80.0),
-                        child: Text(
-                          title,
-                          style: TextStyle(
-                              fontFamily: "Sofia",
-                              fontWeight: FontWeight.w300,
-                              fontSize: 15.5,color: Colors.black),
-                        ),
-                      )),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(left: 25.0),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Container(
-                    height: 55.0,
-                    width: 55.0,
-                    decoration: BoxDecoration(
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey,
-                          offset: Offset(0.0, 1.0), //(x,y)
-                          blurRadius: 6.0,
-                        ),
-                      ],
-                      color: kPrimaryColor,
-                      borderRadius: BorderRadius.all(Radius.circular(50.0)),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        _icon,
-                        color: Colors.white,
-                        size: 26.0,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        )
     );
   }
 }

@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:accessify/components/custom_surfix_icon.dart';
 import 'package:accessify/components/default_button.dart';
 import 'package:accessify/components/form_error.dart';
+import 'package:progress_dialog/progress_dialog.dart';
+import 'package:toast/toast.dart';
 
 import '../../../constants.dart';
 import '../../../size_config.dart';
@@ -60,8 +62,10 @@ class _SignUpFormState extends State<SignUpForm> {
             press: () async{
               if (_formKey.currentState.validate()) {
                 _formKey.currentState.save();
-                // if all are valid then go to success screen
+                final ProgressDialog pr = ProgressDialog(context);
+                pr.show();
                 try {
+
                   UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
                       email: email,
                       password: password
@@ -85,20 +89,26 @@ class _SignUpFormState extends State<SignUpForm> {
                             'email': user.email,
                             'type': "resident",
                             'isActive': true
-                          }).then((value) => Navigator.pushNamed(context, Home.routeName));
+                          }).then((value) {
+                            pr.hide();
+                            Navigator.pushNamed(context, Home.routeName);
+                          });
 
                         });
                       }
                     });
                   });
                 } on FirebaseAuthException catch (e) {
+                  pr.hide();
                   if (e.code == 'weak-password') {
                     print('The password provided is too weak.');
+                    Toast.show("The password provided is too weak", context, duration: Toast.LENGTH_LONG, gravity:  Toast.TOP);
                   } else if (e.code == 'email-already-in-use') {
-                    print('The account already exists for that email.');
+                    Toast.show("email-already-in-use", context, duration: Toast.LENGTH_LONG, gravity:  Toast.TOP);
                   }
                 } catch (e) {
-                  print(e);
+                  pr.hide();
+                  Toast.show(e.toString(), context, duration: Toast.LENGTH_LONG, gravity:  Toast.TOP);
                 }
 
               }

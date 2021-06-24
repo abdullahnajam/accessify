@@ -5,6 +5,8 @@ import 'package:accessify/components/custom_surfix_icon.dart';
 import 'package:accessify/components/form_error.dart';
 import 'package:accessify/helper/keyboard.dart';
 import 'package:accessify/auth/forgot_password/forgot_password_screen.dart';
+import 'package:progress_dialog/progress_dialog.dart';
+import 'package:toast/toast.dart';
 
 import '../../../components/default_button.dart';
 import '../../../constants.dart';
@@ -78,6 +80,8 @@ class _SignFormState extends State<SignForm> {
                 _formKey.currentState.save();
                 // if all are valid then go to success screen
                 KeyboardUtil.hideKeyboard(context);
+                final ProgressDialog pr = ProgressDialog(context);
+                pr.show();
                 try {
                   UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
                       email: email,
@@ -90,16 +94,21 @@ class _SignFormState extends State<SignForm> {
                         print('User is currently signed out!');
                       } else {
                         print('User is signed in!');
+                        pr.hide();
                         Navigator.pushNamed(context, Home.routeName);
                       }
                     });
                   });
                 } on FirebaseAuthException catch (e) {
+                  pr.hide();
                   if (e.code == 'user-not-found') {
                     print('No user found for that email.');
+                    Toast.show("No user found for that email", context, duration: Toast.LENGTH_LONG, gravity:  Toast.TOP);
                   } else if (e.code == 'wrong-password') {
                     print('Wrong password provided for that user.');
+                    Toast.show("Wrong password provided for that user", context, duration: Toast.LENGTH_LONG, gravity:  Toast.TOP);
                   }
+
                 }
 
               }

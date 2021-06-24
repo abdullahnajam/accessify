@@ -18,6 +18,8 @@ class _CreateVehicleState extends State<CreateVehicle> {
   var yearController=TextEditingController();
   var plateController=TextEditingController();
   var colorController=TextEditingController();
+  bool newTag=false;
+  bool agreement=false;
 
 
   Future<void> _showSuccessDailog() async {
@@ -172,6 +174,8 @@ class _CreateVehicleState extends State<CreateVehicle> {
       'color': colorController.text,
       'year': yearController.text,
       'plate': plateController.text,
+      'newTag': newTag,
+      'feeAcceptance': agreement,
     }).then((value) {
       _showSuccessDailog();
     })
@@ -229,7 +233,7 @@ class _CreateVehicleState extends State<CreateVehicle> {
                                 height: 5.0,
                               ),
                               Text(
-                                "Create Resident",
+                                "Add Vehicle",
                                 style: TextStyle(
                                     color: Colors.black,
                                     fontWeight: FontWeight.w800,
@@ -238,7 +242,7 @@ class _CreateVehicleState extends State<CreateVehicle> {
                               SizedBox(height: 10,),
                               Container(
                                 child: Text(
-                                  "Your can create new resident here",
+                                  "Your can add your vehicle here",
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                       color: Colors.black38,
@@ -304,7 +308,7 @@ class _CreateVehicleState extends State<CreateVehicle> {
                               ),
                             ),
                             filled: true,
-                            prefixIcon: Icon(Icons.person_outline,color: Colors.black,size: 22,),
+                            prefixIcon: Icon(Icons.car_repair,color: Colors.black,size: 22,),
                             fillColor: Colors.grey[200],
                             hintText: "Enter Vehicle Make",
                             // If  you are using latest version of flutter then lable text and hint text shown like this
@@ -346,7 +350,7 @@ class _CreateVehicleState extends State<CreateVehicle> {
                               ),
                             ),
                             filled: true,
-                            prefixIcon: Icon(Icons.person_outline,color: Colors.black,size: 22,),
+                            prefixIcon: Icon(Icons.category,color: Colors.black,size: 22,),
                             fillColor: Colors.grey[200],
                             hintText: "Enter Model",
                             // If  you are using latest version of flutter then lable text and hint text shown like this
@@ -388,7 +392,7 @@ class _CreateVehicleState extends State<CreateVehicle> {
                               ),
                             ),
                             filled: true,
-                            prefixIcon: Icon(Icons.email_outlined,color: Colors.black,size: 22,),
+                            prefixIcon: Icon(Icons.calendar_today_outlined,color: Colors.black,size: 22,),
                             fillColor: Colors.grey[200],
                             hintText: "Enter Year",
                             // If  you are using latest version of flutter then lable text and hint text shown like this
@@ -430,7 +434,7 @@ class _CreateVehicleState extends State<CreateVehicle> {
                               ),
                             ),
                             filled: true,
-                            prefixIcon: Icon(Icons.phone_outlined,color: Colors.black,size: 22,),
+                            prefixIcon: Icon(Icons.confirmation_number_outlined,color: Colors.black,size: 22,),
                             fillColor: Colors.grey[200],
                             hintText: "Enter Number Plate",
                             // If  you are using latest version of flutter then lable text and hint text shown like this
@@ -473,7 +477,7 @@ class _CreateVehicleState extends State<CreateVehicle> {
                               ),
                             ),
                             filled: true,
-                            prefixIcon: Icon(Icons.timer_outlined,color: Colors.black,size: 22,),
+                            prefixIcon: Icon(Icons.format_paint_outlined,color: Colors.black,size: 22,),
                             fillColor: Colors.grey[200],
                             hintText: "Enter Color",
                             // If  you are using latest version of flutter then lable text and hint text shown like this
@@ -482,6 +486,39 @@ class _CreateVehicleState extends State<CreateVehicle> {
                           ),
                         ),
 
+                        SizedBox(height: 20),
+
+                        Container(
+                            padding: EdgeInsets.only(left:10,right: 10),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(7),
+                              color: Colors.grey[200],
+                            ),
+                            child: Column(
+                              children: [
+                                CheckboxListTile(
+                                    title: Text("Request New Tag"),
+                                    value: newTag,
+                                    activeColor: kPrimaryColor,
+                                    onChanged: (bool value){
+                                      setState(() {
+                                        newTag=value;
+                                      });
+                                    }
+                                ),
+                                CheckboxListTile(
+                                    title: Text("Show tag fee and acceptance"),
+                                    value: agreement,
+                                    activeColor: kPrimaryColor,
+                                    onChanged: (bool value){
+                                      setState(() {
+                                        agreement=value;
+                                      });
+                                    }
+                                ),
+                              ],
+                            )
+                        ),
                         SizedBox(height: 20),
                         GestureDetector(
                           onTap: (){

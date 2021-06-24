@@ -2,6 +2,7 @@ import 'package:accessify/model/pet_model.dart';
 import 'package:accessify/model/vehicle_model.dart';
 import 'package:accessify/screens/my_home/create_pet.dart';
 import 'package:accessify/screens/my_home/create_vehicle.dart';
+import 'package:accessify/screens/my_home/edit_pet.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/cupertino.dart';
@@ -14,6 +15,8 @@ class MyPets extends StatefulWidget {
 }
 
 class _MyPetsState extends State<MyPets> {
+
+
   Future<void> _showInfoDailog(PetModel model) async {
     return showDialog<void>(
       context: context,
@@ -79,7 +82,31 @@ class _MyPetsState extends State<MyPets> {
                               fit: BoxFit.cover
                             )
                           ),
+                        ),
+
+                        SizedBox(height: 10,),
+                        Text("Actions",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Container(
+                          width: MediaQuery.of(context).size.width*0.5,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              IconButton(icon: Icon(Icons.delete_forever_outlined), onPressed: ()async{
+                                User user=FirebaseAuth.instance.currentUser;
+                                final databaseReference = FirebaseDatabase.instance.reference();
+                                await databaseReference.child("home").child("pets").child(user.uid).child(model.id).remove().then((value) {
+                                  Navigator.pop(context);
+                                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => MyPets()));
+                                });
+                              }),
+                              IconButton(icon: Icon(Icons.edit_outlined), onPressed: (){
+                                Navigator.pop(context);
+                                Navigator.push(context, MaterialPageRoute(builder: (BuildContext context) => EditPet(model)));
+                              })
+                            ],
+                          ),
                         )
+
 
 
                       ],
@@ -249,6 +276,7 @@ class _MyPetsState extends State<MyPets> {
                     if (snapshot.data != null && snapshot.data.length>0) {
                       return ListView.builder(
                         shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
                         //scrollDirection: Axis.horizontal,
                         itemCount: snapshot.data.length,
                         itemBuilder: (BuildContext context,int index){
@@ -315,7 +343,7 @@ class _MyPetsState extends State<MyPets> {
                                           ),
                                           child: Center(
                                             child: Icon(
-                                              Icons.car_repair,
+                                              Icons.pets,
                                               color: Colors.white,
                                               size: 26.0,
                                             ),

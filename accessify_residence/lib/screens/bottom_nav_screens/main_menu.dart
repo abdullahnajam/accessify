@@ -90,7 +90,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                         ),
                       )),
                   Text(
-                    "Accessify",
+                    "Accesfy",
                     style: TextStyle(
                         color: Colors.white,
                         fontSize: 35,

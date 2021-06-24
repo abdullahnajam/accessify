@@ -1,5 +1,6 @@
 import 'package:accessify/model/vehicle_model.dart';
 import 'package:accessify/screens/my_home/create_vehicle.dart';
+import 'package:accessify/screens/my_home/edit_vehicle.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/cupertino.dart';
@@ -69,6 +70,29 @@ class _MyVehicleState extends State<MyVehicle> {
                         Text("Number Plate",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
                         Text("${vehicleModel.plate}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
 
+                        SizedBox(height: 10,),
+                        Text("Actions",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Container(
+                          width: MediaQuery.of(context).size.width*0.5,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              IconButton(icon: Icon(Icons.delete_forever_outlined), onPressed: ()async{
+                                User user=FirebaseAuth.instance.currentUser;
+                                final databaseReference = FirebaseDatabase.instance.reference();
+                                await databaseReference.child("home").child("vehicles").child(user.uid).child(vehicleModel.id).remove().then((value) {
+                                  Navigator.pop(context);
+                                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => MyVehicle()));
+                                });
+                              }),
+                              IconButton(icon: Icon(Icons.edit_outlined), onPressed: (){
+                                Navigator.pop(context);
+                                Navigator.push(context, MaterialPageRoute(builder: (BuildContext context) => EditVehicle(vehicleModel)));
+                              })
+                            ],
+                          ),
+                        )
+
 
                       ],
                     )
@@ -122,7 +146,8 @@ class _MyVehicleState extends State<MyVehicle> {
             DATA[individualKey]['color'],
             DATA[individualKey]['plate'],
             DATA[individualKey]['year'],
-            DATA[individualKey]['tag'],
+            DATA[individualKey]['newTag'],
+            DATA[individualKey]['feeAcceptance'],
           );
           print("key ${vehicleModel.id}");
           list.add(vehicleModel);
@@ -240,6 +265,7 @@ class _MyVehicleState extends State<MyVehicle> {
                         shrinkWrap: true,
                         //scrollDirection: Axis.horizontal,
                         itemCount: snapshot.data.length,
+                        physics: NeverScrollableScrollPhysics(),
                         itemBuilder: (BuildContext context,int index){
                           return Padding(
                               padding: const EdgeInsets.only(top: 15.0),

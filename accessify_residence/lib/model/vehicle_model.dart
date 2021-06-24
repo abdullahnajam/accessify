@@ -1,6 +1,6 @@
 class VehicleModel{
-  String id,make,model,color,plate,year,tag;
+  String id,make,model,color,plate,year;bool tag,acceptance;
 
   VehicleModel(this.id, this.make, this.model, this.color, this.plate,this.year,
-      this.tag);
+      this.tag,this.acceptance);
 }

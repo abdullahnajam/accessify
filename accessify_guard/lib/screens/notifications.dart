@@ -1,17 +1,23 @@
 import 'dart:io';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:guard/components/default_button.dart';
 import 'package:guard/constants.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:guard/model/access/employee_frequent_model.dart';
+import 'package:guard/model/access/event.dart';
+import 'package:guard/model/access/guest.dart';
 import 'package:guard/model/notification_model.dart';
 import 'package:guard/navigator/menu_drawer.dart';
+import 'package:guard/screens/access_control/add_access.dart';
 import 'package:guard/screens/addAccessControlMember.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:qrscan/qrscan.dart' as scanner;
+import 'package:toast/toast.dart';
 class Notifications extends StatefulWidget {
   @override
   _AccessControlState createState() => _AccessControlState();
@@ -56,272 +62,77 @@ class _AccessControlState extends State<Notifications> {
   }
 
 
-  openDailog(){
-    showDialog(
-      context: context,
-      builder: (context) {
-        String contentText = "Content of Dialog";
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return Card(
-                shape: RoundedRectangleBorder(
-                  side: BorderSide(color: Colors.white70, width: 1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                margin: EdgeInsets.only(
-                  top: MediaQuery.of(context).size.height*0.2,
-                  bottom: MediaQuery.of(context).size.height*0.25,
-                  left: MediaQuery.of(context).size.width*0.1,
-                  right: MediaQuery.of(context).size.width*0.1,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      child: Stack(
-                        children: [
-                          Container(
-                            margin:EdgeInsets.only(top: 5),
-                            child: Text(
-                              "Register",
-                              style: TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 20.0),
-                            ),
-                            alignment: Alignment.center,
-                          ),
-                          GestureDetector(
-                            onTap: ()=>Navigator.pop(context),
-                            child: Container(
-                              alignment: Alignment.topRight,
-                              margin: EdgeInsets.all(10),
-                              child: Icon(Icons.close,size: 24,),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 20,),
-                    Container(
-                      height: 60,
-                      width: MediaQuery.of(context).size.width*0.7,
-                      child: TextFormField(
-                        keyboardType: TextInputType.text,
-                        decoration: InputDecoration(
-                          hintText: "ID Number",
-                          // If  you are using latest version of flutter then lable text and hint text shown like this
-                          // if you r using flutter less then 1.20.* then maybe this is not working properly
-                          floatingLabelBehavior: FloatingLabelBehavior.always,
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 20,),
-                    Container(
-                      height: 60,
-                      width: MediaQuery.of(context).size.width*0.7,
-                      child: TextFormField(
-                        keyboardType: TextInputType.text,
-                        decoration: InputDecoration(
-                          hintText: "Vehicle Plate",
-                          // If  you are using latest version of flutter then lable text and hint text shown like this
-                          // if you r using flutter less then 1.20.* then maybe this is not working properly
-                          floatingLabelBehavior: FloatingLabelBehavior.always,
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 10,),
 
-                    Container(
-                      margin:EdgeInsets.only(top: 5),
-                      child: Text(
-                        "Photo Evidence",
-                        style: TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 18.0),
-                      ),
-                      alignment: Alignment.center,
-                    ),
-                    SizedBox(height: 10,),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        GestureDetector(
-                          onTap: pickImage,
-                          child: _imageFile==null?Image.asset('assets/images/add.png',width: 60,height: 60,):Image.file(_imageFile,width: 60,height: 60,),
-                        ),
-                        GestureDetector(
-                          onTap: pickImage2,
-                          child: _imageFile2==null?Image.asset('assets/images/add.png',width: 60,height: 60,):Image.file(_imageFile2,width: 60,height: 60,),
-                        ),
-                        GestureDetector(
-                          onTap: pickImage3,
-                          child: _imageFile3==null?Image.asset('assets/images/add.png',width: 60,height: 60,):Image.file(_imageFile3,width: 60,height: 60,),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 20,),
-                    Container(
-                      child: DefaultButton(
-                        text: "Continue",
-                        press: () {
-                          Navigator.pop(context);
-                        },
-                      ),
-                      margin: EdgeInsets.all(10),
-                    )
-                  ],
-                )
-            );
-          },
+
+
+  Future<EventModel> getEventList(String id) async {
+    EventModel eventModel;
+    User user=FirebaseAuth.instance.currentUser;
+    final databaseReference = FirebaseDatabase.instance.reference();
+    await databaseReference.child("access_control").child("event").child(id).once().then((DataSnapshot dataSnapshot){
+      if(dataSnapshot.value!=null){
+        var KEYS= dataSnapshot.key;
+
+        eventModel = new EventModel(
+          KEYS,
+          dataSnapshot.value['name'],
+          dataSnapshot.value['location'],
+          dataSnapshot.value['date'],
+          dataSnapshot.value['startTime'],
+          dataSnapshot.value['guests'],
+          dataSnapshot.value['qr'],
+          dataSnapshot.value['userId'],
         );
-      },
-    );
+      }
+    });
+    return eventModel;
   }
+  Future<EmployeeAccessModel> getEmployeeFrequentList(String id) async {
+    EmployeeAccessModel empfrequentModel;
+    User user=FirebaseAuth.instance.currentUser;
+    final databaseReference = FirebaseDatabase.instance.reference();
+    await databaseReference.child("access_control").child("employee").child(id).once().then((DataSnapshot dataSnapshot){
+      if(dataSnapshot.value!=null){
+        var KEYS= dataSnapshot.key;
+        empfrequentModel = new EmployeeAccessModel(
+          KEYS,
+          dataSnapshot.value['emp'],
+          dataSnapshot.value['qr'],
+          dataSnapshot.value['fromDate'],
+          dataSnapshot.value['expDate'],
+          dataSnapshot.value['userId'],
+          dataSnapshot.value['type'],
+        );
+      }
+    });
+    return empfrequentModel;
+  }
+  Future<GuestModel> getGuestList(String id) async {
+    GuestModel guestModel;
+    final databaseReference = FirebaseDatabase.instance.reference();
+    await databaseReference.child("access_control").child("guest").child(id).once().then((DataSnapshot dataSnapshot){
+      if(dataSnapshot.value!=null){
+        var KEYS= dataSnapshot.key;
 
-
-  showsDialog(BuildContext context){
-    final idNumberController=TextEditingController();
-    final plateController=TextEditingController();
-    showGeneralDialog(
-
-        barrierColor: Colors.black.withOpacity(0.5),
-        transitionBuilder: (context, a1, a2, widget) {
-          final curvedValue = Curves.easeInOutBack.transform(a1.value) -   1.0;
-          return StatefulBuilder(builder: (context,setState){
-            return Transform(
-              transform: Matrix4.translationValues(0.0, curvedValue * 200, 0.0),
-              child: Opacity(
-                  opacity: a1.value,
-                  child: Card(
-                      shape: RoundedRectangleBorder(
-                        side: BorderSide(color: Colors.white70, width: 1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      margin: EdgeInsets.only(
-                        top: MediaQuery.of(context).size.height*0.2,
-                        bottom: MediaQuery.of(context).size.height*0.25,
-                        left: MediaQuery.of(context).size.width*0.1,
-                        right: MediaQuery.of(context).size.width*0.1,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Container(
-                            child: Stack(
-                              children: [
-                                Container(
-                                  margin:EdgeInsets.only(top: 5),
-                                  child: Text(
-                                    "Register",
-                                    style: TextStyle(
-                                        color: Colors.black,
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 20.0),
-                                  ),
-                                  alignment: Alignment.center,
-                                ),
-                                GestureDetector(
-                                  onTap: ()=>Navigator.pop(context),
-                                  child: Container(
-                                    alignment: Alignment.topRight,
-                                    margin: EdgeInsets.all(10),
-                                    child: Icon(Icons.close,size: 24,),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          SizedBox(height: 20,),
-                          Container(
-                            height: 60,
-                            width: MediaQuery.of(context).size.width*0.7,
-                            child: TextFormField(
-                              keyboardType: TextInputType.text,
-                              controller: idNumberController,
-                              decoration: InputDecoration(
-                                hintText: "ID Number",
-                                // If  you are using latest version of flutter then lable text and hint text shown like this
-                                // if you r using flutter less then 1.20.* then maybe this is not working properly
-                                floatingLabelBehavior: FloatingLabelBehavior.always,
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: 20,),
-                          Container(
-                            height: 60,
-                            width: MediaQuery.of(context).size.width*0.7,
-                            child: TextFormField(
-                              keyboardType: TextInputType.text,
-                              controller: plateController,
-                              decoration: InputDecoration(
-                                hintText: "Vehicle Plate",
-                                // If  you are using latest version of flutter then lable text and hint text shown like this
-                                // if you r using flutter less then 1.20.* then maybe this is not working properly
-                                floatingLabelBehavior: FloatingLabelBehavior.always,
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: 10,),
-
-                          Container(
-                            margin:EdgeInsets.only(top: 5),
-                            child: Text(
-                              "Photo Evidence",
-                              style: TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 18.0),
-                            ),
-                            alignment: Alignment.center,
-                          ),
-                          SizedBox(height: 10,),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              GestureDetector(
-                                onTap: pickImage,
-                                child: _imageFile==null?Image.asset('assets/images/add.png',width: 60,height: 60,):Image.file(_imageFile,width: 60,height: 60,),
-                              ),
-                              GestureDetector(
-                                onTap: pickImage2,
-                                child: _imageFile2==null?Image.asset('assets/images/add.png',width: 60,height: 60,):Image.file(_imageFile2,width: 60,height: 60,),
-                              ),
-                              GestureDetector(
-                                onTap: pickImage3,
-                                child: _imageFile3==null?Image.asset('assets/images/add.png',width: 60,height: 60,):Image.file(_imageFile3,width: 60,height: 60,),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 20,),
-                          Container(
-                            child: DefaultButton(
-                              text: "Continue",
-                              press: () {
-                                Navigator.pop(context);
-                              },
-                            ),
-                            margin: EdgeInsets.all(10),
-                          )
-                        ],
-                      )
-                  )
-              ),
-            );
-          });
-        },
-        transitionDuration: Duration(milliseconds: 500),
-        barrierDismissible: true,
-        barrierLabel: '',
-        context: context,
-        pageBuilder: (context, animation1, animation2) {
-        });
+        guestModel = new GuestModel(
+          KEYS,
+          dataSnapshot.value['name'],
+          dataSnapshot.value['email'],
+          dataSnapshot.value['date'],
+          dataSnapshot.value['hour'],
+          dataSnapshot.value['status'],
+          dataSnapshot.value['userId'],
+          dataSnapshot.value['vehicle'],
+          dataSnapshot.value['qr'],
+        );
+      }
+    });
+    return guestModel;
   }
 
   String qrcode;
 
-  showDeliveryServiceDailog()async{
+  showDeliveryServiceDailog(String type)async{
 
     await Permission.camera.request();
     String barcode = await scanner.scan();
@@ -329,60 +140,45 @@ class _AccessControlState extends State<Notifications> {
       print('nothing return.');
     } else {
       print('qr code $barcode');
-      showsDialog(context);
+      if(type=="event"){
+        getEventList(barcode).then((value){
+          if(value!=null){
+            Navigator.push(context, new MaterialPageRoute(
+                builder: (context) => AddAccess(barcode,type,value.userId,value.name)));
+          }
+          else
+            Toast.show("This barcode is not for event access", context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM);
+        });
+      }
+      if(type=="employee"){
+        getEmployeeFrequentList(barcode).then((value){
+          if(value!=null){
+            Navigator.push(context, new MaterialPageRoute(
+                builder: (context) => AddAccess(barcode,type,value.userId,value.emp)));
+          }
+          else
+            Toast.show("This barcode is not for employee access", context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM);
+        });
+      }
+      if(type=="guest"){
+        getGuestList(barcode).then((value){
+          if(value!=null){
+            Navigator.push(context, new MaterialPageRoute(
+                builder: (context) => AddAccess(barcode,type,value.userId,value.name)));
+          }
+          else
+            Toast.show("This barcode is not for guest access", context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM);
+        });
+      }
     }
 
-  }
-  List<String> urls=[];
-  Future uploadImageToFirebase(BuildContext context,File file) async {
-    String fileName = file.path;
-
-
-    var storage = FirebaseStorage.instance;
-
-    TaskSnapshot snapshot = await storage.ref()
-        .child('bookingPics/${DateTime.now().millisecondsSinceEpoch}')
-        .putFile(file);
-    if (snapshot.state == TaskState.success) {
-      final String downloadUrl = await snapshot.ref.getDownloadURL();
-      setState(() {
-        urls.add(downloadUrl);
-      });
-    }
-  }
-  final picker = ImagePicker();
-  File _imageFile,_imageFile2,_imageFile3;
-  Future pickImage() async {
-    final pickedFile = await picker.getImage(source: ImageSource.camera);
-
-    setState(() {
-      _imageFile = File(pickedFile.path);
-      print("file1 = ${_imageFile.path}");
-    });
-    uploadImageToFirebase(context,_imageFile);
-  }
-  Future pickImage2() async {
-    final pickedFile = await picker.getImage(source: ImageSource.camera);
-
-    setState(() {
-      _imageFile2 = File(pickedFile.path);
-    });
-    uploadImageToFirebase(context,_imageFile2);
-  }
-  Future pickImage3() async {
-    final pickedFile = await picker.getImage(source: ImageSource.camera);
-
-    setState(() {
-      _imageFile3 = File(pickedFile.path);
-    });
-    uploadImageToFirebase(context,_imageFile3);
   }
 
   void _openDrawer () {
     _drawerKey.currentState.openDrawer();
   }
+
   Future<List<NotificationModel>> getNotificationList() async {
-    
     List<NotificationModel> list=[];
     final databaseReference = FirebaseDatabase.instance.reference();
     await databaseReference.child("notifications").child("guard").once().then((DataSnapshot dataSnapshot){
@@ -399,15 +195,22 @@ class _AccessControlState extends State<Notifications> {
               DATA[individualKey]['body'],
               DATA[individualKey]['title'],
               DATA[individualKey]['icon'],
-              DATA[individualKey]['userId']
+              DATA[individualKey]['userId'],
+            DATA[individualKey]['name'],
           );
-          list.add(notificationModel);
+          if(!notificationModel.isOpened)
+            list.add(notificationModel);
 
 
 
         }
       }
     });
+    list.sort((a, b) => DateTime.parse(a.date).millisecondsSinceEpoch.compareTo(DateTime.parse(b.date).millisecondsSinceEpoch));
+    print(list[0]);
+    print(list[1]);
+    print(list[2]);
+    list.reversed;
     return list;
   }
   @override
@@ -486,17 +289,7 @@ class _AccessControlState extends State<Notifications> {
                               ],
                             ),
                             SizedBox(height: 10,),
-                            Container(
-                              child: Text(
-                                "",
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                    color: Colors.black38,
-                                    fontWeight: FontWeight.w300,
-                                    fontSize: 16.0),
-                              ),
-                              padding: EdgeInsets.only(left: 20,right: 20),
-                            )
+
 
                           ],
                         ),
@@ -513,6 +306,7 @@ class _AccessControlState extends State<Notifications> {
                       if (snapshot.data != null && snapshot.data.length>0) {
                         return ListView.builder(
                           shrinkWrap: true,
+                          physics: NeverScrollableScrollPhysics(),
                           //scrollDirection: Axis.horizontal,
                           itemCount: snapshot.data.length,
                           itemBuilder: (BuildContext context,int index){
@@ -520,12 +314,13 @@ class _AccessControlState extends State<Notifications> {
                                 padding: const EdgeInsets.only(top: 15.0),
                                 child: InkWell(
                                   onTap: (){
-                                      if(snapshot.data[index].type=="Delivery" || snapshot.data[index].type=="Taxi"){
+                                      if(snapshot.data[index].type=="delivery" || snapshot.data[index].type=="taxi"){
+                                        print("${snapshot.data[index].id} id");
                                         Navigator.push(context, new MaterialPageRoute(
-                                            builder: (context) => AddAccessControlMember(snapshot.data[index])));
+                                            builder: (context) => AddAccess(snapshot.data[index].id, snapshot.data[index].type,  snapshot.data[index].userId,  snapshot.data[index].name)));
                                       }
                                       else{
-                                        showDeliveryServiceDailog();
+                                        showDeliveryServiceDailog(snapshot.data[index].type);
                                       }
                                   },
                                   child: Container(

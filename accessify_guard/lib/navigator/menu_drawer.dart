@@ -10,6 +10,7 @@ import 'package:guard/screens/home.dart';
 import 'package:guard/screens/inventory/inventory.dart';
 import 'package:guard/screens/members/members.dart';
 import 'package:guard/screens/notifications.dart';
+import 'package:guard/screens/notify_residents.dart';
 import 'package:guard/screens/reservations/reservations.dart';
 import 'package:guard/widget/my_text.dart';
 import 'package:guard/widget/toolbar.dart';
@@ -52,7 +53,7 @@ class MenuDrawerState extends State<MenuDrawer> {
                     ),
                   ),
                   Container(height: 7),
-                  Text("Accessify Guard", style: MyText.body2(context).copyWith(
+                  Text("Accesfy Guard", style: MyText.body2(context).copyWith(
                       color: Colors.blueGrey[800], fontWeight: FontWeight.w500
                   )),
 
@@ -93,6 +94,21 @@ class MenuDrawerState extends State<MenuDrawer> {
             ),
             Container(height: 10),
             InkWell(onTap: (){
+              Navigator.push(context, new MaterialPageRoute(
+                  builder: (context) => NotifyResidents()));
+            },
+              child: Container(height: 40, padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: <Widget>[
+                    Icon(Icons.notifications_active_outlined, color: MyColors.grey_20, size: 20),
+                    Container(width: 20),
+                    Expanded(child: Text("Service Alerts", style: MyText.body2(context).copyWith(color: MyColors.grey_80))),
+                  ],
+                ),
+              ),
+            ),
+            Container(height: 10),
+            InkWell(onTap: (){
               Navigator.pushReplacement(context, new MaterialPageRoute(
                   builder: (context) => Reservations()));
             },
@@ -106,7 +122,7 @@ class MenuDrawerState extends State<MenuDrawer> {
                 ),
               ),
             ),
-            Container(height: 10),
+            /*Container(height: 10),
             InkWell(onTap: (){
               Navigator.pushReplacement(context, new MaterialPageRoute(
                   builder: (context) => Chat()));
@@ -120,7 +136,7 @@ class MenuDrawerState extends State<MenuDrawer> {
                   ],
                 ),
               ),
-            ),
+            ),*/
             Container(height: 10),
             InkWell(onTap: (){
               Navigator.pushReplacement(context, new MaterialPageRoute(

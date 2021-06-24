@@ -208,6 +208,7 @@ class _CreateResidentState extends State<CreateResident> {
       'lastName': lnController.text,
       'phone': pnController.text,
     }).then((value) {
+      print("done");
       _showSuccessDailog();
     })
         .catchError((error, stackTrace) {

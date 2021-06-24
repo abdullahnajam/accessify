@@ -57,7 +57,7 @@ class _NotificationsState extends State<Notifications> {
     User user=FirebaseAuth.instance.currentUser;
     List<NotificationModel> list=[];
     final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("notifications").child("resident").child(user.uid).once().then((DataSnapshot dataSnapshot){
+    await databaseReference.child("notifications").child("user").once().then((DataSnapshot dataSnapshot){
       if(dataSnapshot.value!=null){
         var KEYS= dataSnapshot.value.keys;
         var DATA=dataSnapshot.value;
@@ -73,7 +73,8 @@ class _NotificationsState extends State<Notifications> {
               DATA[individualKey]['icon'],
               DATA[individualKey]['userId']
           );
-          list.add(notificationModel);
+          if(user.uid==notificationModel.userId || notificationModel.userId=="all")
+            list.add(notificationModel);
 
 
 
@@ -125,15 +126,7 @@ class _NotificationsState extends State<Notifications> {
               ),
             ),
             Container(
-            margin: EdgeInsets.all(15),
-            child: Text(
-              "Announcement & Surveys",
-              style: TextStyle(
-                color: Colors.grey[500],
-                fontSize: 15,
-                fontWeight: FontWeight.w300
-              ),
-            ),
+            margin: EdgeInsets.all(5)
           ),
             Container(
               child: FutureBuilder<List<NotificationModel>>(
@@ -156,6 +149,7 @@ class _NotificationsState extends State<Notifications> {
                                     color: Colors.white,
                                     border: Border(
                                       top: BorderSide(width: 0.2, color: Colors.grey[500]),
+                                      bottom: BorderSide(width: 0.1, color: Colors.grey[500]),
                                     ),
 
                                   ),
@@ -166,9 +160,8 @@ class _NotificationsState extends State<Notifications> {
                                           child:Container(
                                               margin: EdgeInsets.all(10),
                                               decoration: new BoxDecoration(
-                                                  shape: BoxShape.circle,
                                                   image: new DecorationImage(
-                                                    fit: BoxFit.fill,
+                                                    fit: BoxFit.cover,
                                                     image: new NetworkImage(snapshot.data[index].icon),
                                                   )
                                               )

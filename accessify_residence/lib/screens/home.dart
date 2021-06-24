@@ -1,5 +1,6 @@
 import 'package:accessify/constants.dart';
 import 'package:accessify/navigator/bottom_navigation.dart';
+import 'package:accessify/screens/bottom_nav_screens/main_menu.dart';
 import 'package:flutter/material.dart';
 class Home extends StatefulWidget {
   static String routeName = "/home";
@@ -10,6 +11,6 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) {
-    return BottomBar();
+    return MainMenuScreen();
   }
 }

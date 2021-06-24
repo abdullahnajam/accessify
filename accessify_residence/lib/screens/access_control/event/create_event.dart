@@ -2,9 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui';
-import 'package:accessify/constants.dart';
+
+import 'package:accessify/model/access/event.dart';
 import 'package:accessify/model/user_model.dart';
-import 'package:accessify/screens/home.dart';
+import 'package:accessify/screens/access_control/event/view_event.dart';
 import 'package:date_format/date_format.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -12,95 +13,38 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
-import 'package:flutter_mailer/flutter_mailer.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:lottie/lottie.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:progress_dialog/progress_dialog.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share/share.dart';
 import 'package:http/http.dart' as http;
-class CreateGuest extends StatefulWidget {
+import 'package:toast/toast.dart';
+import '../../../constants.dart';
+class CreateEvent extends StatefulWidget {
   @override
-  _CreateGuestState createState() => _CreateGuestState();
+  _CreateEventState createState() => _CreateEventState();
 }
+class Visitor{
+  String name,email;
 
-class _CreateGuestState extends State<CreateGuest> {
+  Visitor(this.name, this.email);
+
+}
+class _CreateEventState extends State<CreateEvent> {
   final _formKey = GlobalKey<FormState>();
   var nameController=TextEditingController();
-  var vehicleController=TextEditingController();
+  var guestNameController=TextEditingController();
   var emailController=TextEditingController();
+  var locationController=TextEditingController();
 
-  UserModel userModel;
+  var vnameController=TextEditingController();
+  var vemailController=TextEditingController();
 
-  getUserData()async{
-    User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("users").child(user.uid).once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        print(dataSnapshot.value);
-        userModel = new UserModel(
-            user.uid,
-            dataSnapshot.value['name'],
-            dataSnapshot.value['email'],
-            dataSnapshot.value['type'],
-            dataSnapshot.value['isActive']
-        );
-        print("username = ${userModel.username}");
-      }
-    });
-  }
+  List<EventGuestList> eventGuestList=[];
 
-
-  @override
-  void initState() {
-    getUserData();
-  }
-  sendNotification() async{
-    String url='https://fcm.googleapis.com/fcm/send';
-
-
-    await http.post(
-      'https://fcm.googleapis.com/fcm/send',
-      headers: <String, String>{
-        'Content-Type': 'application/json',
-        'Authorization': 'key=$serverToken',
-      },
-      body: jsonEncode(
-        <String, dynamic>{
-          'notification': <String, dynamic>{
-            'body': 'Guest Access',
-            'title': 'Guest Access control requested by ${userModel.username}'
-          },
-          'priority': 'high',
-          'data': <String, dynamic>{
-            'click_action': 'FLUTTER_NOTIFICATION_CLICK',
-            'id': '1',
-            'status': 'done'
-          },
-          'to': "/topics/guard",
-        },
-      ),
-    ).whenComplete(()  {
-      User user=FirebaseAuth.instance.currentUser;
-      final databaseReference = FirebaseDatabase.instance.reference();
-      databaseReference.child("notifications").child("guard").push().set({
-
-        'isOpened': false,
-        'type':"guest",
-        'name':nameController.text,
-        'date':DateTime.now().toString(),
-        'body':'Guest Service Access from ${userModel.username}',
-        'title':"Guest Service Access",
-        'icon':'https://img.flaticon.com/icons/png/512/185/185527.png?size=1200x630f&pad=10,10,10,10&ext=png&bg=FFFFFFFF',
-        'userId':user.uid
-      });
-
-    });
-  }
-
+  List<Visitor> visitors=[];
   String time=formatDate(DateTime.now(), [hh, ':', nn]);
   String startDate = formatDate(DateTime.now(), [dd, '-', mm, '-', yyyy]);
 
@@ -195,7 +139,7 @@ class _CreateGuestState extends State<CreateGuest> {
                     child: Column(
                       children: [
                         Text("Successful",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
-                        Text("Your guest has been added",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+                        Text("Your event has been added",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
 
                       ],
                     )
@@ -207,8 +151,8 @@ class _CreateGuestState extends State<CreateGuest> {
                 ),
                 GestureDetector(
                   onTap: (){
-                    Navigator.push(
-                        context, MaterialPageRoute(builder: (BuildContext context) => Home()));
+                    Navigator.pushReplacement(
+                        context, MaterialPageRoute(builder: (BuildContext context) => ViewEvents()));
                   },
                   child: Container(
                     alignment: Alignment.center,
@@ -283,16 +227,16 @@ class _CreateGuestState extends State<CreateGuest> {
                 Container(
                   margin: EdgeInsets.only(top:10),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(30.0),
-                    color: Colors.grey[200]
+                      borderRadius: BorderRadius.circular(30.0),
+                      color: Colors.grey[200]
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
-                        icon: Icon(Icons.share),
-                        onPressed: _captureAndSharePng
+                          icon: Icon(Icons.share),
+                          onPressed: _captureAndSharePng
                       ),
                       IconButton(
                           icon: Icon(Icons.file_download),
@@ -314,7 +258,7 @@ class _CreateGuestState extends State<CreateGuest> {
                     width: double.maxFinite,
                     height: 40,
                     margin: EdgeInsets.only(left: 40,right: 40),
-                    child:Text("Add Guest",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
+                    child:Text("Add Event",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
                     decoration: BoxDecoration(
                         color: kPrimaryColor,
                         borderRadius: BorderRadius.circular(30)
@@ -419,15 +363,14 @@ class _CreateGuestState extends State<CreateGuest> {
       setState(() {
         photoUrl = downloadUrl;
       });
-      databaseReference.child("access_control").child("guest").child(key).set({
+      databaseReference.child("access_control").child("event").child(key).set({
         'name': nameController.text,
         'date':startDate,
-        'hour':time,
-        'status':"scheduled",
+        'startTime':time,
         'userId':user.uid,
-        'vehicle':vehicleController.text,
-        'email':emailController.text,
-        'qr':photoUrl
+        'locationse':locationController.text,
+        'qr':photoUrl,
+        'visitors':visitors
       }).then((value) {
         pr.hide();
         sendNotification();
@@ -444,6 +387,72 @@ class _CreateGuestState extends State<CreateGuest> {
 
 
 
+  }
+  UserModel userModel;
+
+  getUserData()async{
+    User user=FirebaseAuth.instance.currentUser;
+    final databaseReference = FirebaseDatabase.instance.reference();
+    await databaseReference.child("users").child(user.uid).once().then((DataSnapshot dataSnapshot){
+      if(dataSnapshot.value!=null){
+        print(dataSnapshot.value);
+        userModel = new UserModel(
+            user.uid,
+            dataSnapshot.value['name'],
+            dataSnapshot.value['email'],
+            dataSnapshot.value['type'],
+            dataSnapshot.value['isActive']
+        );
+        print("username = ${userModel.username}");
+      }
+    });
+  }
+
+
+  @override
+  void initState() {
+    getUserData();
+  }
+  sendNotification() async{
+
+
+    await http.post(
+      'https://fcm.googleapis.com/fcm/send',
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Authorization': 'key=$serverToken',
+      },
+      body: jsonEncode(
+        <String, dynamic>{
+          'notification': <String, dynamic>{
+            'body': 'Event Access',
+            'title': 'Event Access control requested by ${userModel.username}'
+          },
+          'priority': 'high',
+          'data': <String, dynamic>{
+            'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+            'id': '1',
+            'status': 'done'
+          },
+          'to': "/topics/guard",
+        },
+      ),
+    ).whenComplete(()  {
+      User user=FirebaseAuth.instance.currentUser;
+      final databaseReference = FirebaseDatabase.instance.reference();
+      databaseReference.child("notifications").child("guard").push().set({
+
+        'isOpened': false,
+        'type':"event",
+        'name':nameController.text,
+        'date':DateTime.now().toString(),
+        'body':'Event Service Access from ${userModel.username}',
+        'title':"Event Service Access",
+        'icon':'https://img.flaticon.com/icons/png/512/185/185527.png?size=1200x630f&pad=10,10,10,10&ext=png&bg=FFFFFFFF',
+        'userId':user.uid
+      });
+
+    });
   }
   @override
   Widget build(BuildContext context) {
@@ -493,7 +502,7 @@ class _CreateGuestState extends State<CreateGuest> {
                                 height: 5.0,
                               ),
                               Text(
-                                "Add guest",
+                                "Add Event",
                                 style: TextStyle(
                                     color: Colors.black,
                                     fontWeight: FontWeight.w800,
@@ -502,7 +511,7 @@ class _CreateGuestState extends State<CreateGuest> {
                               SizedBox(height: 10,),
                               Container(
                                 child: Text(
-                                  "Your can add new guest here",
+                                  "Your can add new events here",
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                       color: Colors.black38,
@@ -570,7 +579,7 @@ class _CreateGuestState extends State<CreateGuest> {
                             filled: true,
                             prefixIcon: Icon(Icons.person_outline,color: Colors.black,size: 22,),
                             fillColor: Colors.grey[200],
-                            hintText: "Enter Name",
+                            hintText: "Enter Description",
                             // If  you are using latest version of flutter then lable text and hint text shown like this
                             // if you r using flutter less then 1.20.* then maybe this is not working properly
                             floatingLabelBehavior: FloatingLabelBehavior.always,
@@ -580,7 +589,7 @@ class _CreateGuestState extends State<CreateGuest> {
                         SizedBox(height: 20),
 
                         TextFormField(
-                          controller: vehicleController,
+                          controller: locationController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Please enter some text';
@@ -610,55 +619,15 @@ class _CreateGuestState extends State<CreateGuest> {
                               ),
                             ),
                             filled: true,
-                            prefixIcon: Icon(Icons.car_repair,color: Colors.black,size: 22,),
+                            prefixIcon: Icon(Icons.place_outlined,color: Colors.black,size: 22,),
                             fillColor: Colors.grey[200],
-                            hintText: "Enter Vehicle ID",
+                            hintText: "Enter Location",
                             // If  you are using latest version of flutter then lable text and hint text shown like this
                             // if you r using flutter less then 1.20.* then maybe this is not working properly
                             floatingLabelBehavior: FloatingLabelBehavior.always,
                           ),
                         ),
 
-                        SizedBox(height: 20),
-                        TextFormField(
-                          controller: emailController,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
-                            }
-                            return null;
-                          },
-                          decoration: InputDecoration(
-                            contentPadding: EdgeInsets.all(15),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(7.0),
-                              borderSide: BorderSide(
-                                color: Colors.transparent,
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(7.0),
-                              borderSide: BorderSide(
-                                  color: Colors.transparent,
-                                  width: 0.5
-                              ),
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(7.0),
-                              borderSide: BorderSide(
-                                color: Colors.transparent,
-                                width: 0.5,
-                              ),
-                            ),
-                            filled: true,
-                            prefixIcon: Icon(Icons.email_outlined,color: Colors.black,size: 22,),
-                            fillColor: Colors.grey[200],
-                            hintText: "Enter Email",
-                            // If  you are using latest version of flutter then lable text and hint text shown like this
-                            // if you r using flutter less then 1.20.* then maybe this is not working properly
-                            floatingLabelBehavior: FloatingLabelBehavior.always,
-                          ),
-                        ),
 
                         SizedBox(height: 20),
 
@@ -763,9 +732,169 @@ class _CreateGuestState extends State<CreateGuest> {
                             floatingLabelBehavior: FloatingLabelBehavior.always,
                           ),
                         ),
+                        SizedBox(height: 20),
 
 
 
+                        Container(
+                            padding: EdgeInsets.only(left:10,right: 10),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(7),
+                              color: Colors.grey[200],
+                            ),
+                            child:  Column(
+                              //crossAxisAlignment: CrossAxisAlignment.c,
+                              children: [
+                                Container(
+                                  margin: EdgeInsets.only(left: 10,top: 10),
+                                  alignment: Alignment.centerLeft,
+                                  child: Text("Create Event List",style: TextStyle(color: Colors.black,fontSize: 18,fontWeight: FontWeight.w600),),
+                                ),
+                                TextFormField(
+                                  controller: vnameController,
+                                  
+                                  decoration: InputDecoration(
+                                    contentPadding: EdgeInsets.all(15),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(7.0),
+                                      borderSide: BorderSide(
+                                        color: Colors.transparent,
+                                      ),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(7.0),
+                                      borderSide: BorderSide(
+                                          color: Colors.transparent,
+                                          width: 0.5
+                                      ),
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(7.0),
+                                      borderSide: BorderSide(
+                                        color: Colors.transparent,
+                                        width: 0.5,
+                                      ),
+                                    ),
+                                    filled: true,
+                                    prefixIcon: Icon(Icons.person_outline,color: Colors.black,size: 22,),
+                                    fillColor: Colors.grey[200],
+                                    hintText: "Enter Visitor Name",
+                                    // If  you are using latest version of flutter then lable text and hint text shown like this
+                                    // if you r using flutter less then 1.20.* then maybe this is not working properly
+                                    floatingLabelBehavior: FloatingLabelBehavior.always,
+                                  ),
+                                ),
+                                TextFormField(
+                                  controller: vemailController,
+                                  
+                                  decoration: InputDecoration(
+                                    contentPadding: EdgeInsets.all(15),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(7.0),
+                                      borderSide: BorderSide(
+                                        color: Colors.transparent,
+                                      ),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(7.0),
+                                      borderSide: BorderSide(
+                                          color: Colors.transparent,
+                                          width: 0.5
+                                      ),
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(7.0),
+                                      borderSide: BorderSide(
+                                        color: Colors.transparent,
+                                        width: 0.5,
+                                      ),
+                                    ),
+                                    filled: true,
+                                    prefixIcon: Icon(Icons.email_outlined,color: Colors.black,size: 22,),
+                                    fillColor: Colors.grey[200],
+                                    hintText: "Enter Email",
+                                    // If  you are using latest version of flutter then lable text and hint text shown like this
+                                    // if you r using flutter less then 1.20.* then maybe this is not working properly
+                                    floatingLabelBehavior: FloatingLabelBehavior.always,
+                                  ),
+                                ),
+                                Container(
+                                  child: RaisedButton(
+                                    onPressed: (){
+                                      if(vnameController.text.trim()=="" || vemailController.text.trim()==""){
+                                        Toast.show("Please enter some text", context, duration: Toast.LENGTH_LONG, gravity:  Toast.TOP);
+                                      }
+                                      else{
+                                        setState(() {
+                                          Visitor visitor=new Visitor(vnameController.text, vemailController.text);
+                                          visitors.add(visitor);
+                                        });
+                                      }
+                                    },
+                                    color: kPrimaryColor,
+                                    child: Text("Add Visitor",style: TextStyle(color: Colors.white),),
+                                  ),
+                                ),
+                                visitors.length>0?
+                                    ListView.builder(
+                                      shrinkWrap: true,
+                                        itemBuilder: (context,int index){
+                                          return Container(
+                                            height: 50,
+                                            child: Row(
+                                              children: [
+                                                Expanded(
+                                                  flex: 2,
+                                                  child: Container(
+                                                    alignment: Alignment.center,
+                                                    height: 50,
+                                                    width: 50,
+                                                    decoration: BoxDecoration(
+                                                      borderRadius: BorderRadius.circular(200)
+                                                    ),
+                                                    child: Text(visitors[index].name[0].toUpperCase(),style: TextStyle(color: kPrimaryColor,fontSize: 20,fontWeight: FontWeight.bold),),
+                                                  ),
+                                                ),
+                                                Expanded(
+                                                  flex: 6,
+                                                  child: Container(
+                                                    margin: EdgeInsets.only(left: 20),
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      mainAxisAlignment: MainAxisAlignment.center,
+                                                      children: [
+                                                        Text(visitors[index].name,style: TextStyle(color: Colors.black,fontWeight: FontWeight.w400,fontSize: 18),),
+                                                        Text(visitors[index].email),
+                                                      ],
+                                                    ),
+                                                  )
+                                                ),
+                                                Expanded(
+                                                  flex: 2,
+                                                  child: IconButton(
+                                                    icon: Icon(Icons.delete_forever_outlined),
+                                                    onPressed: (){
+                                                      setState(() {
+                                                        visitors.removeAt(index);
+                                                      });
+                                                    },
+
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                        itemCount: visitors.length
+                                    ):
+                                    Container(
+                                      height: 1,
+                                    ),
+
+                                SizedBox(height: 10),
+                              ],
+                            )
+                        ),
                         SizedBox(height: 20),
                         GestureDetector(
                           onTap: (){
@@ -792,15 +921,7 @@ class _CreateGuestState extends State<CreateGuest> {
                     ),
                   ),
                 ),
-                SizedBox(height: 200,),
-                /*RepaintBoundary(
-                  key: globalKey,
-                  child: QrImage(
-                    data: key,
-                    size: 200,
 
-                  ),
-                ),*/
 
 
                 SizedBox(

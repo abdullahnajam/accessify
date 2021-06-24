@@ -1,9 +1,16 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui';
+
 import 'package:accessify/constants.dart';
 import 'package:accessify/model/access/employee_frequent_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share/share.dart';
 
 import 'createEmployeeFrequent.dart';
 class EmployeeFrequentAccess extends StatefulWidget {
@@ -12,6 +19,7 @@ class EmployeeFrequentAccess extends StatefulWidget {
 }
 
 class _EmployeeFrequentAccessState extends State<EmployeeFrequentAccess> {
+  GlobalKey globalKey = new GlobalKey();
   Future<void> _showInfoDailog(EmployeeAccessModel model) async {
     return showDialog<void>(
       context: context,
@@ -63,17 +71,41 @@ class _EmployeeFrequentAccessState extends State<EmployeeFrequentAccess> {
 
                         SizedBox(height: 10,),
                         Text("QR Code",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        RepaintBoundary(
+                          key: globalKey,
+                          child: Container(
+                            height: 100,
+                            width: 100,
+                            decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                                image: DecorationImage(
+                                    image: NetworkImage(model.qr),
+                                    fit: BoxFit.cover
+                                )
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 10,),
+                        Text("Actions",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
                         Container(
-                          height: 100,
-                          width: 100,
-                          decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(20),
-                              image: DecorationImage(
-                                  image: NetworkImage(model.qr),
-                                  fit: BoxFit.cover
-                              )
+                          width: MediaQuery.of(context).size.width*0.5,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              IconButton(icon: Icon(Icons.delete_forever_outlined), onPressed: ()async{
+                                final databaseReference = FirebaseDatabase.instance.reference();
+                                await databaseReference.child("access_control").child("employee").child(model.id).remove().then((value) {
+                                  Navigator.pop(context);
+                                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => EmployeeFrequentAccess()));
+                                });
+                              }),
+                              IconButton(icon: Icon(Icons.share_outlined), onPressed: (){
+                                _captureAndSharePng();
+                              })
+                            ],
                           ),
                         )
+
 
 
 
@@ -112,7 +144,28 @@ class _EmployeeFrequentAccessState extends State<EmployeeFrequentAccess> {
       },
     );
   }
+  Future<void> _captureAndSharePng() async {
+    try {
+      RenderRepaintBoundary boundary = globalKey.currentContext.findRenderObject();
+      var image = await boundary.toImage();
+      ByteData byteData = await image.toByteData(format: ImageByteFormat.png);
+      Uint8List pngBytes = byteData.buffer.asUint8List();
 
+      final tempDir = await getTemporaryDirectory();
+      String path='${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}.png';
+      File file = await new File('${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}.png').create();
+      await file.writeAsBytes(pngBytes);
+      print(file.path);
+      print(path);
+
+      Share.shareFiles([path],text: 'QR Code for accesfy');
+
+
+
+    }  catch(e) {
+      print(e.toString());
+    }
+  }
   Future<List<EmployeeAccessModel>> getEmployeeFrequentList() async {
     List<EmployeeAccessModel> list=new List();
     User user=FirebaseAuth.instance.currentUser;
@@ -132,8 +185,10 @@ class _EmployeeFrequentAccessState extends State<EmployeeFrequentAccess> {
             DATA[individualKey]['userId'],
             DATA[individualKey]['type'],
           );
-          print("key ${empfrequentModel.id}");
-          list.add(empfrequentModel);
+          if(user.uid==empfrequentModel.userId){
+            list.add(empfrequentModel);
+          }
+
 
         }
       }
@@ -247,6 +302,7 @@ class _EmployeeFrequentAccessState extends State<EmployeeFrequentAccess> {
                       return ListView.builder(
                         shrinkWrap: true,
                         //scrollDirection: Axis.horizontal,
+                        physics: NeverScrollableScrollPhysics(),
                         itemCount: snapshot.data.length,
                         itemBuilder: (BuildContext context,int index){
                           return Padding(
@@ -306,7 +362,7 @@ class _EmployeeFrequentAccessState extends State<EmployeeFrequentAccess> {
                                           ),
                                           child: Center(
                                             child: Icon(
-                                              Icons.car_repair,
+                                              Icons.person_outline,
                                               color: Colors.white,
                                               size: 26.0,
                                             ),

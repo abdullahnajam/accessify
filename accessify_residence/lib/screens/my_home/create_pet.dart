@@ -29,6 +29,70 @@ class _CreatePetState extends State<CreatePet> {
   ///Needs image_picker plugin {https://pub.dev/packages/image_picker}
   final picker = ImagePicker();
 
+  Future<void> _showchoiceDailog() async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: true, // user must tap button!
+      builder: (BuildContext context) {
+        return Card(
+          margin: EdgeInsets.only(top: MediaQuery.of(context).size.height*0.8),
+          shape: RoundedRectangleBorder(
+            borderRadius: const BorderRadius.only(
+              topRight: Radius.circular(30.0),
+              topLeft: Radius.circular(30.0),
+            ),
+          ),
+          elevation: 2,
+
+          child: Container(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GestureDetector(
+                  onTap: (){
+                    pickImage();
+                    Navigator.pop(context);
+                  },
+                  child: Container(
+                    alignment: Alignment.center,
+                    width: double.maxFinite,
+                    height: 40,
+                    margin: EdgeInsets.only(left: 40,right: 40),
+                    child:Text("Take Picture From Camera",style: TextStyle(color:Colors.black,fontSize: 15,fontWeight: FontWeight.w400),),
+                    decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(30)
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  height: 15,
+                ),
+                GestureDetector(
+                  onTap: (){
+                    Navigator.pop(context);
+                    pickImageFromGallery();
+                  },
+                  child: Container(
+                    alignment: Alignment.center,
+                    width: double.maxFinite,
+                    height: 40,
+                    margin: EdgeInsets.only(left: 40,right: 40),
+                    child:Text("Choose From Gallery",style: TextStyle(color:Colors.black,fontSize: 15,fontWeight: FontWeight.w400),),
+                    decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(30)
+                    ),
+                  ),
+                ),
+
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future pickImage() async {
     final pickedFile = await picker.getImage(source: ImageSource.camera);
 
@@ -37,6 +101,7 @@ class _CreatePetState extends State<CreatePet> {
     });
     uploadImageToFirebase(context);
   }
+
   Future pickImageFromGallery() async {
     final pickedFile = await picker.getImage(source: ImageSource.gallery);
 
@@ -47,15 +112,7 @@ class _CreatePetState extends State<CreatePet> {
   }
 
   Future uploadImageToFirebase(BuildContext context) async {
-    String fileName = _imageFile.path;
-
-    /* final firebaseStorageRef = FirebaseStorage.instance.ref().child('uploads/$fileName');
-    StorageUploadTask uploadTask = firebaseStorageRef.putFile(_imageFile);
-    TaskSnapshot taskSnapshot = await uploadTask.onComplete;
-    taskSnapshot.ref.getDownloadURL().then((value) => photoUrl=value,);*/
-
     var storage = FirebaseStorage.instance;
-
     TaskSnapshot snapshot = await storage.ref()
         .child('bookingPics/${DateTime.now().millisecondsSinceEpoch}')
         .putFile(_imageFile);
@@ -352,7 +409,6 @@ class _CreatePetState extends State<CreatePet> {
                               ),
                             ),
                             filled: true,
-                            prefixIcon: Icon(Icons.person_outline,color: Colors.black,size: 22,),
                             fillColor: Colors.grey[200],
                             hintText: "Enter Name",
                             // If  you are using latest version of flutter then lable text and hint text shown like this
@@ -394,7 +450,6 @@ class _CreatePetState extends State<CreatePet> {
                               ),
                             ),
                             filled: true,
-                            prefixIcon: Icon(Icons.person_outline,color: Colors.black,size: 22,),
                             fillColor: Colors.grey[200],
                             hintText: "Enter Class",
                             // If  you are using latest version of flutter then lable text and hint text shown like this
@@ -435,7 +490,6 @@ class _CreatePetState extends State<CreatePet> {
                               ),
                             ),
                             filled: true,
-                            prefixIcon: Icon(Icons.email_outlined,color: Colors.black,size: 22,),
                             fillColor: Colors.grey[200],
                             hintText: "Enter Breed",
                             // If  you are using latest version of flutter then lable text and hint text shown like this
@@ -477,7 +531,6 @@ class _CreatePetState extends State<CreatePet> {
                               ),
                             ),
                             filled: true,
-                            prefixIcon: Icon(Icons.phone_outlined,color: Colors.black,size: 22,),
                             fillColor: Colors.grey[200],
                             hintText: "Enter Color",
                             // If  you are using latest version of flutter then lable text and hint text shown like this
@@ -488,67 +541,44 @@ class _CreatePetState extends State<CreatePet> {
 
 
                         SizedBox(height: 20),
-                        Container(
-                            padding: EdgeInsets.only(left:10,right: 10,top: 10,bottom: 10),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(7),
-                              color: Colors.grey[200],
-                            ),
-                            child: _imageFile==null?
-                            Column(
-                              children: [
-                                InkWell(
-                                  onTap: pickImageFromGallery,
-                                  child: Container(
-                                    alignment: Alignment.center,
-                                    width: double.maxFinite,
-                                    height: 50,
-                                    decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(5),
-                                        color: Colors.blueGrey,
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Color.fromRGBO(196, 135, 198, .3),
-                                            blurRadius: 20,
-                                            offset: Offset(0, 10),
-                                          )
-                                        ]
-                                    ),
-                                    child: Text('Upload From Device',textAlign: TextAlign.center,style: TextStyle(fontSize:16,color: Colors.white),),
-                                  ),
-                                ),
-                                SizedBox(height: 10,),
-                                Text('OR',textAlign: TextAlign.center,style: TextStyle(fontSize:18,fontWeight:FontWeight.w400),),
-                                SizedBox(height: 10,),
-                                InkWell(
-                                  onTap: pickImage,
-                                  child: Container(
-                                    alignment: Alignment.center,
-                                    width: double.maxFinite,
-                                    height: 50,
-                                    decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(5),
-                                        color: Colors.blueGrey,
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Color.fromRGBO(196, 135, 198, .3),
-                                            blurRadius: 20,
-                                            offset: Offset(0, 10),
-                                          )
-                                        ]
-                                    ),
-                                    child: Text('Take Picture From Camera',textAlign: TextAlign.center,style: TextStyle(fontSize:16,color: Colors.white),),
-                                  ),
-                                ),
-                              ],
-                            ):
-                            Container(
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: Image.file(_imageFile,width: double.maxFinite,height: 150,fit: BoxFit.cover,),
+                        GestureDetector(
+                          onTap: () =>_showchoiceDailog(),
+                          child: Container(
+                              height: 50,
+                              padding: EdgeInsets.only(left:10,right: 10),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(7),
+                                color: Colors.grey[200],
                               ),
-                              margin: EdgeInsets.only(left: 20,right: 20),
-                            ),
+                              child:  _imageFile==null?Row(
+                                children: [
+                                  Expanded(
+                                    flex: 1,
+                                    child: Icon(Icons.photo_outlined,color: Colors.black,size: 22,),
+                                  ),
+
+                                  Expanded(
+                                      flex: 9,
+                                      child: Container(
+                                        padding: EdgeInsets.only(left:12),
+                                        child:Text("Add Photo",style: TextStyle(
+                                            fontSize: 17,
+                                            color: Colors.grey[700]
+                                        ),),
+                                      )
+                                  )
+                                ],
+                              ):GestureDetector(
+                                onTap: _showchoiceDailog,
+                                child: Container(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Image.file(_imageFile,width: double.maxFinite,height: 150,fit: BoxFit.cover,),
+                                  ),
+                                  margin: EdgeInsets.only(left: 20,right: 20),
+                                ),
+                              )
+                          ),
                         ),
                         SizedBox(height: 20),
                         GestureDetector(

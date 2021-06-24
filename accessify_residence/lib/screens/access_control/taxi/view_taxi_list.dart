@@ -289,8 +289,96 @@ class _TaxiAccessState extends State<TaxiAccess> with SingleTickerProviderStateM
                   )
               ),
 
+              FutureBuilder<List<TaxiModel>>(
+                future: getTaxiList(),
+                builder: (context,snapshot){
+                  if (snapshot.hasData) {
+                    if (snapshot.data != null && snapshot.data.length>0) {
+                      return ListView.builder(
+                        shrinkWrap: true,
+                        //scrollDirection: Axis.horizontal,
+                        physics: NeverScrollableScrollPhysics(),
+                        itemCount: snapshot.data.length,
+                        itemBuilder: (BuildContext context,int index){
+                          return InkWell(
+                            onTap: (){
+                              _showInfoDailog(snapshot.data[index]);
+                            },
+                            child: Container(
+                              height: 70,
+                              margin:EdgeInsets.only(left: 20,right: 20,top: 10),
+                              decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.grey.withOpacity(0.5),
+                                      spreadRadius:1,
+                                      blurRadius: 2,
+                                      offset: Offset(0, 1), // changes position of shadow
+                                    ),
+                                  ],
+                                  borderRadius: BorderRadius.circular(10)
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                      flex: 4,
+                                      child: Container(
+                                        margin: EdgeInsets.only(left: 10),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
 
-              DefaultTabController(
+                                            Row(
+                                              children: [
+                                                Text(snapshot.data[index].name,style: TextStyle(fontWeight:FontWeight.w500,fontSize: 20,color: Colors.black),),
+
+                                              ],
+                                            ),
+                                            SizedBox(height: 5,),
+                                            Container(
+                                                padding: EdgeInsets.only(top: 2,bottom: 2),
+
+                                                child: Text(snapshot.data[index].date,style: TextStyle(fontSize: 14,),)
+                                            )
+                                          ],
+                                        ),
+                                      )
+                                  ),
+                                  Expanded(
+                                    flex: 1,
+                                    child: Container(
+                                      child: Text(snapshot.data[index].hour,style: TextStyle(color: Colors.black,fontSize: 17,fontWeight: FontWeight.w300,)
+                                      ),
+                                    ),)
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    }
+                    else {
+                      return new Center(
+                        child: Container(
+                            margin: EdgeInsets.only(top: 100),
+                            child: Text("You currently don't have any taxi")
+                        ),
+                      );
+                    }
+                  }
+                  else if (snapshot.hasError) {
+                    return Text('Error : ${snapshot.error}');
+                  } else {
+                    return new Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+                },
+              ),
+
+              /*DefaultTabController(
                   length: 2, // length of tabs
                   initialIndex: 0,
                   child: Column(
@@ -338,6 +426,7 @@ class _TaxiAccessState extends State<TaxiAccess> with SingleTickerProviderStateM
                                         return ListView.builder(
                                           shrinkWrap: true,
                                           //scrollDirection: Axis.horizontal,
+                                          physics: NeverScrollableScrollPhysics(),
                                           itemCount: snapshot.data.length,
                                           itemBuilder: (BuildContext context,int index){
                                             return InkWell(
@@ -513,7 +602,7 @@ class _TaxiAccessState extends State<TaxiAccess> with SingleTickerProviderStateM
                         )
 
                       ])
-              ),
+              ),*/
               SizedBox(
                 height: 20.0,
               ),

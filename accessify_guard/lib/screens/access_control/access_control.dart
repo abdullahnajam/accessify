@@ -1,3 +1,9 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:guard/model/access/employee_frequent_model.dart';
+import 'package:guard/model/access/event.dart';
+import 'package:guard/model/access/guest.dart';
+import 'package:guard/screens/access_control/add_access.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:qrscan/qrscan.dart' as scanner;
 import 'package:flutter/services.dart';
@@ -6,6 +12,7 @@ import 'package:guard/constants.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:guard/navigator/menu_drawer.dart';
+import 'package:toast/toast.dart';
 class AccessControl extends StatefulWidget {
   @override
   _AccessControlState createState() => _AccessControlState();
@@ -151,7 +158,72 @@ class _AccessControlState extends State<AccessControl> {
         });
   }
 
-  showDeliveryServiceDailog()async{
+  Future<EventModel> getEventList(String id) async {
+    EventModel eventModel;
+    User user=FirebaseAuth.instance.currentUser;
+    final databaseReference = FirebaseDatabase.instance.reference();
+    await databaseReference.child("access_control").child("event").child(id).once().then((DataSnapshot dataSnapshot){
+      if(dataSnapshot.value!=null){
+        var KEYS= dataSnapshot.key;
+
+         eventModel = new EventModel(
+          KEYS,
+          dataSnapshot.value['name'],
+          dataSnapshot.value['location'],
+          dataSnapshot.value['date'],
+          dataSnapshot.value['startTime'],
+          dataSnapshot.value['guests'],
+          dataSnapshot.value['qr'],
+           dataSnapshot.value['userId'],
+        );
+      }
+    });
+    return eventModel;
+  }
+  Future<EmployeeAccessModel> getEmployeeFrequentList(String id) async {
+    EmployeeAccessModel empfrequentModel;
+    User user=FirebaseAuth.instance.currentUser;
+    final databaseReference = FirebaseDatabase.instance.reference();
+    await databaseReference.child("access_control").child("employee").child(id).once().then((DataSnapshot dataSnapshot){
+      if(dataSnapshot.value!=null){
+        var KEYS= dataSnapshot.key;
+         empfrequentModel = new EmployeeAccessModel(
+           KEYS,
+          dataSnapshot.value['emp'],
+           dataSnapshot.value['qr'],
+           dataSnapshot.value['fromDate'],
+           dataSnapshot.value['expDate'],
+           dataSnapshot.value['userId'],
+           dataSnapshot.value['type'],
+        );
+      }
+    });
+    return empfrequentModel;
+  }
+  Future<GuestModel> getGuestList(String id) async {
+    GuestModel guestModel;
+    final databaseReference = FirebaseDatabase.instance.reference();
+    await databaseReference.child("access_control").child("guest").child(id).once().then((DataSnapshot dataSnapshot){
+      if(dataSnapshot.value!=null){
+        var KEYS= dataSnapshot.key;
+
+         guestModel = new GuestModel(
+          KEYS,
+          dataSnapshot.value['name'],
+          dataSnapshot.value['email'],
+          dataSnapshot.value['date'],
+          dataSnapshot.value['hour'],
+          dataSnapshot.value['status'],
+          dataSnapshot.value['userId'],
+          dataSnapshot.value['vehicle'],
+          dataSnapshot.value['qr'],
+        );
+      }
+    });
+    return guestModel;
+  }
+
+  scanQRCode(String type)async{
 
     await Permission.camera.request();
     String barcode = await scanner.scan();
@@ -159,7 +231,38 @@ class _AccessControlState extends State<AccessControl> {
       print('nothing return.');
     } else {
       print('qr code $barcode');
-      showDialog();
+      if(type=="event"){
+        getEventList(barcode).then((value){
+          if(value!=null){
+            Navigator.push(context, new MaterialPageRoute(
+                builder: (context) => AddAccess(barcode,type,value.userId,value.name)));
+          }
+          else
+            Toast.show("This barcode is not for event access", context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM);
+        });
+      }
+      if(type=="employee"){
+        getEmployeeFrequentList(barcode).then((value){
+          if(value!=null){
+            Navigator.push(context, new MaterialPageRoute(
+                builder: (context) => AddAccess(barcode,type,value.userId,value.emp)));
+          }
+          else
+            Toast.show("This barcode is not for employee access", context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM);
+        });
+      }
+      if(type=="guest"){
+        getGuestList(barcode).then((value){
+          if(value!=null){
+            Navigator.push(context, new MaterialPageRoute(
+                builder: (context) => AddAccess(barcode,type,value.userId,value.name)));
+          }
+          else
+            Toast.show("This barcode is not for guest access", context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM);
+        });
+      }
+      
+
     }
 
   }
@@ -476,10 +579,9 @@ class _AccessControlState extends State<AccessControl> {
 
 
 
-              _card(Icons.people, "Guest", () =>showDeliveryServiceDailog()),
-              _card(Icons.card_travel, "Frecuent / Employee", () =>showDeliveryServiceDailog()),
-              _card(Icons.event, "Event", () =>showDeliveryServiceDailog()),
-              _card(Icons.info_outline, "Unregistered", () =>showUnRegisteredDailog()),
+              _card(Icons.people, "Guest", () =>scanQRCode("guest")),
+              _card(Icons.card_travel, "Frecuent / Employee", () =>scanQRCode("employee")),
+              _card(Icons.event, "Event", () =>scanQRCode("event")),
               SizedBox(
                 height: 20.0,
               )

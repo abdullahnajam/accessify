@@ -54,8 +54,7 @@ class _CreateEmployeeState extends State<CreateEmployee> {
     _daysList.add(day);
     day=new Days(false, "Sunday");
     _daysList.add(day);
-    day=new Days(false, "Monday");
-    _daysList.add(day);
+
     day=new Days(false, "Every Day");
     _daysList.add(day);
   }
@@ -206,6 +205,7 @@ class _CreateEmployeeState extends State<CreateEmployee> {
                 GestureDetector(
                   onTap: (){
                     pickImage();
+                    Navigator.pop(context);
                   },
                   child: Container(
                     alignment: Alignment.center,
@@ -224,6 +224,7 @@ class _CreateEmployeeState extends State<CreateEmployee> {
                 GestureDetector(
                   onTap: (){
                     pickImageFromGallery();
+                    Navigator.pop(context);
                   },
                   child: Container(
                     alignment: Alignment.center,
@@ -563,7 +564,6 @@ class _CreateEmployeeState extends State<CreateEmployee> {
                         GestureDetector(
                           onTap: () =>_showchoiceDailog(),
                           child: Container(
-                              height: 50,
                               padding: EdgeInsets.only(left:10,right: 10),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(7),
@@ -772,7 +772,7 @@ class _CreateEmployeeState extends State<CreateEmployee> {
                             height: 50,
                             width: double.maxFinite,
                             alignment: Alignment.center,
-                            child: Text("Add Vehicle",textAlign: TextAlign.center,style: TextStyle(color: Colors.white,fontSize: 20),),
+                            child: Text("Add Employee",textAlign: TextAlign.center,style: TextStyle(color: Colors.white,fontSize: 20),),
                             decoration: BoxDecoration(
                                 color: kPrimaryColor,
                                 borderRadius: BorderRadius.circular(30)

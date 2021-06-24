@@ -7,10 +7,9 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_mailer/flutter_mailer.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lottie/lottie.dart';
-import 'package:timeago/timeago.dart' as timeago;
+import 'package:toast/toast.dart';
 class CreateIncident extends StatefulWidget {
   @override
   _CreateIncidentState createState() => _CreateIncidentState();
@@ -546,7 +545,10 @@ class _CreateIncidentState extends State<CreateIncident> {
                             //print(timeAgoSinceDate('2021-04-25 23:35:09.911320'));
                             //print(DateTime.now().toString());
                             if (_formKey.currentState.validate()) {
-                              saveInfo();
+                              if(photoUrl!=null)
+                                saveInfo();
+                              else
+                                Toast.show("Please select an image", context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM);
                             }
                           },
                           child: Container(

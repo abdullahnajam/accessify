@@ -166,7 +166,7 @@ class _MembersState extends State<Members> with SingleTickerProviderStateMixin{
                             SizedBox(height: 10,),
                             Container(
                               child: Text(
-                                "Keep track of the list of members via their payment status",
+                                "Keep track of the list of members",
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                     color: Colors.black38,

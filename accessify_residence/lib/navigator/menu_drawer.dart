@@ -1,4 +1,5 @@
 import 'package:accessify/auth/sign_in/sign_in_screen.dart';
+import 'package:accessify/screens/bottom_nav_screens/notifications.dart';
 import 'package:accessify/screens/coupon/view_coupons.dart';
 import 'package:accessify/screens/payments/my_payments.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -33,27 +34,11 @@ class MenuDrawerState extends State<MenuDrawer> {
           children: <Widget>[
             Container(
               height: 200,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  Container(height: 30),
-                  CircleAvatar(
-                    radius: 32,
-                    backgroundColor: MyColors.grey_20,
-                    child: CircleAvatar(
-                      radius: 30,
-                      backgroundImage: NetworkImage('https://icon-library.com/images/avatar-icon-images/avatar-icon-images-4.jpg'),
-                    ),
-                  ),
-                  Container(height: 7),
-                  Text("My Name", style: MyText.body2(context).copyWith(
-                      color: Colors.blueGrey[800], fontWeight: FontWeight.w500
-                  )),
-                  Container(height: 2),
-                  Text("myemailid@mail.com", style: MyText.caption(context).copyWith(
-                      color: MyColors.grey_20, fontWeight: FontWeight.w500
-                  ))
-                ],
+              decoration: BoxDecoration(
+                image: DecorationImage(
+                  image: AssetImage("assets/images/logo.png"),
+                  fit: BoxFit.cover
+                )
               ),
             ),
             Container(height: 8),
@@ -83,6 +68,21 @@ class MenuDrawerState extends State<MenuDrawer> {
                     Icon(Icons.monetization_on, color: MyColors.grey_20, size: 20),
                     Container(width: 20),
                     Expanded(child: Text("Payment", style: MyText.body2(context).copyWith(color: MyColors.grey_80))),
+                  ],
+                ),
+              ),
+            ),
+            Container(height: 10),
+            InkWell(onTap: (){
+              Navigator.push(context, new MaterialPageRoute(
+                  builder: (context) => Notifications()));
+            },
+              child: Container(height: 40, padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: <Widget>[
+                    Icon(Icons.notifications_none, color: MyColors.grey_20, size: 20),
+                    Container(width: 20),
+                    Expanded(child: Text("Notifications", style: MyText.body2(context).copyWith(color: MyColors.grey_80))),
                   ],
                 ),
               ),

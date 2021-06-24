@@ -62,9 +62,7 @@ class _CreateReservationState extends State<CreateReservation> {
   }
   Future<List<DateTime>> getReservedDates() async {
     List<ReservationModel> list=new List();
-    List<Meeting> meeting=[];
     List<DateTime> blackoutDates=[];
-    List<dynamic> eventData = [];
     final databaseReference = FirebaseDatabase.instance.reference();
     await databaseReference.child("reservation").once().then((DataSnapshot dataSnapshot){
       if(dataSnapshot.value!=null){
@@ -86,7 +84,7 @@ class _CreateReservationState extends State<CreateReservation> {
           );
           list.add(reservationModel);
           DateTime parsedDate = DateTime.parse(reservationModel.dateNoFormat);
-          blackoutDates.add(parsedDate.add(Duration(days: 1)),);
+          blackoutDates.add(parsedDate.add(Duration(days: 0)),);
         }
       }
     });
@@ -176,7 +174,7 @@ class _CreateReservationState extends State<CreateReservation> {
                           child: QrImage(
                             data: qrKey,
                             size: 200,
-                            embeddedImage: AssetImage('assets/images/logo.png'),
+                            embeddedImage: AssetImage('assets/images/qr_logo.png'),
                             embeddedImageStyle: QrEmbeddedImageStyle(
                               size: Size(50, 50),
                             ),

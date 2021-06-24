@@ -178,6 +178,7 @@ class _ViewIncidentsState extends State<ViewIncidents> {
                     if (snapshot.data != null && snapshot.data.length>0) {
                       return ListView.builder(
                         shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
                         //scrollDirection: Axis.horizontal,
                         itemCount: snapshot.data.length,
                         itemBuilder: (BuildContext context,int index){
@@ -201,7 +202,7 @@ class _ViewIncidentsState extends State<ViewIncidents> {
                                   child: Column(
                                     children: <Widget>[
                                       Container(
-                                        height: 200,
+                                        height: 150,
                                         decoration: BoxDecoration(
                                             image:  DecorationImage(
                                               image: NetworkImage(snapshot.data[index].photo),

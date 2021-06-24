@@ -5,6 +5,7 @@ import 'package:accessify/screens/my_home/create_employee.dart';
 import 'package:accessify/screens/my_home/create_frequents.dart';
 import 'package:accessify/screens/my_home/create_pet.dart';
 import 'package:accessify/screens/my_home/create_vehicle.dart';
+import 'package:accessify/screens/my_home/edit_frequents.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/cupertino.dart';
@@ -49,8 +50,8 @@ class _MyFrequentsState extends State<MyFrequents> {
                   ),
                 ),
                 Container(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: ListView(
+                      //crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text("Employee Information",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
                         SizedBox(height: 10,),
@@ -92,16 +93,36 @@ class _MyFrequentsState extends State<MyFrequents> {
 
                         SizedBox(height: 10,),
                         Text("Days Allowed",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
-                        Text("${model.daysAllowed.length}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+                        Text(model.daysAllowed[0]=="Every Day"?"7":"${model.daysAllowed.length}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
 
-
-
+                        SizedBox(height: 10,),
+                        Text("Actions",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Container(
+                          width: MediaQuery.of(context).size.width*0.5,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              IconButton(icon: Icon(Icons.delete_forever_outlined), onPressed: ()async{
+                                User user=FirebaseAuth.instance.currentUser;
+                                final databaseReference = FirebaseDatabase.instance.reference();
+                                await databaseReference.child("home").child("frequents").child(user.uid).child(model.id).remove().then((value) {
+                                  Navigator.pop(context);
+                                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => MyFrequents()));
+                                });
+                              }),
+                              IconButton(icon: Icon(Icons.edit_outlined), onPressed: (){
+                                Navigator.pop(context);
+                                Navigator.push(context, MaterialPageRoute(builder: (BuildContext context) => EditFrequents(model)));
+                              })
+                            ],
+                          ),
+                        )
                       ],
                     )
 
                 ),
                 Container(
-                  margin: EdgeInsets.only(top:20,left: 20,right: 20,bottom: 20),
+                  margin: EdgeInsets.only(left: 20,right: 20,bottom: 20),
                   child: Divider(color: Colors.grey,),
                 ),
                 GestureDetector(
@@ -265,6 +286,7 @@ class _MyFrequentsState extends State<MyFrequents> {
                   if (snapshot.hasData) {
                     if (snapshot.data != null && snapshot.data.length>0) {
                       return ListView.builder(
+                        physics: NeverScrollableScrollPhysics(),
                         shrinkWrap: true,
                         //scrollDirection: Axis.horizontal,
                         itemCount: snapshot.data.length,

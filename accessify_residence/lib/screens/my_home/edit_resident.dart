@@ -1,164 +1,29 @@
-import 'dart:convert';
-import 'dart:io';
-import 'dart:typed_data';
-import 'dart:ui';
 import 'package:accessify/constants.dart';
-import 'package:accessify/model/user_model.dart';
+import 'package:accessify/model/resident_model.dart';
 import 'package:accessify/screens/home.dart';
-import 'package:date_format/date_format.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:flutter_mailer/flutter_mailer.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:lottie/lottie.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:progress_dialog/progress_dialog.dart';
-import 'package:qr_flutter/qr_flutter.dart';
-import 'package:share/share.dart';
-import 'package:http/http.dart' as http;
-class CreateGuest extends StatefulWidget {
+class EditResident extends StatefulWidget {
+  ResidentsModel resident;
+
+  EditResident(this.resident);
+
   @override
-  _CreateGuestState createState() => _CreateGuestState();
+  _EditResidentState createState() => _EditResidentState();
 }
 
-class _CreateGuestState extends State<CreateGuest> {
+class _EditResidentState extends State<EditResident> {
   final _formKey = GlobalKey<FormState>();
-  var nameController=TextEditingController();
-  var vehicleController=TextEditingController();
+  var ageController=TextEditingController();
+  var fnController=TextEditingController();
+  var lnController=TextEditingController();
+  var pnController=TextEditingController();
   var emailController=TextEditingController();
-
-  UserModel userModel;
-
-  getUserData()async{
-    User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("users").child(user.uid).once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        print(dataSnapshot.value);
-        userModel = new UserModel(
-            user.uid,
-            dataSnapshot.value['name'],
-            dataSnapshot.value['email'],
-            dataSnapshot.value['type'],
-            dataSnapshot.value['isActive']
-        );
-        print("username = ${userModel.username}");
-      }
-    });
-  }
-
-
-  @override
-  void initState() {
-    getUserData();
-  }
-  sendNotification() async{
-    String url='https://fcm.googleapis.com/fcm/send';
-
-
-    await http.post(
-      'https://fcm.googleapis.com/fcm/send',
-      headers: <String, String>{
-        'Content-Type': 'application/json',
-        'Authorization': 'key=$serverToken',
-      },
-      body: jsonEncode(
-        <String, dynamic>{
-          'notification': <String, dynamic>{
-            'body': 'Guest Access',
-            'title': 'Guest Access control requested by ${userModel.username}'
-          },
-          'priority': 'high',
-          'data': <String, dynamic>{
-            'click_action': 'FLUTTER_NOTIFICATION_CLICK',
-            'id': '1',
-            'status': 'done'
-          },
-          'to': "/topics/guard",
-        },
-      ),
-    ).whenComplete(()  {
-      User user=FirebaseAuth.instance.currentUser;
-      final databaseReference = FirebaseDatabase.instance.reference();
-      databaseReference.child("notifications").child("guard").push().set({
-
-        'isOpened': false,
-        'type':"guest",
-        'name':nameController.text,
-        'date':DateTime.now().toString(),
-        'body':'Guest Service Access from ${userModel.username}',
-        'title':"Guest Service Access",
-        'icon':'https://img.flaticon.com/icons/png/512/185/185527.png?size=1200x630f&pad=10,10,10,10&ext=png&bg=FFFFFFFF',
-        'userId':user.uid
-      });
-
-    });
-  }
-
-  String time=formatDate(DateTime.now(), [hh, ':', nn]);
-  String startDate = formatDate(DateTime.now(), [dd, '-', mm, '-', yyyy]);
-
-  GlobalKey globalKey = new GlobalKey();
-
-  String photoUrl;
-
-  File file;
-  String key=DateTime.now().millisecondsSinceEpoch.toString();
-
-  Future<void> _add() async {
-    try {
-      RenderRepaintBoundary boundary = globalKey.currentContext.findRenderObject();
-      var image = await boundary.toImage();
-      ByteData byteData = await image.toByteData(format: ImageByteFormat.png);
-      Uint8List pngBytes = byteData.buffer.asUint8List();
-
-      final tempDir = await getTemporaryDirectory();
-      String path='${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}.png';
-      file = await new File('${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}.png').create();
-      await file.writeAsBytes(pngBytes);
-      print(file.path);
-      print(path);
-
-      saveInfo(file);
-
-
-
-    }  catch(e) {
-      print(e.toString());
-    }
-  }
-
-  Future<void> _captureAndSharePng() async {
-    try {
-      RenderRepaintBoundary boundary = globalKey.currentContext.findRenderObject();
-      var image = await boundary.toImage();
-      ByteData byteData = await image.toByteData(format: ImageByteFormat.png);
-      Uint8List pngBytes = byteData.buffer.asUint8List();
-
-      final tempDir = await getTemporaryDirectory();
-      String path='${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}.png';
-      file = await new File('${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}.png').create();
-      await file.writeAsBytes(pngBytes);
-      print(file.path);
-      print(path);
-
-      Share.shareFiles([path],text: 'QR Code for accesfy');
-
-
-
-    }  catch(e) {
-      print(e.toString());
-    }
-  }
-
-
-
+  String dropdownValue = 'Family';
 
   Future<void> _showSuccessDailog() async {
     return showDialog<void>(
@@ -195,8 +60,7 @@ class _CreateGuestState extends State<CreateGuest> {
                     child: Column(
                       children: [
                         Text("Successful",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
-                        Text("Your guest has been added",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-
+                        Text("Your resident has been updated",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
                       ],
                     )
 
@@ -218,105 +82,6 @@ class _CreateGuestState extends State<CreateGuest> {
                     child:Text("OKAY",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
                     decoration: BoxDecoration(
                         color: Colors.green,
-                        borderRadius: BorderRadius.circular(30)
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  height: 15,
-                )
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _generateQRCode() async {
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: true, // user must tap button!
-      builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: const BorderRadius.all(
-              Radius.circular(30.0),
-            ),
-          ),
-          insetAnimationDuration: const Duration(seconds: 1),
-          insetAnimationCurve: Curves.fastOutSlowIn,
-          elevation: 2,
-
-          child: Container(
-            decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(30)
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-
-                Container(
-                    child: Column(
-                      children: [
-                        Container(
-                          margin:EdgeInsets.only(top: 10,bottom: 10),
-                          child: Text("QR Code",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
-                        ),
-                        RepaintBoundary(
-                          key: globalKey,
-                          child: QrImage(
-                            data: key,
-                            size: 200,
-                            embeddedImage: AssetImage('assets/images/qr_logo.png'),
-                            embeddedImageStyle: QrEmbeddedImageStyle(
-                              size: Size(50, 50),
-                            ),
-                            backgroundColor: Colors.white,
-                          ),
-                        ),
-                      ],
-                    )
-
-                ),
-                Container(
-                  margin: EdgeInsets.only(top:10),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(30.0),
-                    color: Colors.grey[200]
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.share),
-                        onPressed: _captureAndSharePng
-                      ),
-                      IconButton(
-                          icon: Icon(Icons.file_download),
-                          onPressed: null
-                      )
-                    ],
-                  ),
-                ),
-                Container(
-                  margin: EdgeInsets.only(top:20,left: 20,right: 20,bottom: 20),
-                  child: Divider(color: Colors.grey,),
-                ),
-                GestureDetector(
-                  onTap: (){
-                    _add();
-                  },
-                  child: Container(
-                    alignment: Alignment.center,
-                    width: double.maxFinite,
-                    height: 40,
-                    margin: EdgeInsets.only(left: 40,right: 40),
-                    child:Text("Add Guest",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
-                    decoration: BoxDecoration(
-                        color: kPrimaryColor,
                         borderRadius: BorderRadius.circular(30)
                     ),
                   ),
@@ -403,47 +168,40 @@ class _CreateGuestState extends State<CreateGuest> {
     );
   }
 
-  saveInfo(File QRfile) async{
-    final ProgressDialog pr = ProgressDialog(context);
-    await pr.show();
+  saveInfo(){
+    String pass=new DateTime.now().millisecondsSinceEpoch.toString();
     User user=FirebaseAuth.instance.currentUser;
     final databaseReference = FirebaseDatabase.instance.reference();
+    databaseReference.child("home").child("residents").child(user.uid).child(widget.resident.id).set({
+      'age': ageController.text,
+      'passcode': widget.resident.passcode,
+      'email': emailController.text,
+      'relation': dropdownValue,
+      'firstName': fnController.text,
+      'lastName': lnController.text,
+      'phone': pnController.text,
+    }).then((value) {
+      _showSuccessDailog();
+    })
+        .catchError((error, stackTrace) {
+      print("inner: $error");
+      // although `throw SecondError()` has the same effect.
+      _showFailuresDailog(error.toString());
+    });
+  }
 
-    var storage = FirebaseStorage.instance;
-
-    TaskSnapshot snapshot = await storage.ref()
-        .child('bookingPics/${DateTime.now().millisecondsSinceEpoch}')
-        .putFile(QRfile);
-    if (snapshot.state == TaskState.success) {
-      final String downloadUrl = await snapshot.ref.getDownloadURL();
-      setState(() {
-        photoUrl = downloadUrl;
-      });
-      databaseReference.child("access_control").child("guest").child(key).set({
-        'name': nameController.text,
-        'date':startDate,
-        'hour':time,
-        'status':"scheduled",
-        'userId':user.uid,
-        'vehicle':vehicleController.text,
-        'email':emailController.text,
-        'qr':photoUrl
-      }).then((value) {
-        pr.hide();
-        sendNotification();
-        _showSuccessDailog();
-      })
-          .catchError((error, stackTrace) {
-        pr.hide();
-        print("inner: $error");
-        // although `throw SecondError()` has the same effect.
-        _showFailuresDailog(error.toString());
-      });
-    }
-
-
-
-
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    ageController.text=widget.resident.age;
+    fnController.text=widget.resident.firstName;
+    lnController.text=widget.resident.lastName;
+    emailController.text=widget.resident.email;
+    pnController.text=widget.resident.phone;
+    setState(() {
+      dropdownValue=widget.resident.relation;
+    });
   }
   @override
   Widget build(BuildContext context) {
@@ -493,7 +251,7 @@ class _CreateGuestState extends State<CreateGuest> {
                                 height: 5.0,
                               ),
                               Text(
-                                "Add guest",
+                                "Edit Resident",
                                 style: TextStyle(
                                     color: Colors.black,
                                     fontWeight: FontWeight.w800,
@@ -502,7 +260,7 @@ class _CreateGuestState extends State<CreateGuest> {
                               SizedBox(height: 10,),
                               Container(
                                 child: Text(
-                                  "Your can add new guest here",
+                                  "Your can edit your resident here",
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                       color: Colors.black38,
@@ -538,7 +296,7 @@ class _CreateGuestState extends State<CreateGuest> {
                     child: Column(
                       children: [
                         TextFormField(
-                          controller: nameController,
+                          controller: fnController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Please enter some text';
@@ -570,7 +328,7 @@ class _CreateGuestState extends State<CreateGuest> {
                             filled: true,
                             prefixIcon: Icon(Icons.person_outline,color: Colors.black,size: 22,),
                             fillColor: Colors.grey[200],
-                            hintText: "Enter Name",
+                            hintText: "Enter First Name",
                             // If  you are using latest version of flutter then lable text and hint text shown like this
                             // if you r using flutter less then 1.20.* then maybe this is not working properly
                             floatingLabelBehavior: FloatingLabelBehavior.always,
@@ -580,7 +338,7 @@ class _CreateGuestState extends State<CreateGuest> {
                         SizedBox(height: 20),
 
                         TextFormField(
-                          controller: vehicleController,
+                          controller: lnController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Please enter some text';
@@ -610,9 +368,9 @@ class _CreateGuestState extends State<CreateGuest> {
                               ),
                             ),
                             filled: true,
-                            prefixIcon: Icon(Icons.car_repair,color: Colors.black,size: 22,),
+                            prefixIcon: Icon(Icons.person_outline,color: Colors.black,size: 22,),
                             fillColor: Colors.grey[200],
-                            hintText: "Enter Vehicle ID",
+                            hintText: "Enter Last Name",
                             // If  you are using latest version of flutter then lable text and hint text shown like this
                             // if you r using flutter less then 1.20.* then maybe this is not working properly
                             floatingLabelBehavior: FloatingLabelBehavior.always,
@@ -663,23 +421,13 @@ class _CreateGuestState extends State<CreateGuest> {
                         SizedBox(height: 20),
 
                         TextFormField(
-                          readOnly: true,
-                          onTap: (){
-                            DatePicker.showDatePicker(context,
-                                showTitleActions: true,
-                                minTime: DateTime(2021, 1, 1),
-                                maxTime: DateTime(2025, 1, 1),
-                                onChanged: (date) {
-                                  print('change $date');
-                                },
-                                onConfirm: (date) {
-                                  print('confirm $date');
-                                  setState(() {
-                                    startDate = formatDate(date, [dd, '-', mm, '-', yyyy]);
-                                  });
-                                },
-                                currentTime: DateTime.now(),
-                                locale: LocaleType.en);
+                          controller: pnController,
+                          keyboardType: TextInputType.phone,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter some text';
+                            }
+                            return null;
                           },
                           decoration: InputDecoration(
                             contentPadding: EdgeInsets.all(15),
@@ -704,9 +452,9 @@ class _CreateGuestState extends State<CreateGuest> {
                               ),
                             ),
                             filled: true,
-                            prefixIcon: Icon(Icons.wb_sunny_outlined,color: Colors.black,size: 22,),
+                            prefixIcon: Icon(Icons.phone_outlined,color: Colors.black,size: 22,),
                             fillColor: Colors.grey[200],
-                            hintText: startDate,
+                            hintText: "Enter Phone Number",
                             // If  you are using latest version of flutter then lable text and hint text shown like this
                             // if you r using flutter less then 1.20.* then maybe this is not working properly
                             floatingLabelBehavior: FloatingLabelBehavior.always,
@@ -714,24 +462,67 @@ class _CreateGuestState extends State<CreateGuest> {
                         ),
 
                         SizedBox(height: 20),
-                        TextFormField(
-                          readOnly: true,
-                          onTap: (){
-                            DatePicker.showTimePicker(context,
-                                showTitleActions: true,
-                                onChanged: (date) {
-                                  print('change $date');
-                                },
-                                onConfirm: (date) {
-                                  print('confirm $date');
-                                  setState(() {
-                                    time = formatDate(date, [hh, ':', nn]);
-                                  });
-                                },
-                                currentTime: DateTime.now(),
-                                locale: LocaleType.en);
-                          },
 
+                        Container(
+                            padding: EdgeInsets.only(left:10,right: 10),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(7),
+                              color: Colors.grey[200],
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  flex: 1,
+                                  child: Icon(Icons.people_outline,color: Colors.black,size: 22,),
+                                ),
+
+                                Expanded(
+                                    flex: 9,
+                                    child: Container(
+                                      padding: EdgeInsets.only(left:12),
+                                      child:DropdownButton<String>(
+                                        value: dropdownValue,
+                                        isExpanded: true,
+                                        icon: Icon(Icons.keyboard_arrow_down),
+                                        iconSize: 20,
+                                        elevation: 16,
+                                        style: TextStyle(
+                                            fontSize: 17,
+                                            color: Colors.grey[700]
+                                        ),
+                                        underline: Container(
+                                        ),
+                                        onChanged: (String newValue) {
+                                          setState(() {
+                                            dropdownValue = newValue;
+                                          });
+                                        },
+                                        items: <String>['Family', 'Tenant']
+                                            .map<DropdownMenuItem<String>>((String value) {
+                                          return DropdownMenuItem<String>(
+                                            value: value,
+                                            child: Text(value),
+                                          );
+                                        })
+                                            .toList(),
+                                      ),
+                                    )
+                                )
+                              ],
+                            )
+                        ),
+
+                        SizedBox(height: 20),
+
+                        TextFormField(
+                          controller: ageController,
+                          keyboardType: TextInputType.number,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter some text';
+                            }
+                            return null;
+                          },
                           decoration: InputDecoration(
                             contentPadding: EdgeInsets.all(15),
                             focusedBorder: OutlineInputBorder(
@@ -757,30 +548,26 @@ class _CreateGuestState extends State<CreateGuest> {
                             filled: true,
                             prefixIcon: Icon(Icons.timer_outlined,color: Colors.black,size: 22,),
                             fillColor: Colors.grey[200],
-                            hintText: time,
+                            hintText: "Enter Age",
                             // If  you are using latest version of flutter then lable text and hint text shown like this
                             // if you r using flutter less then 1.20.* then maybe this is not working properly
                             floatingLabelBehavior: FloatingLabelBehavior.always,
                           ),
                         ),
 
-
-
                         SizedBox(height: 20),
                         GestureDetector(
                           onTap: (){
 
                             if (_formKey.currentState.validate()) {
-                              //_captureAndSharePng();
-                              //saveInfo();
-                              _generateQRCode();
+                              saveInfo();
                             }
                           },
                           child: Container(
                             height: 50,
                             width: double.maxFinite,
                             alignment: Alignment.center,
-                            child: Text("Generate QR",textAlign: TextAlign.center,style: TextStyle(color: Colors.white,fontSize: 20),),
+                            child: Text("Update Resident",textAlign: TextAlign.center,style: TextStyle(color: Colors.white,fontSize: 20),),
                             decoration: BoxDecoration(
                                 color: kPrimaryColor,
                                 borderRadius: BorderRadius.circular(30)
@@ -792,15 +579,6 @@ class _CreateGuestState extends State<CreateGuest> {
                     ),
                   ),
                 ),
-                SizedBox(height: 200,),
-                /*RepaintBoundary(
-                  key: globalKey,
-                  child: QrImage(
-                    data: key,
-                    size: 200,
-
-                  ),
-                ),*/
 
 
                 SizedBox(

@@ -44,6 +44,7 @@ dependencies:
   qr_flutter: ^3.0.0
   progress_dialog: ^1.2.4
   firebase_messaging: ^7.0.3
+  toast: ^0.1.5
   overlay_support: ^1.0.0
   http: any
 

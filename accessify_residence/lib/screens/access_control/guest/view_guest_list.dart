@@ -1,3 +1,7 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui';
+
 import 'package:accessify/constants.dart';
 import 'package:accessify/model/access/guest.dart';
 import 'package:accessify/model/access/qr_image.dart';
@@ -6,12 +10,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share/share.dart';
 class GuestAccess extends StatefulWidget {
   @override
   _GuestAccessState createState() => _GuestAccessState();
 }
 
 class _GuestAccessState extends State<GuestAccess> {
+  GlobalKey globalKey = new GlobalKey();
   Future<void> _showInfoDailog(GuestModel model) async {
     return showDialog<void>(
       context: context,
@@ -71,15 +79,38 @@ class _GuestAccessState extends State<GuestAccess> {
 
                         SizedBox(height: 10,),
                         Text("QR Code",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        RepaintBoundary(
+                          key: globalKey,
+                          child: Container(
+                            height: 100,
+                            width: 100,
+                            decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                                image: DecorationImage(
+                                    image: NetworkImage(model.qr),
+                                    fit: BoxFit.cover
+                                )
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 10,),
+                        Text("Actions",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
                         Container(
-                          height: 100,
-                          width: 100,
-                          decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(20),
-                              image: DecorationImage(
-                                  image: NetworkImage(model.qr),
-                                  fit: BoxFit.cover
-                              )
+                          width: MediaQuery.of(context).size.width*0.5,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              IconButton(icon: Icon(Icons.delete_forever_outlined), onPressed: ()async{
+                                final databaseReference = FirebaseDatabase.instance.reference();
+                                await databaseReference.child("access_control").child("guest").child(model.id).remove().then((value) {
+                                  Navigator.pop(context);
+                                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => GuestAccess()));
+                                });
+                              }),
+                              IconButton(icon: Icon(Icons.share_outlined), onPressed: (){
+                                _captureAndSharePng();
+                              })
+                            ],
                           ),
                         )
 
@@ -120,6 +151,28 @@ class _GuestAccessState extends State<GuestAccess> {
       },
     );
   }
+  Future<void> _captureAndSharePng() async {
+    try {
+      RenderRepaintBoundary boundary = globalKey.currentContext.findRenderObject();
+      var image = await boundary.toImage();
+      ByteData byteData = await image.toByteData(format: ImageByteFormat.png);
+      Uint8List pngBytes = byteData.buffer.asUint8List();
+
+      final tempDir = await getTemporaryDirectory();
+      String path='${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}.png';
+      File file = await new File('${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}.png').create();
+      await file.writeAsBytes(pngBytes);
+      print(file.path);
+      print(path);
+
+      Share.shareFiles([path],text: 'QR Code for accesfy');
+
+
+
+    }  catch(e) {
+      print(e.toString());
+    }
+  }
 
   Future<List<GuestModel>> getGuestList() async {
     List<GuestModel> list=new List();
@@ -142,8 +195,8 @@ class _GuestAccessState extends State<GuestAccess> {
             DATA[individualKey]['vehicle'],
             DATA[individualKey]['qr'],
           );
-          print("key ${guestModel.id}");
-          list.add(guestModel);
+          if(user.uid==guestModel.userId)
+            list.add(guestModel);
 
         }
       }
@@ -257,6 +310,7 @@ class _GuestAccessState extends State<GuestAccess> {
                       return ListView.builder(
                         shrinkWrap: true,
                         //scrollDirection: Axis.horizontal,
+                        physics: NeverScrollableScrollPhysics(),
                         itemCount: snapshot.data.length,
                         itemBuilder: (BuildContext context,int index){
                           return Padding(
@@ -316,7 +370,7 @@ class _GuestAccessState extends State<GuestAccess> {
                                           ),
                                           child: Center(
                                             child: Icon(
-                                              Icons.car_repair,
+                                              Icons.person,
                                               color: Colors.white,
                                               size: 26.0,
                                             ),

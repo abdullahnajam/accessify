@@ -4,6 +4,7 @@ import 'package:accessify/model/vehicle_model.dart';
 import 'package:accessify/screens/my_home/create_employee.dart';
 import 'package:accessify/screens/my_home/create_pet.dart';
 import 'package:accessify/screens/my_home/create_vehicle.dart';
+import 'package:accessify/screens/my_home/edit_employee.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/cupertino.dart';
@@ -35,9 +36,10 @@ class _MyEmployeesState extends State<MyEmployees> {
             decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(30)
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+            margin: EdgeInsets.only(left: 20),
+            child: ListView(
+              //mainAxisAlignment: MainAxisAlignment.start,
+              //mainAxisSize: MainAxisSize.min,
               children: [
                 GestureDetector(
                   onTap: ()=>Navigator.pop(context),
@@ -91,7 +93,30 @@ class _MyEmployeesState extends State<MyEmployees> {
 
                         SizedBox(height: 10,),
                         Text("Days Allowed",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
-                        Text("${model.daysAllowed.length}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+                        Text(model.daysAllowed[0]=="Every Day"?"7":"${model.daysAllowed.length}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+
+                        SizedBox(height: 10,),
+                        Text("Actions",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Container(
+                          width: MediaQuery.of(context).size.width*0.5,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              IconButton(icon: Icon(Icons.delete_forever_outlined), onPressed: ()async{
+                                User user=FirebaseAuth.instance.currentUser;
+                                final databaseReference = FirebaseDatabase.instance.reference();
+                                await databaseReference.child("home").child("employees").child(user.uid).child(model.id).remove().then((value) {
+                                  Navigator.pop(context);
+                                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => MyEmployees()));
+                                });
+                              }),
+                              IconButton(icon: Icon(Icons.edit_outlined), onPressed: (){
+                                Navigator.pop(context);
+                                Navigator.push(context, MaterialPageRoute(builder: (BuildContext context) => EditEmployee(model)));
+                              })
+                            ],
+                          ),
+                        )
 
 
 
@@ -264,6 +289,7 @@ class _MyEmployeesState extends State<MyEmployees> {
                   if (snapshot.hasData) {
                     if (snapshot.data != null && snapshot.data.length>0) {
                       return ListView.builder(
+                        physics: NeverScrollableScrollPhysics(),
                         shrinkWrap: true,
                         //scrollDirection: Axis.horizontal,
                         itemCount: snapshot.data.length,
@@ -310,6 +336,7 @@ class _MyEmployeesState extends State<MyEmployees> {
                                       child: Align(
                                         alignment: Alignment.centerLeft,
                                         child: Container(
+                                          alignment: Alignment.center,
                                           height: 55.0,
                                           width: 55.0,
                                           decoration: BoxDecoration(
@@ -323,12 +350,9 @@ class _MyEmployeesState extends State<MyEmployees> {
                                             color: kPrimaryColor,
                                             borderRadius: BorderRadius.all(Radius.circular(50.0)),
                                           ),
-                                          child: Center(
-                                            child: Icon(
-                                              Icons.car_repair,
-                                              color: Colors.white,
-                                              size: 26.0,
-                                            ),
+                                          child: Container(
+                                            alignment: Alignment.center,
+                                            child: Text(snapshot.data[index].name[0].toUpperCase(),textAlign: TextAlign.center,style: TextStyle(fontSize: 20,color: Colors.white),)
                                           ),
                                         ),
                                       ),

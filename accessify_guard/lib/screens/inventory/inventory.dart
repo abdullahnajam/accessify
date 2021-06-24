@@ -202,7 +202,7 @@ class _InventoryState extends State<Inventory> with SingleTickerProviderStateMix
                             SizedBox(height: 10,),
                             Container(
                               child: Text(
-                                "Keep track of the list of members via their payment status",
+                                "Keep track of the list of inventory items",
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                     color: Colors.black38,

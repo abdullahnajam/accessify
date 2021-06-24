@@ -52,9 +52,6 @@ class _CreateDeliveryState extends State<CreateDelivery> {
     getUserData();
   }
   sendNotification() async{
-    String url='https://fcm.googleapis.com/fcm/send';
-
-
     await http.post(
       'https://fcm.googleapis.com/fcm/send',
       headers: <String, String>{
@@ -82,7 +79,8 @@ class _CreateDeliveryState extends State<CreateDelivery> {
       databaseReference.child("notifications").child("guard").push().set({
 
         'isOpened': false,
-        'type':"Delivery",
+        'type':"delivery",
+        'name':nameController.text,
         'date':DateTime.now().toString(),
         'body':'Delivery Service Access from ${userModel.username}',
         'title':"Delivery Service Access",
@@ -446,6 +444,7 @@ class _CreateDeliveryState extends State<CreateDelivery> {
                           onTap: (){
                             DatePicker.showTimePicker(context,
                                 showTitleActions: true,
+                                showSecondsColumn: false,
                                 onChanged: (date) {
                                   print('change $date');
                                 },

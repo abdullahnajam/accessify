@@ -54,8 +54,6 @@ class _CreateFrequentsState extends State<CreateFrequents> {
     _daysList.add(day);
     day=new Days(false, "Sunday");
     _daysList.add(day);
-    day=new Days(false, "Monday");
-    _daysList.add(day);
     day=new Days(false, "Every Day");
     _daysList.add(day);
   }

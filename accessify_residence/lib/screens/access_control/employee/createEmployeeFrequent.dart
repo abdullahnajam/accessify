@@ -97,7 +97,8 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
       databaseReference.child("notifications").child("guard").push().set({
 
         'isOpened': false,
-        'type':"Employee/Frequent",
+        'type':"employee",
+        'name':emp,
         'date':DateTime.now().toString(),
         'body':'Employee/Frequent Access from ${userModel.username}',
         'title':"Employee/Frequent Access",
@@ -436,7 +437,7 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
                         return new Center(
                           child: Container(
                               margin: EdgeInsets.only(top: 100),
-                              child: Text("You currently don't have any employees")
+                              child: Text("You currently don't have any frequents")
                           ),
                         );
                       }
@@ -497,7 +498,7 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
                           child: QrImage(
                             data: qrKey,
                             size: 200,
-                            embeddedImage: AssetImage('assets/images/logo.png'),
+                            embeddedImage: AssetImage('assets/images/qr_logo.png'),
                             embeddedImageStyle: QrEmbeddedImageStyle(
                               size: Size(50, 50),
                             ),

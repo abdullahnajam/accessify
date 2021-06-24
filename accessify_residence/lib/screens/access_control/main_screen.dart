@@ -1,6 +1,7 @@
 import 'package:accessify/constants.dart';
 import 'package:accessify/screens/access_control/delivery/view_delivery_list.dart';
 import 'package:accessify/screens/access_control/employee/view_employee_frequent_list.dart';
+import 'package:accessify/screens/access_control/event/view_event.dart';
 import 'package:accessify/screens/access_control/guest/view_guest_list.dart';
 import 'package:accessify/screens/access_control/taxi/view_taxi_list.dart';
 import 'package:flutter/cupertino.dart';
@@ -84,7 +85,7 @@ class _AccessControlState extends State<AccessControl> {
                   )
                 ],
               ),
-              Padding(
+              /*Padding(
                 padding:
                 const EdgeInsets.only(left: 25.0,right: 10, top: 40.0, bottom: 10.0),
                 child: Row(
@@ -106,7 +107,7 @@ class _AccessControlState extends State<AccessControl> {
                     )
                   ],
                 )
-              ),
+              ),*/
 
 
               _card(Icons.delivery_dining, "Delivery Service", () {
@@ -121,11 +122,14 @@ class _AccessControlState extends State<AccessControl> {
                 Navigator.push(context, new MaterialPageRoute(
                     builder: (context) => GuestAccess()));
               }),
-              _card(Icons.card_travel, "Frecuent / Employee", () {
+              _card(Icons.contact_mail_outlined, "Frecuent / Employee", () {
                 Navigator.push(context, new MaterialPageRoute(
                     builder: (context) => EmployeeFrequentAccess()));
               }),
-              _card(Icons.event, "Event", () {}),
+              _card(Icons.people_outline, "Event", () {
+                Navigator.push(context, new MaterialPageRoute(
+                    builder: (context) => ViewEvents()));
+              }),
               SizedBox(
                 height: 20.0,
               )
