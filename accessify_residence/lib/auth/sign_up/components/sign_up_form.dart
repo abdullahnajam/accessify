@@ -1,3 +1,4 @@
+import 'package:accessify/navigator/bottom_navigation.dart';
 import 'package:accessify/screens/home.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -91,7 +92,7 @@ class _SignUpFormState extends State<SignUpForm> {
                             'isActive': true
                           }).then((value) {
                             pr.hide();
-                            Navigator.pushNamed(context, Home.routeName);
+                            Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => BottomBar()));
                           });
 
                         });

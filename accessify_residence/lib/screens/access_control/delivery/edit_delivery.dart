@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:accessify/constants.dart';
+import 'package:accessify/model/access/delivery.dart';
 import 'package:accessify/model/user_model.dart';
+import 'package:accessify/screens/access_control/delivery/view_delivery_list.dart';
 import 'package:accessify/screens/home.dart';
 import 'package:date_format/date_format.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -15,88 +17,34 @@ import 'package:image_picker/image_picker.dart';
 import 'package:lottie/lottie.dart';
 import 'package:http/http.dart' as http;
 
-class CreateTaxi extends StatefulWidget {
+class EditDelivery extends StatefulWidget {
+  Delivery model;
+
+  EditDelivery(this.model);
+
   @override
-  _CreateTaxiState createState() => _CreateTaxiState();
+  _EditDeliveryState createState() => _EditDeliveryState();
 }
 
-class _CreateTaxiState extends State<CreateTaxi> {
+class _EditDeliveryState extends State<EditDelivery> {
   final _formKey = GlobalKey<FormState>();
   var nameController=TextEditingController();
-  var desController=TextEditingController();
-  bool pickup=false,omw=false;
 
   String time=formatDate(DateTime.now(), [H, ':', nn]);
   String startDate = formatDate(DateTime.now(), [dd, '-', mm, '-', yyyy]);
-
-
-  UserModel userModel;
-
-  getUserData()async{
-    User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("users").child(user.uid).once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        print(dataSnapshot.value);
-        userModel = new UserModel(
-            user.uid,
-            dataSnapshot.value['name'],
-            dataSnapshot.value['email'],
-            dataSnapshot.value['type'],
-            dataSnapshot.value['isActive']
-        );
-        print("username = ${userModel.username}");
-      }
-    });
-  }
-
+  //UserModel userModel;
 
   @override
   void initState() {
-    getUserData();
+    super.initState();
+    nameController.text=widget.model.name;
+    startDate=widget.model.date;
+    time=widget.model.hour;
   }
-  sendNotification() async{
-    String url='https://fcm.googleapis.com/fcm/send';
 
 
-    await http.post(
-      'https://fcm.googleapis.com/fcm/send',
-      headers: <String, String>{
-        'Content-Type': 'application/json',
-        'Authorization': 'key=$serverToken',
-      },
-      body: jsonEncode(
-        <String, dynamic>{
-          'notification': <String, dynamic>{
-            'body': 'Delivery Access',
-            'title': 'Access control requested by ${userModel.username}'
-          },
-          'priority': 'high',
-          'data': <String, dynamic>{
-            'click_action': 'FLUTTER_NOTIFICATION_CLICK',
-            'id': '1',
-            'status': 'done'
-          },
-          'to': "/topics/guard",
-        },
-      ),
-    ).whenComplete(()  {
-      User user=FirebaseAuth.instance.currentUser;
-      final databaseReference = FirebaseDatabase.instance.reference();
-      databaseReference.child("notifications").child("guard").push().set({
 
-        'isOpened': false,
-        'type':"taxi",
-        'name':nameController.text,
-        'date':DateTime.now().toString(),
-        'body':'Taxi Access from ${userModel.username}',
-        'title':"Taxi Access",
-        'icon':'https://cdn1.iconfinder.com/data/icons/logistics-transportation-vehicles/202/logistic-shipping-vehicles-002-512.png',
-        'userId':user.uid
-      });
 
-    });
-  }
   Future<void> _showSuccessDailog() async {
     return showDialog<void>(
       context: context,
@@ -132,7 +80,7 @@ class _CreateTaxiState extends State<CreateTaxi> {
                     child: Column(
                       children: [
                         Text("Successful",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
-                        Text("Your taxi has been added",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+                        Text("Your deliveries has been updated",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
                       ],
                     )
 
@@ -144,7 +92,7 @@ class _CreateTaxiState extends State<CreateTaxi> {
                 GestureDetector(
                   onTap: (){
                     Navigator.push(
-                        context, MaterialPageRoute(builder: (BuildContext context) => Home()));
+                        context, MaterialPageRoute(builder: (BuildContext context) => DeliveryAccess()));
                   },
                   child: Container(
                     alignment: Alignment.center,
@@ -240,20 +188,16 @@ class _CreateTaxiState extends State<CreateTaxi> {
     );
   }
 
-  saveInfo(){
+  saveInfo() {
     User user=FirebaseAuth.instance.currentUser;
     final databaseReference = FirebaseDatabase.instance.reference();
-    databaseReference.child("access_control").child("taxi").push().set({
+    databaseReference.child("access_control").child("delivery").child(widget.model.id).set({
       'name': nameController.text,
       'date':startDate,
       'hour':time,
       'status':"scheduled",
-      'userId':user.uid,
-      'description':desController.text,
-      'pickup':pickup,
-      'omw':omw
+      'userId':user.uid
     }).then((value) {
-      sendNotification();
       _showSuccessDailog();
     })
         .catchError((error, stackTrace) {
@@ -310,7 +254,7 @@ class _CreateTaxiState extends State<CreateTaxi> {
                                 height: 5.0,
                               ),
                               Text(
-                                "Add taxi",
+                                "Edit deliveries",
                                 style: TextStyle(
                                     color: Colors.black,
                                     fontWeight: FontWeight.w800,
@@ -319,7 +263,7 @@ class _CreateTaxiState extends State<CreateTaxi> {
                               SizedBox(height: 10,),
                               Container(
                                 child: Text(
-                                  "Your can add new taxi here",
+                                  "Your can edit deliveriess here",
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                       color: Colors.black38,
@@ -397,48 +341,6 @@ class _CreateTaxiState extends State<CreateTaxi> {
                         SizedBox(height: 20),
 
                         TextFormField(
-                          controller: desController,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
-                            }
-                            return null;
-                          },
-                          decoration: InputDecoration(
-                            contentPadding: EdgeInsets.all(15),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(7.0),
-                              borderSide: BorderSide(
-                                color: Colors.transparent,
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(7.0),
-                              borderSide: BorderSide(
-                                  color: Colors.transparent,
-                                  width: 0.5
-                              ),
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(7.0),
-                              borderSide: BorderSide(
-                                color: Colors.transparent,
-                                width: 0.5,
-                              ),
-                            ),
-                            filled: true,
-                            prefixIcon: Icon(Icons.note_outlined,color: Colors.black,size: 22,),
-                            fillColor: Colors.grey[200],
-                            hintText: "Enter Description",
-                            // If  you are using latest version of flutter then lable text and hint text shown like this
-                            // if you r using flutter less then 1.20.* then maybe this is not working properly
-                            floatingLabelBehavior: FloatingLabelBehavior.always,
-                          ),
-                        ),
-
-                        SizedBox(height: 20),
-
-                        TextFormField(
                           readOnly: true,
                           onTap: (){
                             DatePicker.showDatePicker(context,
@@ -495,6 +397,7 @@ class _CreateTaxiState extends State<CreateTaxi> {
                           onTap: (){
                             DatePicker.showTimePicker(context,
                                 showTitleActions: true,
+                                showSecondsColumn: false,
                                 onChanged: (date) {
                                   print('change $date');
                                 },
@@ -541,39 +444,6 @@ class _CreateTaxiState extends State<CreateTaxi> {
                         ),
 
                         SizedBox(height: 20),
-                        Container(
-                            padding: EdgeInsets.only(left:10,right: 10),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(7),
-                              color: Colors.grey[200],
-                            ),
-                            child: Column(
-                              children: [
-                                CheckboxListTile(
-                                    title: Text("Pick Up"),
-                                    value: pickup,
-                                    activeColor: kPrimaryColor,
-                                    onChanged: (bool value){
-                                      setState(() {
-                                        pickup=value;
-                                      });
-                                    }
-                                ),
-                                CheckboxListTile(
-                                    title: Text("On My Way"),
-                                    value: omw,
-                                    activeColor: kPrimaryColor,
-                                    onChanged: (bool value){
-                                      setState(() {
-                                        omw=value;
-                                      });
-                                    }
-                                ),
-                              ],
-                            )
-                        ),
-
-                        SizedBox(height: 20),
                         GestureDetector(
                           onTap: (){
 
@@ -585,7 +455,7 @@ class _CreateTaxiState extends State<CreateTaxi> {
                             height: 50,
                             width: double.maxFinite,
                             alignment: Alignment.center,
-                            child: Text("Add Taxi",textAlign: TextAlign.center,style: TextStyle(color: Colors.white,fontSize: 20),),
+                            child: Text("Update Delivery",textAlign: TextAlign.center,style: TextStyle(color: Colors.white,fontSize: 20),),
                             decoration: BoxDecoration(
                                 color: kPrimaryColor,
                                 borderRadius: BorderRadius.circular(30)

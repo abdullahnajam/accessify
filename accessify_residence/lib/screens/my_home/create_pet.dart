@@ -113,9 +113,7 @@ class _CreatePetState extends State<CreatePet> {
 
   Future uploadImageToFirebase(BuildContext context) async {
     var storage = FirebaseStorage.instance;
-    TaskSnapshot snapshot = await storage.ref()
-        .child('bookingPics/${DateTime.now().millisecondsSinceEpoch}')
-        .putFile(_imageFile);
+    TaskSnapshot snapshot = await storage.ref().child('bookingPics/${DateTime.now().millisecondsSinceEpoch}').putFile(_imageFile);
     if (snapshot.state == TaskState.success) {
       final String downloadUrl = await snapshot.ref.getDownloadURL();
       setState(() {

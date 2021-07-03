@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:accessify/auth/sign_in/sign_in_screen.dart';
+import 'package:accessify/navigator/bottom_navigation.dart';
 import 'package:accessify/screens/home.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -40,7 +41,8 @@ class _SplashScreenState extends State<SplashScreen> {
       }
       else {
         print('User is signed in!');
-        Navigator.pushNamed(context, Home.routeName);
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => BottomBar()));
+
       }
     });
 

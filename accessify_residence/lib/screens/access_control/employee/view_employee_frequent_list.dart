@@ -4,11 +4,13 @@ import 'dart:ui';
 
 import 'package:accessify/constants.dart';
 import 'package:accessify/model/access/employee_frequent_model.dart';
+import 'package:accessify/screens/access_control/employee/edit_employee_frequent.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share/share.dart';
 
@@ -87,24 +89,66 @@ class _EmployeeFrequentAccessState extends State<EmployeeFrequentAccess> {
                         ),
                         SizedBox(height: 10,),
                         Text("Actions",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        SizedBox(height: 10,),
                         Container(
                           width: MediaQuery.of(context).size.width*0.5,
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              IconButton(icon: Icon(Icons.delete_forever_outlined), onPressed: ()async{
-                                final databaseReference = FirebaseDatabase.instance.reference();
-                                await databaseReference.child("access_control").child("employee").child(model.id).remove().then((value) {
+                              InkWell(
+                                onTap: ()async{
+                                  User user=FirebaseAuth.instance.currentUser;
+                                  final databaseReference = FirebaseDatabase.instance.reference();
+                                  await databaseReference.child("access_control").child("employee").child(user.uid).child(model.id).remove().then((value) {
+                                    Navigator.pop(context);
+                                    Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => EmployeeFrequentAccess()));
+                                  });
+                                },
+                                child: Container(
+                                  height: MediaQuery.of(context).size.height*0.05,
+                                  width: MediaQuery.of(context).size.width*0.22,
+                                  decoration: BoxDecoration(
+                                      border: Border.all(color: kPrimaryColor),
+                                      borderRadius: BorderRadius.circular(5)
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.delete_forever_outlined,color: kPrimaryColor,),
+                                      Text("Delete",style: TextStyle(color: kPrimaryColor),)
+                                    ],
+                                  ),
+
+                                ),
+                              ),
+                              SizedBox(width: 10,),
+                              InkWell(
+                                onTap: (){
                                   Navigator.pop(context);
-                                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => EmployeeFrequentAccess()));
-                                });
-                              }),
-                              IconButton(icon: Icon(Icons.share_outlined), onPressed: (){
-                                _captureAndSharePng();
-                              })
+                                  Navigator.push(context, MaterialPageRoute(builder: (BuildContext context) => EditEmployeeFrequent(model)));
+                                },
+                                child: Container(
+                                  height: MediaQuery.of(context).size.height*0.05,
+                                  width: MediaQuery.of(context).size.width*0.22,
+                                  decoration: BoxDecoration(
+                                      color: kPrimaryColor,
+                                      border: Border.all(color: kPrimaryColor),
+                                      borderRadius: BorderRadius.circular(5)
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.edit_outlined,color: Colors.white,),
+                                      Text("Edit",style: TextStyle(color: Colors.white),)
+                                    ],
+                                  ),
+
+                                ),
+                              )
+
                             ],
                           ),
-                        )
+                        ),
 
 
 
@@ -311,66 +355,51 @@ class _EmployeeFrequentAccessState extends State<EmployeeFrequentAccess> {
                                 onTap: (){
                                   _showInfoDailog(snapshot.data[index]);
                                 },
-                                child: Stack(
-                                  children: <Widget>[
-                                    Padding(
-                                      padding: const EdgeInsets.only(left: 30.0, right: 20.0, top: 0.0),
-                                      child: Container(
-                                        height: 55.0,
-                                        width: double.infinity,
-                                        decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.all(Radius.circular(70.0)),
-                                            color: Colors.white),
-                                        child: Align(
-                                            alignment: Alignment.centerLeft,
-                                            child: Padding(
-                                                padding: const EdgeInsets.only(left: 80.0),
-                                                child: Column(
-                                                  mainAxisAlignment: MainAxisAlignment.center,
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      "${snapshot.data[index].emp}",
-                                                      style: TextStyle(
-                                                          fontFamily: "Sofia",
-                                                          fontWeight: FontWeight.w500,
-                                                          fontSize: 16,color: Colors.black),
-                                                    ),
-
-                                                  ],
-                                                )
-                                            )),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.only(left: 25.0),
-                                      child: Align(
-                                        alignment: Alignment.centerLeft,
-                                        child: Container(
-                                          height: 55.0,
-                                          width: 55.0,
-                                          decoration: BoxDecoration(
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.grey,
-                                                offset: Offset(0.0, 1.0), //(x,y)
-                                                blurRadius: 6.0,
-                                              ),
-                                            ],
-                                            color: kPrimaryColor,
-                                            borderRadius: BorderRadius.all(Radius.circular(50.0)),
-                                          ),
-                                          child: Center(
-                                            child: Icon(
-                                              Icons.person_outline,
-                                              color: Colors.white,
-                                              size: 26.0,
-                                            ),
-                                          ),
+                                child: Slidable(
+                                  actionPane: SlidableDrawerActionPane(),
+                                  actionExtentRatio: 0.25,
+                                  child: Container(
+                                    color: Colors.white,
+                                    child: ListTile(
+                                      leading: CircleAvatar(
+                                        backgroundColor: Colors.indigoAccent,
+                                        child:  Icon(
+                                          Icons.contact_mail_outlined,
                                         ),
+                                        foregroundColor: Colors.white,
                                       ),
+                                      title: Text("${snapshot.data[index].emp}"),
+                                      subtitle: Text(snapshot.data[index].type),
+                                    ),
+                                  ),
+                                  secondaryActions: <Widget>[
+                                    IconSlideAction(
+                                        caption: 'Share',
+                                        color: Colors.indigo,
+                                        icon: Icons.share_outlined,
+                                        onTap: () => Share.share(snapshot.data[index].qr, subject: 'QR Code for accesfy')
+                                    ),
+                                    IconSlideAction(
+                                      caption: 'Edit',
+                                      color: Colors.indigo,
+                                      icon: Icons.edit_outlined,
+                                      onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => EditEmployeeFrequent(snapshot.data[index]))),
+                                    ),
+                                    IconSlideAction(
+                                      caption: 'Delete',
+                                      color: Colors.indigo,
+                                      icon: Icons.delete_forever_outlined,
+                                      onTap: () async{
+                                        User user=FirebaseAuth.instance.currentUser;
+                                        final databaseReference = FirebaseDatabase.instance.reference();
+                                        await databaseReference.child("access_control").child("employee").child(user.uid).child(snapshot.data[index].id).remove().then((value) {
+                                          Navigator.pop(context);
+                                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => EmployeeFrequentAccess()));
+                                        });
+                                      },
                                     ),
                                   ],
+
                                 ),
                               )
                           );

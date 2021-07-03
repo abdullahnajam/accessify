@@ -4,14 +4,29 @@ import 'package:accessify/screens/access_control/employee/view_employee_frequent
 import 'package:accessify/screens/access_control/event/view_event.dart';
 import 'package:accessify/screens/access_control/guest/view_guest_list.dart';
 import 'package:accessify/screens/access_control/taxi/view_taxi_list.dart';
+import 'package:accessify/shared_preference/shared_pref.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:toast/toast.dart';
 class AccessControl extends StatefulWidget {
   @override
   _AccessControlState createState() => _AccessControlState();
 }
 
 class _AccessControlState extends State<AccessControl> {
+  bool areVisitsAllowed,isSharedPrefLoaded=false;
+  SharedPref sharedPref=new SharedPref();
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    sharedPref.getVisitsAllowed().then((value) {
+      setState(() {
+        areVisitsAllowed=value;
+        isSharedPrefLoaded=true;
+      });
+    });
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -85,57 +100,89 @@ class _AccessControlState extends State<AccessControl> {
                   )
                 ],
               ),
-              /*Padding(
-                padding:
-                const EdgeInsets.only(left: 25.0,right: 10, top: 40.0, bottom: 10.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      "Allow Visits",
-                      style: TextStyle(
-                          fontFamily: "Sofia",
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16.0),
-                    ),
-                    Switch(
-                      onChanged: (value){
-
-                      },
-                      value: true,
-                      activeColor: kPrimaryColor,
-                    )
-                  ],
-                )
-              ),*/
-
+              Padding(
+                  padding:
+                  const EdgeInsets.only(left: 25.0,right: 10, top: 40.0, bottom: 10.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Allow Visits",
+                        style: TextStyle(
+                            fontFamily: "Sofia",
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16.0),
+                      ),
+                      Switch(
+                        onChanged: (value){
+                          setState(() {
+                            areVisitsAllowed=value;
+                            sharedPref.setVisitsAllowed(value);
+                          });
+                        },
+                        value: areVisitsAllowed,
+                        activeColor: kPrimaryColor,
+                      )
+                    ],
+                  )
+              ),
 
               _card(Icons.delivery_dining, "Delivery Service", () {
-                Navigator.push(context, new MaterialPageRoute(
-                    builder: (context) => DeliveryAccess()));
+                if(areVisitsAllowed){
+                  Navigator.push(context, new MaterialPageRoute(builder: (context) => DeliveryAccess()));
+                }
+                else{
+                  Toast.show("No Visits Allowed", context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM);
+
+                }
+
               }),
               _card(Icons.local_taxi, "My Taxi", () {
-                Navigator.push(context, new MaterialPageRoute(
-                    builder: (context) => TaxiAccess()));
+                if(areVisitsAllowed){
+                  Navigator.push(context, new MaterialPageRoute(builder: (context) => TaxiAccess()));
+                }
+                else{
+                  Toast.show("No Visits Allowed", context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM);
+
+                }
+
               }),
               _card(Icons.people, "Guest", () {
-                Navigator.push(context, new MaterialPageRoute(
-                    builder: (context) => GuestAccess()));
+                if(areVisitsAllowed){
+                  Navigator.push(context, new MaterialPageRoute(builder: (context) => GuestAccess()));
+                }
+                else{
+                  Toast.show("No Visits Allowed", context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM);
+
+                }
+
               }),
               _card(Icons.contact_mail_outlined, "Frecuent / Employee", () {
-                Navigator.push(context, new MaterialPageRoute(
-                    builder: (context) => EmployeeFrequentAccess()));
+                if(areVisitsAllowed){
+                  Navigator.push(context, new MaterialPageRoute(builder: (context) => EmployeeFrequentAccess()));
+                }
+                else{
+                  Toast.show("No Visits Allowed", context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM);
+
+                }
+
               }),
               _card(Icons.people_outline, "Event", () {
-                Navigator.push(context, new MaterialPageRoute(
-                    builder: (context) => ViewEvents()));
+                if(areVisitsAllowed){
+                  Navigator.push(context, new MaterialPageRoute(builder: (context) => ViewEvents()));
+                }
+                else{
+                  Toast.show("No Visits Allowed", context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM);
+
+                }
+
               }),
               SizedBox(
                 height: 20.0,
               )
             ],
           ),
-        ),
+        )
       ),
     );
   }

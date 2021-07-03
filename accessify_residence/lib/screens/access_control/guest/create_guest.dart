@@ -101,7 +101,7 @@ class _CreateGuestState extends State<CreateGuest> {
     });
   }
 
-  String time=formatDate(DateTime.now(), [hh, ':', nn]);
+  String time=formatDate(DateTime.now(), [H, ':', nn]);
   String startDate = formatDate(DateTime.now(), [dd, '-', mm, '-', yyyy]);
 
   GlobalKey globalKey = new GlobalKey();
@@ -725,7 +725,7 @@ class _CreateGuestState extends State<CreateGuest> {
                                 onConfirm: (date) {
                                   print('confirm $date');
                                   setState(() {
-                                    time = formatDate(date, [hh, ':', nn]);
+                                    time = formatDate(date, [H, ':', nn]);
                                   });
                                 },
                                 currentTime: DateTime.now(),

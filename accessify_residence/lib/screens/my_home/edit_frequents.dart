@@ -796,7 +796,7 @@ class _EditFrequentsState extends State<EditFrequents> {
                             height: 50,
                             width: double.maxFinite,
                             alignment: Alignment.center,
-                            child: Text("Add Vehicle",textAlign: TextAlign.center,style: TextStyle(color: Colors.white,fontSize: 20),),
+                            child: Text("Update Frequents",textAlign: TextAlign.center,style: TextStyle(color: Colors.white,fontSize: 20),),
                             decoration: BoxDecoration(
                                 color: kPrimaryColor,
                                 borderRadius: BorderRadius.circular(30)

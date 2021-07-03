@@ -24,7 +24,7 @@ class _CreateDeliveryState extends State<CreateDelivery> {
   final _formKey = GlobalKey<FormState>();
   var nameController=TextEditingController();
 
-  String time=formatDate(DateTime.now(), [hh, ':', nn]);
+  String time=formatDate(DateTime.now(), [H, ':', nn]);
   String startDate = formatDate(DateTime.now(), [dd, '-', mm, '-', yyyy]);
   UserModel userModel;
 
@@ -451,7 +451,7 @@ class _CreateDeliveryState extends State<CreateDelivery> {
                                 onConfirm: (date) {
                                   print('confirm $date');
                                   setState(() {
-                                    time = formatDate(date, [hh, ':', nn]);
+                                    time = formatDate(date, [H, ':', nn]);
                                   });
                                 },
                                 currentTime: DateTime.now(),

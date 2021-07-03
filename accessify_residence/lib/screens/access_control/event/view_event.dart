@@ -5,6 +5,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share/share.dart';
 import 'dart:io';
@@ -17,6 +18,110 @@ class ViewEvents extends StatefulWidget {
 }
 
 class _ViewEventsState extends State<ViewEvents> {
+  Future<List<EventGuestList>> getGuestList(String id) async {
+    List<EventGuestList> list=new List();
+    final databaseReference = FirebaseDatabase.instance.reference();
+    await databaseReference.child("access_control").child("event").child(id).child("visitors").once().then((DataSnapshot dataSnapshot){
+      if(dataSnapshot.value!=null){
+        var KEYS= dataSnapshot.value.keys;
+        var DATA=dataSnapshot.value;
+
+        for(var individualKey in KEYS) {
+          EventGuestList visitor = new EventGuestList(
+            individualKey,
+            DATA[individualKey]['name'],
+            DATA[individualKey]['email'],
+          );
+          list.add(visitor);
+
+        }
+      }
+    });
+
+    return list;
+  }
+  Future<void> _showGuestDailog(String id) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: true, // user must tap button!
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: const BorderRadius.all(
+              Radius.circular(10.0),
+            ),
+          ),
+          insetAnimationDuration: const Duration(seconds: 1),
+          insetAnimationCurve: Curves.fastOutSlowIn,
+          elevation: 2,
+
+          child: Container(
+            decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(30)
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  margin: EdgeInsets.all(10),
+                  child: Text("Visitors List",textAlign: TextAlign.center,style: TextStyle(fontSize: 20,color:Colors.black,fontWeight: FontWeight.w600),),
+                ),
+                FutureBuilder<List<EventGuestList>>(
+                  future: getGuestList(id),
+                  builder: (context,snapshot){
+                    if (snapshot.hasData) {
+                      if (snapshot.data != null && snapshot.data.length>0) {
+                        return Container(
+                          margin: EdgeInsets.all(10),
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: snapshot.data.length,
+                            itemBuilder: (BuildContext context,int index){
+                              return Container(
+                                color: Colors.white,
+                                child: ListTile(
+                                  leading: CircleAvatar(
+                                    radius: 25,
+                                    child: Text(snapshot.data[index].name[0].toUpperCase()),
+                                    backgroundColor: Colors.indigoAccent,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  title: Text("${snapshot.data[index].name}"),
+                                  subtitle: Text(snapshot.data[index].email),
+                                ),
+                              );
+                            },
+                          ),
+                        );
+                      }
+                      else {
+                        return new Center(
+                          child: Container(
+                              margin: EdgeInsets.only(top: 100),
+                              child: Text("You currently don't have any employees")
+                          ),
+                        );
+                      }
+                    }
+                    else if (snapshot.hasError) {
+                      return Text('Error : ${snapshot.error}');
+                    } else {
+                      return new Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    }
+                  },
+                ),
+                SizedBox(
+                  height: 15,
+                )
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
   Future<void> _captureAndSharePng() async {
     try {
       RenderRepaintBoundary boundary = globalKey.currentContext.findRenderObject();
@@ -313,66 +418,51 @@ class _ViewEventsState extends State<ViewEvents> {
                                 onTap: (){
                                   _showInfoDailog(snapshot.data[index]);
                                 },
-                                child: Stack(
-                                  children: <Widget>[
-                                    Padding(
-                                      padding: const EdgeInsets.only(left: 30.0, right: 20.0, top: 0.0),
-                                      child: Container(
-                                        height: 55.0,
-                                        width: double.infinity,
-                                        decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.all(Radius.circular(70.0)),
-                                            color: Colors.white),
-                                        child: Align(
-                                            alignment: Alignment.centerLeft,
-                                            child: Padding(
-                                                padding: const EdgeInsets.only(left: 80.0),
-                                                child: Column(
-                                                  mainAxisAlignment: MainAxisAlignment.center,
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      "${snapshot.data[index].name}",
-                                                      style: TextStyle(
-                                                          fontFamily: "Sofia",
-                                                          fontWeight: FontWeight.w500,
-                                                          fontSize: 16,color: Colors.black),
-                                                    ),
-
-                                                  ],
-                                                )
-                                            )),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.only(left: 25.0),
-                                      child: Align(
-                                        alignment: Alignment.centerLeft,
-                                        child: Container(
-                                          height: 55.0,
-                                          width: 55.0,
-                                          decoration: BoxDecoration(
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.grey,
-                                                offset: Offset(0.0, 1.0), //(x,y)
-                                                blurRadius: 6.0,
-                                              ),
-                                            ],
-                                            color: kPrimaryColor,
-                                            borderRadius: BorderRadius.all(Radius.circular(50.0)),
-                                          ),
-                                          child: Center(
-                                            child: Icon(
-                                              Icons.event_available_outlined,
-                                              color: Colors.white,
-                                              size: 26.0,
-                                            ),
-                                          ),
+                                child: Slidable(
+                                  actionPane: SlidableDrawerActionPane(),
+                                  actionExtentRatio: 0.25,
+                                  child: Container(
+                                    color: Colors.white,
+                                    child: ListTile(
+                                      leading: CircleAvatar(
+                                        backgroundColor: Colors.indigoAccent,
+                                        child:  Icon(
+                                          Icons.calendar_today_outlined,
                                         ),
+                                        foregroundColor: Colors.white,
                                       ),
+                                      title: Text("${snapshot.data[index].name}"),
+                                      subtitle: Text(snapshot.data[index].date),
+                                    ),
+                                  ),
+                                  secondaryActions: <Widget>[
+                                    IconSlideAction(
+                                        caption: 'Share',
+                                        color: Colors.indigo,
+                                        icon: Icons.share_outlined,
+                                        onTap: () => Share.share(snapshot.data[index].qr, subject: 'QR Code for accesfy')
+                                    ),
+                                    IconSlideAction(
+                                      caption: 'Guest List',
+                                      color: Colors.indigo,
+                                      icon: Icons.assignment_outlined,
+                                      onTap: ()=>_showGuestDailog(snapshot.data[index].id)
+                                    ),
+                                    IconSlideAction(
+                                      caption: 'Delete',
+                                      color: Colors.indigo,
+                                      icon: Icons.delete_forever_outlined,
+                                      onTap: () async{
+                                        User user=FirebaseAuth.instance.currentUser;
+                                        final databaseReference = FirebaseDatabase.instance.reference();
+                                        await databaseReference.child("access_control").child("event").child(user.uid).child(snapshot.data[index].id).remove().then((value) {
+                                          Navigator.pop(context);
+                                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => ViewEvents()));
+                                        });
+                                      },
                                     ),
                                   ],
+
                                 ),
                               )
                           );

@@ -629,18 +629,33 @@ class _CreateReservationState extends State<CreateReservation> {
                                   future: getReservedDates(),
                                   builder: (context, snapshot) {
                                     if (snapshot.hasData) {
-                                      return SfCalendar(
-                                        view: CalendarView.month,
-                                        minDate: new DateTime.now(),
-                                        blackoutDates: snapshot.data,
-                                        onTap: (CalendarTapDetails details){
-                                          DateTime date = details.date;
-                                          setState(() {
-                                            dateSelected=formatDate(date, [dd, '-', mm, '-', yyyy]);
-                                            dateFullFormat=date.toString();
-                                          });
-                                        },
-                                      );
+                                      if(snapshot.data!=null){
+                                        return SfCalendar(
+                                          view: CalendarView.month,
+                                          minDate: new DateTime.now(),
+                                          blackoutDates: snapshot.data,
+                                          onTap: (CalendarTapDetails details){
+                                            DateTime date = details.date;
+                                            setState(() {
+                                              dateSelected=formatDate(date, [dd, '-', mm, '-', yyyy]);
+                                              dateFullFormat=date.toString();
+                                            });
+                                          },
+                                        );
+                                      }
+                                      else{
+                                        return SfCalendar(
+                                          view: CalendarView.month,
+                                          minDate: new DateTime.now(),
+                                          onTap: (CalendarTapDetails details){
+                                            DateTime date = details.date;
+                                            setState(() {
+                                              dateSelected=formatDate(date, [dd, '-', mm, '-', yyyy]);
+                                              dateFullFormat=date.toString();
+                                            });
+                                          },
+                                        );
+                                      }
                                     } else if (snapshot.hasError) {
                                       return Text('Error : ${snapshot.error}');
                                     } else {

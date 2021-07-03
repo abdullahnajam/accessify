@@ -10,6 +10,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 
 import '../../constants.dart';
 class MyFrequents extends StatefulWidget {
@@ -37,9 +38,10 @@ class _MyFrequentsState extends State<MyFrequents> {
             decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(30)
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+            margin: EdgeInsets.only(left: 20),
+            child: ListView(
+              //mainAxisAlignment: MainAxisAlignment.start,
+              //mainAxisSize: MainAxisSize.min,
               children: [
                 GestureDetector(
                   onTap: ()=>Navigator.pop(context),
@@ -50,8 +52,8 @@ class _MyFrequentsState extends State<MyFrequents> {
                   ),
                 ),
                 Container(
-                    child: ListView(
-                      //crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text("Employee Information",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
                         SizedBox(height: 10,),
@@ -97,32 +99,75 @@ class _MyFrequentsState extends State<MyFrequents> {
 
                         SizedBox(height: 10,),
                         Text("Actions",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        SizedBox(height: 10,),
                         Container(
                           width: MediaQuery.of(context).size.width*0.5,
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              IconButton(icon: Icon(Icons.delete_forever_outlined), onPressed: ()async{
-                                User user=FirebaseAuth.instance.currentUser;
-                                final databaseReference = FirebaseDatabase.instance.reference();
-                                await databaseReference.child("home").child("frequents").child(user.uid).child(model.id).remove().then((value) {
+                              InkWell(
+                                onTap: ()async{
+                                  User user=FirebaseAuth.instance.currentUser;
+                                  final databaseReference = FirebaseDatabase.instance.reference();
+                                  await databaseReference.child("home").child("frequents").child(user.uid).child(model.id).remove().then((value) {
+                                    Navigator.pop(context);
+                                    Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => MyFrequents()));
+                                  });
+                                },
+                                child: Container(
+                                  height: MediaQuery.of(context).size.height*0.05,
+                                  width: MediaQuery.of(context).size.width*0.22,
+                                  decoration: BoxDecoration(
+                                      border: Border.all(color: kPrimaryColor),
+                                      borderRadius: BorderRadius.circular(5)
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.delete_forever_outlined,color: kPrimaryColor,),
+                                      Text("Delete",style: TextStyle(color: kPrimaryColor),)
+                                    ],
+                                  ),
+
+                                ),
+                              ),
+                              SizedBox(width: 10,),
+                              InkWell(
+                                onTap: (){
                                   Navigator.pop(context);
-                                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => MyFrequents()));
-                                });
-                              }),
-                              IconButton(icon: Icon(Icons.edit_outlined), onPressed: (){
-                                Navigator.pop(context);
-                                Navigator.push(context, MaterialPageRoute(builder: (BuildContext context) => EditFrequents(model)));
-                              })
+                                  Navigator.push(context, MaterialPageRoute(builder: (BuildContext context) => EditFrequents(model)));
+                                },
+                                child: Container(
+                                  height: MediaQuery.of(context).size.height*0.05,
+                                  width: MediaQuery.of(context).size.width*0.22,
+                                  decoration: BoxDecoration(
+                                      color: kPrimaryColor,
+                                      border: Border.all(color: kPrimaryColor),
+                                      borderRadius: BorderRadius.circular(5)
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.edit_outlined,color: Colors.white,),
+                                      Text("Edit",style: TextStyle(color: Colors.white),)
+                                    ],
+                                  ),
+
+                                ),
+                              )
+
                             ],
                           ),
                         )
+
+
+
                       ],
                     )
 
                 ),
                 Container(
-                  margin: EdgeInsets.only(left: 20,right: 20,bottom: 20),
+                  margin: EdgeInsets.only(top:20,left: 20,right: 20,bottom: 20),
                   child: Divider(color: Colors.grey,),
                 ),
                 GestureDetector(
@@ -178,6 +223,9 @@ class _MyFrequentsState extends State<MyFrequents> {
 
         }
       }
+    });
+    list.sort((a, b) {
+      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
     });
     return list;
   }
@@ -297,66 +345,44 @@ class _MyFrequentsState extends State<MyFrequents> {
                                 onTap: (){
                                   _showInfoDailog(snapshot.data[index]);
                                 },
-                                child: Stack(
-                                  children: <Widget>[
-                                    Padding(
-                                      padding: const EdgeInsets.only(left: 30.0, right: 20.0, top: 0.0),
-                                      child: Container(
-                                        height: 55.0,
-                                        width: double.infinity,
-                                        decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.all(Radius.circular(70.0)),
-                                            color: Colors.white),
-                                        child: Align(
-                                            alignment: Alignment.centerLeft,
-                                            child: Padding(
-                                                padding: const EdgeInsets.only(left: 80.0),
-                                                child: Column(
-                                                  mainAxisAlignment: MainAxisAlignment.center,
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      "${snapshot.data[index].name}",
-                                                      style: TextStyle(
-                                                          fontFamily: "Sofia",
-                                                          fontWeight: FontWeight.w500,
-                                                          fontSize: 16,color: Colors.black),
-                                                    ),
-
-                                                  ],
-                                                )
-                                            )),
+                                child: Slidable(
+                                  actionPane: SlidableDrawerActionPane(),
+                                  actionExtentRatio: 0.25,
+                                  child: Container(
+                                    color: Colors.white,
+                                    child: ListTile(
+                                      leading: CircleAvatar(
+                                        radius: 25,
+                                        child: Text(snapshot.data[index].name[0].toUpperCase()),
+                                        backgroundColor: Colors.indigoAccent,
+                                        foregroundColor: Colors.white,
                                       ),
+                                      title: Text("${snapshot.data[index].name}"),
+                                      subtitle: Text(snapshot.data[index].email),
                                     ),
-                                    Padding(
-                                      padding: const EdgeInsets.only(left: 25.0),
-                                      child: Align(
-                                        alignment: Alignment.centerLeft,
-                                        child: Container(
-                                          height: 55.0,
-                                          width: 55.0,
-                                          decoration: BoxDecoration(
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.grey,
-                                                offset: Offset(0.0, 1.0), //(x,y)
-                                                blurRadius: 6.0,
-                                              ),
-                                            ],
-                                            color: kPrimaryColor,
-                                            borderRadius: BorderRadius.all(Radius.circular(50.0)),
-                                          ),
-                                          child: Center(
-                                            child: Icon(
-                                              Icons.car_repair,
-                                              color: Colors.white,
-                                              size: 26.0,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
+                                  ),
+                                  secondaryActions: <Widget>[
+                                    IconSlideAction(
+                                      caption: 'Edit',
+                                      color: Colors.indigo,
+                                      icon: Icons.edit_outlined,
+                                      onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => EditFrequents(snapshot.data[index]))),
+                                    ),
+                                    IconSlideAction(
+                                      caption: 'Delete',
+                                      color: Colors.indigo,
+                                      icon: Icons.delete_forever_outlined,
+                                      onTap: () async{
+                                        User user=FirebaseAuth.instance.currentUser;
+                                        final databaseReference = FirebaseDatabase.instance.reference();
+                                        await databaseReference.child("home").child("frequents").child(user.uid).child(snapshot.data[index].id).remove().then((value) {
+                                          Navigator.pop(context);
+                                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => MyFrequents()));
+                                        });
+                                      },
                                     ),
                                   ],
+
                                 ),
                               )
                           );

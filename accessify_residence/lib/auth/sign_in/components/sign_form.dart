@@ -1,3 +1,4 @@
+import 'package:accessify/navigator/bottom_navigation.dart';
 import 'package:accessify/screens/home.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -95,7 +96,8 @@ class _SignFormState extends State<SignForm> {
                       } else {
                         print('User is signed in!');
                         pr.hide();
-                        Navigator.pushNamed(context, Home.routeName);
+
+                        Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => BottomBar()));
                       }
                     });
                   });

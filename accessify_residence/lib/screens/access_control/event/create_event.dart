@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:accessify/model/access/event.dart';
+import 'package:accessify/model/single_var.dart';
 import 'package:accessify/model/user_model.dart';
 import 'package:accessify/screens/access_control/event/view_event.dart';
 import 'package:date_format/date_format.dart';
@@ -20,6 +21,7 @@ import 'package:progress_dialog/progress_dialog.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share/share.dart';
 import 'package:http/http.dart' as http;
+import 'package:time_range_picker/time_range_picker.dart';
 import 'package:toast/toast.dart';
 import '../../../constants.dart';
 class CreateEvent extends StatefulWidget {
@@ -45,15 +47,119 @@ class _CreateEventState extends State<CreateEvent> {
   List<EventGuestList> eventGuestList=[];
 
   List<Visitor> visitors=[];
-  String time=formatDate(DateTime.now(), [hh, ':', nn]);
+  String time="Hours Allowed";
   String startDate = formatDate(DateTime.now(), [dd, '-', mm, '-', yyyy]);
 
   GlobalKey globalKey = new GlobalKey();
 
   String photoUrl;
 
+  String nameText="Select Amenity";
+
   File file;
   String key=DateTime.now().millisecondsSinceEpoch.toString();
+
+  Future<List<SingleValueModel>> getAmenitiesList() async {
+    List<SingleValueModel> list=new List();
+    final databaseReference = FirebaseDatabase.instance.reference();
+    await databaseReference.child("amenities").once().then((DataSnapshot dataSnapshot){
+      if(dataSnapshot.value!=null){
+        var KEYS= dataSnapshot.value.keys;
+        var DATA=dataSnapshot.value;
+
+        for(var individualKey in KEYS) {
+          SingleValueModel amenities = new SingleValueModel(
+            individualKey,
+            DATA[individualKey]['name'],
+          );
+          list.add(amenities);
+
+        }
+      }
+    });
+
+    return list;
+  }
+  Future<void> _showAmenitiesDailog() async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: true, // user must tap button!
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: const BorderRadius.all(
+              Radius.circular(10.0),
+            ),
+          ),
+          insetAnimationDuration: const Duration(seconds: 1),
+          insetAnimationCurve: Curves.fastOutSlowIn,
+          elevation: 2,
+
+          child: Container(
+            decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(30)
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  margin: EdgeInsets.all(10),
+                  child: Text("Amenities",textAlign: TextAlign.center,style: TextStyle(fontSize: 20,color:Colors.black,fontWeight: FontWeight.w600),),
+                ),
+                FutureBuilder<List<SingleValueModel>>(
+                  future: getAmenitiesList(),
+                  builder: (context,snapshot){
+                    if (snapshot.hasData) {
+                      if (snapshot.data != null && snapshot.data.length>0) {
+                        return Container(
+                          margin: EdgeInsets.all(10),
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: snapshot.data.length,
+                            itemBuilder: (BuildContext context,int index){
+                              return GestureDetector(
+                                onTap: (){
+                                  setState(() {
+                                    nameText=snapshot.data[index].name;
+                                  });
+                                  Navigator.pop(context);
+                                },
+                                child: Container(
+                                  child: Text(snapshot.data[index].name,textAlign: TextAlign.center,style: TextStyle(fontSize: 16,color:Colors.black),),
+                                ),
+                              );
+                            },
+                          ),
+                        );
+                      }
+                      else {
+                        return new Center(
+                          child: Container(
+                              margin: EdgeInsets.only(top: 100),
+                              child: Text("You currently don't have any employees")
+                          ),
+                        );
+                      }
+                    }
+                    else if (snapshot.hasError) {
+                      return Text('Error : ${snapshot.error}');
+                    } else {
+                      return new Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    }
+                  },
+                ),
+                SizedBox(
+                  height: 15,
+                )
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   Future<void> _add() async {
     try {
@@ -368,18 +474,22 @@ class _CreateEventState extends State<CreateEvent> {
         'date':startDate,
         'startTime':time,
         'userId':user.uid,
-        'locationse':locationController.text,
+        'location':nameText,
         'qr':photoUrl,
-        'visitors':visitors
       }).then((value) {
         pr.hide();
+        for(int i=0;i<visitors.length;i++){
+          databaseReference.child("access_control").child("event").child(key).child('visitors').child("visitor$i").set({
+            "name":visitors[i].name,
+            "email":visitors[i].email,
+          });
+        }
         sendNotification();
         _showSuccessDailog();
       })
           .catchError((error, stackTrace) {
         pr.hide();
         print("inner: $error");
-        // although `throw SecondError()` has the same effect.
         _showFailuresDailog(error.toString());
       });
     }
@@ -587,46 +697,36 @@ class _CreateEventState extends State<CreateEvent> {
                         ),
 
                         SizedBox(height: 20),
+                        Container(
+                            padding: EdgeInsets.only(top:15,bottom:15,left:10,right: 10),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(7),
+                              color: Colors.grey[200],
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  flex: 1,
+                                  child: Icon(Icons.location_city,color: Colors.black,size: 22,),
+                                ),
 
-                        TextFormField(
-                          controller: locationController,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
-                            }
-                            return null;
-                          },
-                          decoration: InputDecoration(
-                            contentPadding: EdgeInsets.all(15),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(7.0),
-                              borderSide: BorderSide(
-                                color: Colors.transparent,
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(7.0),
-                              borderSide: BorderSide(
-                                  color: Colors.transparent,
-                                  width: 0.5
-                              ),
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(7.0),
-                              borderSide: BorderSide(
-                                color: Colors.transparent,
-                                width: 0.5,
-                              ),
-                            ),
-                            filled: true,
-                            prefixIcon: Icon(Icons.place_outlined,color: Colors.black,size: 22,),
-                            fillColor: Colors.grey[200],
-                            hintText: "Enter Location",
-                            // If  you are using latest version of flutter then lable text and hint text shown like this
-                            // if you r using flutter less then 1.20.* then maybe this is not working properly
-                            floatingLabelBehavior: FloatingLabelBehavior.always,
-                          ),
+                                Expanded(
+                                    flex: 9,
+                                    child: Container(
+                                      padding: EdgeInsets.only(left:12),
+                                      child:InkWell(
+                                          onTap: (){
+                                            _showAmenitiesDailog();
+                                          },
+                                          child:Text(nameText,style: TextStyle(fontSize: 17),)
+                                      ),
+                                    )
+                                )
+                              ],
+                            )
                         ),
+
+
 
 
                         SizedBox(height: 20),
@@ -683,53 +783,42 @@ class _CreateEventState extends State<CreateEvent> {
                         ),
 
                         SizedBox(height: 20),
-                        TextFormField(
-                          readOnly: true,
-                          onTap: (){
-                            DatePicker.showTimePicker(context,
-                                showTitleActions: true,
-                                onChanged: (date) {
-                                  print('change $date');
-                                },
-                                onConfirm: (date) {
-                                  print('confirm $date');
-                                  setState(() {
-                                    time = formatDate(date, [hh, ':', nn]);
-                                  });
-                                },
-                                currentTime: DateTime.now(),
-                                locale: LocaleType.en);
+                        GestureDetector(
+                          onTap: () async {
+                            TimeRange result = await showTimeRangePicker(
+                              context: context,
+                            );
+                            print("result ${result.startTime.hour}:${result.startTime.minute}   TO   ${result.endTime.hour}:${result.endTime.minute}");
+                            setState(() {
+                              time="${result.startTime.hour}:${result.startTime.minute}   TO   ${result.endTime.hour}:${result.endTime.minute}";
+                            });
                           },
+                          child: Container(
+                              height: 50,
+                              padding: EdgeInsets.only(left:10,right: 10),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(7),
+                                color: Colors.grey[200],
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    flex: 1,
+                                    child: Icon(Icons.timer_outlined,color: Colors.black,size: 22,),
+                                  ),
 
-                          decoration: InputDecoration(
-                            contentPadding: EdgeInsets.all(15),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(7.0),
-                              borderSide: BorderSide(
-                                color: Colors.transparent,
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(7.0),
-                              borderSide: BorderSide(
-                                  color: Colors.transparent,
-                                  width: 0.5
-                              ),
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(7.0),
-                              borderSide: BorderSide(
-                                color: Colors.transparent,
-                                width: 0.5,
-                              ),
-                            ),
-                            filled: true,
-                            prefixIcon: Icon(Icons.timer_outlined,color: Colors.black,size: 22,),
-                            fillColor: Colors.grey[200],
-                            hintText: time,
-                            // If  you are using latest version of flutter then lable text and hint text shown like this
-                            // if you r using flutter less then 1.20.* then maybe this is not working properly
-                            floatingLabelBehavior: FloatingLabelBehavior.always,
+                                  Expanded(
+                                      flex: 9,
+                                      child: Container(
+                                        padding: EdgeInsets.only(left:12),
+                                        child:Text(time,style: TextStyle(
+                                            fontSize: 17,
+                                            color: Colors.grey[700]
+                                        ),),
+                                      )
+                                  )
+                                ],
+                              )
                           ),
                         ),
                         SizedBox(height: 20),
@@ -847,7 +936,7 @@ class _CreateEventState extends State<CreateEvent> {
                                                   flex: 2,
                                                   child: Container(
                                                     alignment: Alignment.center,
-                                                    height: 50,
+                                                    height: 70,
                                                     width: 50,
                                                     decoration: BoxDecoration(
                                                       borderRadius: BorderRadius.circular(200)

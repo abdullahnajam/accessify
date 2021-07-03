@@ -488,6 +488,49 @@ class _CreateVehicleState extends State<CreateVehicle> {
 
                         SizedBox(height: 20),
 
+                        TextFormField(
+                          readOnly: true,
+                          controller: colorController,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter some text';
+                            }
+                            return null;
+                          },
+                          decoration: InputDecoration(
+                            contentPadding: EdgeInsets.all(15),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(7.0),
+                              borderSide: BorderSide(
+                                color: Colors.transparent,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(7.0),
+                              borderSide: BorderSide(
+                                  color: Colors.transparent,
+                                  width: 0.5
+                              ),
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(7.0),
+                              borderSide: BorderSide(
+                                color: Colors.transparent,
+                                width: 0.5,
+                              ),
+                            ),
+                            filled: true,
+                            prefixIcon: Icon(Icons.confirmation_number_outlined,color: Colors.black,size: 22,),
+                            fillColor: Colors.grey[200],
+                            hintText: "Tag Number",
+                            // If  you are using latest version of flutter then lable text and hint text shown like this
+                            // if you r using flutter less then 1.20.* then maybe this is not working properly
+                            floatingLabelBehavior: FloatingLabelBehavior.always,
+                          ),
+                        ),
+
+                        SizedBox(height: 20),
+
                         Container(
                             padding: EdgeInsets.only(left:10,right: 10),
                             decoration: BoxDecoration(
@@ -507,7 +550,7 @@ class _CreateVehicleState extends State<CreateVehicle> {
                                     }
                                 ),
                                 CheckboxListTile(
-                                    title: Text("Show tag fee and acceptance"),
+                                    title: Text("Tag fee and acceptance"),
                                     value: agreement,
                                     activeColor: kPrimaryColor,
                                     onChanged: (bool value){

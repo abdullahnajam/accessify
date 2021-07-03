@@ -7,8 +7,8 @@ class EventModel{
 
 }
 class EventGuestList{
-  String name,email;
+  String id,name,email;
 
-  EventGuestList(this.name, this.email);
+  EventGuestList(this.id,this.name, this.email);
 
 }

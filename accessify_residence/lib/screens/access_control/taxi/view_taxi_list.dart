@@ -5,12 +5,15 @@ import 'package:accessify/model/pet_model.dart';
 import 'package:accessify/model/vehicle_model.dart';
 import 'package:accessify/screens/access_control/delivery/create_delivery.dart';
 import 'package:accessify/screens/access_control/taxi/create_taxi.dart';
+import 'package:accessify/screens/access_control/taxi/edit_taxi.dart';
 import 'package:accessify/screens/my_home/create_pet.dart';
 import 'package:accessify/screens/my_home/create_vehicle.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:share/share.dart';
 
 
 class TaxiAccess extends StatefulWidget {
@@ -86,6 +89,67 @@ class _TaxiAccessState extends State<TaxiAccess> with SingleTickerProviderStateM
                         SizedBox(height: 10,),
                         Text("Start Hour",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
                         Text("${model.hour}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+
+                        SizedBox(height: 10,),
+                        Container(
+                          width: MediaQuery.of(context).size.width*0.5,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              InkWell(
+                                onTap: ()async{
+                                  User user=FirebaseAuth.instance.currentUser;
+                                  final databaseReference = FirebaseDatabase.instance.reference();
+                                  await databaseReference.child("access_control").child("taxi").child(user.uid).child(model.id).remove().then((value) {
+                                    Navigator.pop(context);
+                                    Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => TaxiAccess()));
+                                  });
+                                },
+                                child: Container(
+                                  height: MediaQuery.of(context).size.height*0.05,
+                                  width: MediaQuery.of(context).size.width*0.22,
+                                  decoration: BoxDecoration(
+                                      border: Border.all(color: kPrimaryColor),
+                                      borderRadius: BorderRadius.circular(5)
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.delete_forever_outlined,color: kPrimaryColor,),
+                                      Text("Delete",style: TextStyle(color: kPrimaryColor),)
+                                    ],
+                                  ),
+
+                                ),
+                              ),
+                              SizedBox(width: 10,),
+                              InkWell(
+                                onTap: (){
+                                  Navigator.pop(context);
+                                  Navigator.push(context, MaterialPageRoute(builder: (BuildContext context) => EditTaxi(model)));
+                                },
+                                child: Container(
+                                  height: MediaQuery.of(context).size.height*0.05,
+                                  width: MediaQuery.of(context).size.width*0.22,
+                                  decoration: BoxDecoration(
+                                      color: kPrimaryColor,
+                                      border: Border.all(color: kPrimaryColor),
+                                      borderRadius: BorderRadius.circular(5)
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.edit_outlined,color: Colors.white,),
+                                      Text("Edit",style: TextStyle(color: Colors.white),)
+                                    ],
+                                  ),
+
+                                ),
+                              )
+
+                            ],
+                          ),
+                        ),
 
 
 
@@ -239,7 +303,7 @@ class _TaxiAccessState extends State<TaxiAccess> with SingleTickerProviderStateM
                               height: 5.0,
                             ),
                             Text(
-                              "My taxi",
+                              "My Taxi",
                               style: TextStyle(
                                   color: Colors.black,
                                   fontWeight: FontWeight.w800,
@@ -304,56 +368,47 @@ class _TaxiAccessState extends State<TaxiAccess> with SingleTickerProviderStateM
                             onTap: (){
                               _showInfoDailog(snapshot.data[index]);
                             },
-                            child: Container(
-                              height: 70,
-                              margin:EdgeInsets.only(left: 20,right: 20,top: 10),
-                              decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.grey.withOpacity(0.5),
-                                      spreadRadius:1,
-                                      blurRadius: 2,
-                                      offset: Offset(0, 1), // changes position of shadow
+                            child: Slidable(
+                              actionPane: SlidableDrawerActionPane(),
+                              actionExtentRatio: 0.25,
+                              child: Container(
+                                color: Colors.white,
+                                child: ListTile(
+                                  leading: CircleAvatar(
+                                    backgroundColor: Colors.indigoAccent,
+                                    child:  Icon(
+                                      Icons.local_taxi,
                                     ),
-                                  ],
-                                  borderRadius: BorderRadius.circular(10)
-                              ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                      flex: 4,
-                                      child: Container(
-                                        margin: EdgeInsets.only(left: 10),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-
-                                            Row(
-                                              children: [
-                                                Text(snapshot.data[index].name,style: TextStyle(fontWeight:FontWeight.w500,fontSize: 20,color: Colors.black),),
-
-                                              ],
-                                            ),
-                                            SizedBox(height: 5,),
-                                            Container(
-                                                padding: EdgeInsets.only(top: 2,bottom: 2),
-
-                                                child: Text(snapshot.data[index].date,style: TextStyle(fontSize: 14,),)
-                                            )
-                                          ],
-                                        ),
-                                      )
+                                    foregroundColor: Colors.white,
                                   ),
-                                  Expanded(
-                                    flex: 1,
-                                    child: Container(
-                                      child: Text(snapshot.data[index].hour,style: TextStyle(color: Colors.black,fontSize: 17,fontWeight: FontWeight.w300,)
-                                      ),
-                                    ),)
-                                ],
+                                  title: Text("${snapshot.data[index].name}"),
+                                  subtitle: Text(snapshot.data[index].date),
+                                  trailing: Text(snapshot.data[index].hour),
+                                ),
                               ),
+                              secondaryActions: <Widget>[
+
+                                IconSlideAction(
+                                  caption: 'Edit',
+                                  color: Colors.indigo,
+                                  icon: Icons.edit_outlined,
+                                  onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => EditTaxi(snapshot.data[index]))),
+                                ),
+                                IconSlideAction(
+                                  caption: 'Delete',
+                                  color: Colors.indigo,
+                                  icon: Icons.delete_forever_outlined,
+                                  onTap: () async{
+                                    User user=FirebaseAuth.instance.currentUser;
+                                    final databaseReference = FirebaseDatabase.instance.reference();
+                                    await databaseReference.child("access_control").child("taxi").child(user.uid).child(snapshot.data[index].id).remove().then((value) {
+                                      Navigator.pop(context);
+                                      Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => TaxiAccess()));
+                                    });
+                                  },
+                                ),
+                              ],
+
                             ),
                           );
                         },
