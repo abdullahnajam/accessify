@@ -274,8 +274,9 @@ class _MyResidenceState extends State<MyResidence> {
               ),
 
               StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance.collection('home').doc('residents').collection(user.uid).snapshots(),
+                stream: FirebaseFirestore.instance.collection('home').doc('resident').collection(user.uid).snapshots(),
                 builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                  print("user ${user.uid}");
                   if (snapshot.hasError) {
                     return Center(
                       child: Column(

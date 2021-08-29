@@ -457,7 +457,7 @@ class _CreateEventState extends State<CreateEvent> {
       setState(() {
         photoUrl = downloadUrl;
       });
-      FirebaseFirestore.instance.collection("c").doc(key).set({
+      FirebaseFirestore.instance.collection("event_access").doc(key).set({
         'name': nameController.text,
         'date':startDate,
         'startTime':time,
