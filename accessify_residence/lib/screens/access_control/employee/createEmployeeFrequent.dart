@@ -53,13 +53,7 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
       if (documentSnapshot.exists) {
 
         Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
-        userModel=new UserModel(
-          documentSnapshot.reference.id,
-          data['firstName'],
-          data['lastName'],
-          data['email'],
-          data['phone'],
-        );
+        userModel=UserModel.fromMap(data, documentSnapshot.reference.id);
       }
     });
 
