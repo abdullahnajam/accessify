@@ -1,5 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+
 import 'package:guard/components/default_button.dart';
 import 'package:guard/constants.dart';
 import 'package:flutter/cupertino.dart';
@@ -29,63 +30,6 @@ class _MembersState extends State<Members> with SingleTickerProviderStateMixin{
   void dispose() {
     super.dispose();
     _tabController.dispose();
-  }
-  Future<List<UserModel>> getActiveUserList() async {
-    List<UserModel> list=[];
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("users").once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.value.keys;
-        var DATA=dataSnapshot.value;
-
-        for(var individualKey in KEYS) {
-          UserModel userModel = new UserModel(
-            individualKey,
-            DATA[individualKey]['name'],
-            DATA[individualKey]['email'],
-            DATA[individualKey]['type'],
-            DATA[individualKey]['isActive'],
-              DATA[individualKey]['token']
-          );
-          print("key ${userModel.id}");
-          if(userModel.isActive==true  && userModel.type=="resident"){
-            list.add(userModel);
-          }
-
-
-        }
-      }
-    });
-    return list;
-  }
-
-  Future<List<UserModel>> getInActiveUserList() async {
-    List<UserModel> list=[];
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("users").once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.value.keys;
-        var DATA=dataSnapshot.value;
-
-        for(var individualKey in KEYS) {
-          UserModel userModel = new UserModel(
-              individualKey,
-              DATA[individualKey]['username'],
-              DATA[individualKey]['email'],
-              DATA[individualKey]['type'],
-              DATA[individualKey]['isActive'],
-              DATA[individualKey]['token']
-          );
-          print("key ${userModel.id}");
-          if(userModel.isActive==false && userModel.type=="resident"){
-            list.add(userModel);
-          }
-
-
-        }
-      }
-    });
-    return list;
   }
 
   @override
@@ -211,73 +155,99 @@ class _MembersState extends State<Members> with SingleTickerProviderStateMixin{
 
                             child: TabBarView(children: <Widget>[
                               Container(
-                                child: FutureBuilder<List<UserModel>>(
-                                  future: getActiveUserList(),
-                                  builder: (context,snapshot){
-                                    if (snapshot.hasData) {
-                                      if (snapshot.data != null && snapshot.data.length>0) {
-                                        return ListView.builder(
-                                          shrinkWrap: true,
-                                          //scrollDirection: Axis.horizontal,
-                                          itemCount: snapshot.data.length,
-                                          itemBuilder: (BuildContext context,int index){
-                                            return _card (snapshot.data[index].username, () { });
-                                          },
-                                        );
-                                      }
-                                      else {
-                                        return new Center(
-                                          child: Container(
-                                              margin: EdgeInsets.only(top: 100),
-                                              child: Text("You currently don't have any active user")
-                                          ),
-                                        );
-                                      }
+                                child:  StreamBuilder<QuerySnapshot>(
+                                  stream: FirebaseFirestore.instance.collection('homeowner').snapshots(),
+                                  builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                                    if (snapshot.hasError) {
+                                      return Center(
+                                        child: Column(
+                                          children: [
+                                            Image.asset("assets/images/wrong.png",width: 150,height: 150,),
+                                            Text("Something Went Wrong")
+
+                                          ],
+                                        ),
+                                      );
                                     }
-                                    else if (snapshot.hasError) {
-                                      return Text('Error : ${snapshot.error}');
-                                    } else {
-                                      return new Center(
+
+                                    if (snapshot.connectionState == ConnectionState.waiting) {
+                                      return Center(
                                         child: CircularProgressIndicator(),
                                       );
                                     }
+                                    if (snapshot.data.size==0){
+                                      return Center(
+                                        child: Column(
+                                          children: [
+                                            Image.asset("assets/images/empty.png",width: 150,height: 150,),
+                                            Text("No Users")
+
+                                          ],
+                                        ),
+                                      );
+
+                                    }
+
+                                    return new ListView(
+                                      shrinkWrap: true,
+                                      children: snapshot.data.docs.map((DocumentSnapshot document) {
+                                        Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+
+                                        final model = UserModel.fromMap(data,document.reference.id);
+
+                                        return  _card (model.firstName, () { });
+                                      }).toList(),
+                                    );
                                   },
                                 ),
                               ),
                               Container(
-                                child: FutureBuilder<List<UserModel>>(
-                                  future: getInActiveUserList(),
-                                  builder: (context,snapshot){
-                                    if (snapshot.hasData) {
-                                      if (snapshot.data != null && snapshot.data.length>0) {
-                                        return ListView.builder(
-                                          shrinkWrap: true,
-                                          //scrollDirection: Axis.horizontal,
-                                          itemCount: snapshot.data.length,
-                                          itemBuilder: (BuildContext context,int index){
-                                            return _card (snapshot.data[index].username, () { });
-                                          },
-                                        );
-                                      }
-                                      else {
-                                        return new Center(
-                                          child: Container(
-                                              margin: EdgeInsets.only(top: 100),
-                                              child: Text("You currently don't have any inactive users")
-                                          ),
-                                        );
-                                      }
+                                child:  StreamBuilder<QuerySnapshot>(
+                                  stream: FirebaseFirestore.instance.collection('homeowner').snapshots(),
+                                  builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                                    if (snapshot.hasError) {
+                                      return Center(
+                                        child: Column(
+                                          children: [
+                                            Image.asset("assets/images/wrong.png",width: 150,height: 150,),
+                                            Text("Something Went Wrong")
+
+                                          ],
+                                        ),
+                                      );
                                     }
-                                    else if (snapshot.hasError) {
-                                      return Text('Error : ${snapshot.error}');
-                                    } else {
-                                      return new Center(
+
+                                    if (snapshot.connectionState == ConnectionState.waiting) {
+                                      return Center(
                                         child: CircularProgressIndicator(),
                                       );
                                     }
+                                    if (snapshot.data.size==0){
+                                      return Center(
+                                        child: Column(
+                                          children: [
+                                            Image.asset("assets/images/empty.png",width: 150,height: 150,),
+                                            Text("No Users")
+
+                                          ],
+                                        ),
+                                      );
+
+                                    }
+
+                                    return new ListView(
+                                      shrinkWrap: true,
+                                      children: snapshot.data.docs.map((DocumentSnapshot document) {
+                                        Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+
+                                        final model = UserModel.fromMap(data,document.reference.id);
+
+                                        return  _card (model.firstName, () { });
+                                      }).toList(),
+                                    );
                                   },
                                 ),
-                              ),
+                              )
 
                             ])
                         )

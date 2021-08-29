@@ -8,8 +8,9 @@ import 'package:accessify/screens/access_control/taxi/create_taxi.dart';
 import 'package:accessify/screens/access_control/taxi/edit_taxi.dart';
 import 'package:accessify/screens/my_home/create_pet.dart';
 import 'package:accessify/screens/my_home/create_vehicle.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
@@ -99,8 +100,7 @@ class _TaxiAccessState extends State<TaxiAccess> with SingleTickerProviderStateM
                               InkWell(
                                 onTap: ()async{
                                   User user=FirebaseAuth.instance.currentUser;
-                                  final databaseReference = FirebaseDatabase.instance.reference();
-                                  await databaseReference.child("access_control").child("taxi").child(user.uid).child(model.id).remove().then((value) {
+                                  FirebaseFirestore.instance.collection("taxi_access").doc(model.id).delete().then((value) {
                                     Navigator.pop(context);
                                     Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => TaxiAccess()));
                                   });
@@ -190,71 +190,9 @@ class _TaxiAccessState extends State<TaxiAccess> with SingleTickerProviderStateM
   }
 
 
-  Future<List<TaxiModel>> getTaxiList() async {
-    List<TaxiModel> list=[];
-    User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("access_control").child("taxi").once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.value.keys;
-        var DATA=dataSnapshot.value;
-
-        for(var individualKey in KEYS) {
-          TaxiModel taxiModel = new TaxiModel(
-              individualKey,
-              DATA[individualKey]['name'],
-              DATA[individualKey]['date'],
-              DATA[individualKey]['hour'],
-              DATA[individualKey]['status'],
-              DATA[individualKey]['userId'],
-            DATA[individualKey]['description'],
-            DATA[individualKey]['pickup'],
-            DATA[individualKey]['omw'],
-          );
-          print("key ${taxiModel.id}");
-          if(taxiModel.status=="scheduled" && user.uid==taxiModel.userId){
-            list.add(taxiModel);
-          }
 
 
-        }
-      }
-    });
-    return list;
-  }
 
-  Future<List<TaxiModel>> getTaxiHistoryList() async {
-    List<TaxiModel> list=[];
-    User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("access_control").child("taxi").once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.value.keys;
-        var DATA=dataSnapshot.value;
-
-        for(var individualKey in KEYS) {
-          TaxiModel taxiModel = new TaxiModel(
-            individualKey,
-            DATA[individualKey]['name'],
-            DATA[individualKey]['date'],
-            DATA[individualKey]['hour'],
-            DATA[individualKey]['status'],
-            DATA[individualKey]['userId'],
-            DATA[individualKey]['description'],
-            DATA[individualKey]['pickup'],
-            DATA[individualKey]['omw'],
-          );
-          print("key ${taxiModel.id}");
-          if(taxiModel.status=="history" && user.uid==taxiModel.userId){
-            list.add(taxiModel);
-          }
-
-
-        }
-      }
-    });
-    return list;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -352,86 +290,105 @@ class _TaxiAccessState extends State<TaxiAccess> with SingleTickerProviderStateM
                     ],
                   )
               ),
+              StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance.collection('taxi_access').where('userId', isEqualTo: FirebaseAuth.instance.currentUser.uid).snapshots(),
+                builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Column(
+                        children: [
+                          Image.asset("assets/images/wrong.png",width: 150,height: 150,),
+                          Text("Something Went Wrong")
 
-              FutureBuilder<List<TaxiModel>>(
-                future: getTaxiList(),
-                builder: (context,snapshot){
-                  if (snapshot.hasData) {
-                    if (snapshot.data != null && snapshot.data.length>0) {
-                      return ListView.builder(
-                        shrinkWrap: true,
-                        //scrollDirection: Axis.horizontal,
-                        physics: NeverScrollableScrollPhysics(),
-                        itemCount: snapshot.data.length,
-                        itemBuilder: (BuildContext context,int index){
-                          return InkWell(
-                            onTap: (){
-                              _showInfoDailog(snapshot.data[index]);
-                            },
-                            child: Slidable(
-                              actionPane: SlidableDrawerActionPane(),
-                              actionExtentRatio: 0.25,
-                              child: Container(
-                                color: Colors.white,
-                                child: ListTile(
-                                  leading: CircleAvatar(
-                                    backgroundColor: Colors.indigoAccent,
-                                    child:  Icon(
-                                      Icons.local_taxi,
-                                    ),
-                                    foregroundColor: Colors.white,
-                                  ),
-                                  title: Text("${snapshot.data[index].name}"),
-                                  subtitle: Text(snapshot.data[index].date),
-                                  trailing: Text(snapshot.data[index].hour),
-                                ),
-                              ),
-                              secondaryActions: <Widget>[
-
-                                IconSlideAction(
-                                  caption: 'Edit',
-                                  color: Colors.indigo,
-                                  icon: Icons.edit_outlined,
-                                  onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => EditTaxi(snapshot.data[index]))),
-                                ),
-                                IconSlideAction(
-                                  caption: 'Delete',
-                                  color: Colors.indigo,
-                                  icon: Icons.delete_forever_outlined,
-                                  onTap: () async{
-                                    User user=FirebaseAuth.instance.currentUser;
-                                    final databaseReference = FirebaseDatabase.instance.reference();
-                                    await databaseReference.child("access_control").child("taxi").child(user.uid).child(snapshot.data[index].id).remove().then((value) {
-                                      Navigator.pop(context);
-                                      Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => TaxiAccess()));
-                                    });
-                                  },
-                                ),
-                              ],
-
-                            ),
-                          );
-                        },
-                      );
-                    }
-                    else {
-                      return new Center(
-                        child: Container(
-                            margin: EdgeInsets.only(top: 100),
-                            child: Text("You currently don't have any taxi")
-                        ),
-                      );
-                    }
+                        ],
+                      ),
+                    );
                   }
-                  else if (snapshot.hasError) {
-                    return Text('Error : ${snapshot.error}');
-                  } else {
-                    return new Center(
+
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(
                       child: CircularProgressIndicator(),
                     );
                   }
+                  if (snapshot.data.size==0){
+                    return Center(
+                      child: Column(
+                        children: [
+                          Image.asset("assets/images/empty.png",width: 150,height: 150,),
+                          Text("No Taxi Added")
+
+                        ],
+                      ),
+                    );
+
+                  }
+
+                  return new ListView(
+                    shrinkWrap: true,
+                    children: snapshot.data.docs.map((DocumentSnapshot document) {
+                      Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+                      TaxiModel model=new TaxiModel(
+                        document.reference.id,
+                        data['name'],
+                        data['date'],
+                        data['hour'],
+                        data['status'],
+                        data['userId'],
+                        data['description'],
+                        data['omw'],
+                        data['pickup'],
+                      );
+                      return InkWell(
+                        onTap: (){
+                          _showInfoDailog(model);
+                        },
+                        child: Slidable(
+                          actionPane: SlidableDrawerActionPane(),
+                          actionExtentRatio: 0.25,
+                          child: Container(
+                            color: Colors.white,
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: Colors.indigoAccent,
+                                child:  Icon(
+                                  Icons.local_taxi,
+                                ),
+                                foregroundColor: Colors.white,
+                              ),
+                              title: Text("${model.name}"),
+                              subtitle: Text(model.date),
+                              trailing: Text(model.hour),
+                            ),
+                          ),
+                          secondaryActions: <Widget>[
+
+                            IconSlideAction(
+                              caption: 'Edit',
+                              color: Colors.indigo,
+                              icon: Icons.edit_outlined,
+                              onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => EditTaxi(model))),
+                            ),
+                            IconSlideAction(
+                              caption: 'Delete',
+                              color: Colors.indigo,
+                              icon: Icons.delete_forever_outlined,
+                              onTap: () async{
+                                User user=FirebaseAuth.instance.currentUser;
+                                FirebaseFirestore.instance.collection("taxi_access").doc(model.id).delete().then((value) {
+                                  Navigator.pop(context);
+                                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => TaxiAccess()));
+                                });
+                              },
+                            ),
+                          ],
+
+                        ),
+                      );
+                    }).toList(),
+                  );
                 },
               ),
+              
 
               /*DefaultTabController(
                   length: 2, // length of tabs
@@ -486,7 +443,7 @@ class _TaxiAccessState extends State<TaxiAccess> with SingleTickerProviderStateM
                                           itemBuilder: (BuildContext context,int index){
                                             return InkWell(
                                               onTap: (){
-                                                _showInfoDailog(snapshot.data[index]);
+                                                _showInfoDailog(model);
                                               },
                                               child: Container(
                                                 height: 70,
@@ -516,7 +473,7 @@ class _TaxiAccessState extends State<TaxiAccess> with SingleTickerProviderStateM
 
                                                               Row(
                                                                 children: [
-                                                                  Text(snapshot.data[index].name,style: TextStyle(fontWeight:FontWeight.w500,fontSize: 20,color: Colors.black),),
+                                                                  Text(model.name,style: TextStyle(fontWeight:FontWeight.w500,fontSize: 20,color: Colors.black),),
 
                                                                 ],
                                                               ),
@@ -524,7 +481,7 @@ class _TaxiAccessState extends State<TaxiAccess> with SingleTickerProviderStateM
                                                               Container(
                                                                   padding: EdgeInsets.only(top: 2,bottom: 2),
 
-                                                                  child: Text(snapshot.data[index].date,style: TextStyle(fontSize: 14,),)
+                                                                  child: Text(model.date,style: TextStyle(fontSize: 14,),)
                                                               )
                                                             ],
                                                           ),
@@ -533,7 +490,7 @@ class _TaxiAccessState extends State<TaxiAccess> with SingleTickerProviderStateM
                                                     Expanded(
                                                       flex: 1,
                                                       child: Container(
-                                                        child: Text(snapshot.data[index].hour,style: TextStyle(color: Colors.black,fontSize: 17,fontWeight: FontWeight.w300,)
+                                                        child: Text(model.hour,style: TextStyle(color: Colors.black,fontSize: 17,fontWeight: FontWeight.w300,)
                                                         ),
                                                       ),)
                                                   ],
@@ -575,7 +532,7 @@ class _TaxiAccessState extends State<TaxiAccess> with SingleTickerProviderStateM
                                           itemBuilder: (BuildContext context,int index){
                                             return InkWell(
                                               onTap: (){
-                                                _showInfoDailog(snapshot.data[index]);
+                                                _showInfoDailog(model);
                                               },
                                               child:  Container(
 
@@ -606,7 +563,7 @@ class _TaxiAccessState extends State<TaxiAccess> with SingleTickerProviderStateM
 
                                                               Row(
                                                                 children: [
-                                                                  Text(snapshot.data[index].name,style: TextStyle(fontWeight:FontWeight.w500,fontSize: 20,color: Colors.black),),
+                                                                  Text(model.name,style: TextStyle(fontWeight:FontWeight.w500,fontSize: 20,color: Colors.black),),
 
                                                                 ],
                                                               ),
@@ -614,7 +571,7 @@ class _TaxiAccessState extends State<TaxiAccess> with SingleTickerProviderStateM
                                                               Container(
                                                                   padding: EdgeInsets.only(top: 2,bottom: 2),
 
-                                                                  child: Text(snapshot.data[index].date,style: TextStyle(fontSize: 14,),)
+                                                                  child: Text(model.date,style: TextStyle(fontSize: 14,),)
                                                               )
                                                             ],
                                                           ),
@@ -623,7 +580,7 @@ class _TaxiAccessState extends State<TaxiAccess> with SingleTickerProviderStateM
                                                     Expanded(
                                                       flex: 1,
                                                       child: Container(
-                                                        child: Text(snapshot.data[index].hour,style: TextStyle(color: Colors.black,fontSize: 17,fontWeight: FontWeight.w300,)
+                                                        child: Text(model.hour,style: TextStyle(color: Colors.black,fontSize: 17,fontWeight: FontWeight.w300,)
                                                         ),
                                                       ),)
                                                   ],

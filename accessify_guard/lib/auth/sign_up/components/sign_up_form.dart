@@ -1,5 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:guard/screens/home.dart';
 import 'package:flutter/material.dart';
@@ -58,7 +58,7 @@ class _SignUpFormState extends State<SignUpForm> {
           DefaultButton(
             text: "Continue",
             press: () async {
-              if (_formKey.currentState.validate()) {
+              /*if (_formKey.currentState.validate()) {
                 _formKey.currentState.save();
                 // if all are valid then go to success screen
                 try {
@@ -102,7 +102,7 @@ class _SignUpFormState extends State<SignUpForm> {
                 } catch (e) {
                   print(e);
                 }
-              }
+              }*/
             },
           ),
         ],

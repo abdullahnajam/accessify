@@ -5,9 +5,10 @@ import 'dart:ui';
 import 'package:accessify/model/facilities.dart';
 import 'package:accessify/model/meeting.dart';
 import 'package:accessify/model/reservation_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:date_format/date_format.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -38,56 +39,17 @@ class _CreateReservationState extends State<CreateReservation> {
   String selectedFacilityId;
 
 
-  Future<List<FacilitiesModel>> getFacilityList() async {
-    List<FacilitiesModel> list=new List();
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("facilities").once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.value.keys;
-        var DATA=dataSnapshot.value;
 
-        for(var individualKey in KEYS) {
-          FacilitiesModel facilitiesModel = new FacilitiesModel(
-            individualKey,
-            DATA[individualKey]['name'],
-            DATA[individualKey]['image'],
-          );
-          list.add(facilitiesModel);
-
-        }
-      }
-    });
-
-    return list;
-  }
   Future<List<DateTime>> getReservedDates() async {
     List<ReservationModel> list=new List();
     List<DateTime> blackoutDates=[];
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("reservation").once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.value.keys;
-        var DATA=dataSnapshot.value;
-
-        for(var individualKey in KEYS) {
-          ReservationModel reservationModel = new ReservationModel(
-            individualKey,
-            DATA[individualKey]['date'],
-            DATA[individualKey]['facilityName'],
-            DATA[individualKey]['facilityId'],
-            DATA[individualKey]['totalGuests'],
-            DATA[individualKey]['hourStart'],
-            DATA[individualKey]['hourEnd'],
-            DATA[individualKey]['user'],
-            DATA[individualKey]['dateNoFormat'],
-            DATA[individualKey]['qr'],
-          );
-          list.add(reservationModel);
-          DateTime parsedDate = DateTime.parse(reservationModel.dateNoFormat);
-          blackoutDates.add(parsedDate.add(Duration(days: 0)),);
-        }
-      }
+    FirebaseFirestore.instance.collection('reservation').get().then((QuerySnapshot querySnapshot) {
+      querySnapshot.docs.forEach((doc) {
+        DateTime parsedDate = DateTime.parse(doc["dateNoFormat"]);
+        blackoutDates.add(parsedDate.add(Duration(days: 0)),);
+      });
     });
+
 
     return blackoutDates;
   }
@@ -262,53 +224,74 @@ class _CreateReservationState extends State<CreateReservation> {
               children: [
                 Container(
                   margin: EdgeInsets.all(10),
-                  child: Text("Facilities",textAlign: TextAlign.center,style: TextStyle(fontSize: 20,color:Colors.black,fontWeight: FontWeight.w600),),
+                  child: Text("facility",textAlign: TextAlign.center,style: TextStyle(fontSize: 20,color:Colors.black,fontWeight: FontWeight.w600),),
                 ),
-                FutureBuilder<List<FacilitiesModel>>(
-                  future: getFacilityList(),
-                  builder: (context,snapshot){
-                    if (snapshot.hasData) {
-                      if (snapshot.data != null && snapshot.data.length>0) {
-                        return Container(
-                          margin: EdgeInsets.all(10),
-                          child: ListView.builder(
-                            shrinkWrap: true,
-                            itemCount: snapshot.data.length,
-                            itemBuilder: (BuildContext context,int index){
-                              return ListTile(
-                                onTap: (){
-                                  setState(() {
-                                    facilitySelected=snapshot.data[index].name;
-                                    selectedFacilityId=snapshot.data[index].id;
-                                  });
-                                  Navigator.pop(context);
-                                },
-                                leading: Image.network(snapshot.data[index].image),
-                                title: Text(snapshot.data[index].name,textAlign: TextAlign.center,style: TextStyle(fontSize: 16,color:Colors.black),
-                                ),
-                              );
-                            },
-                          ),
-                        );
-                      }
-                      else {
-                        return new Center(
-                          child: Container(
-                              margin: EdgeInsets.only(top: 100),
-                              child: Text("You currently don't have any employees")
-                          ),
-                        );
-                      }
+                StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance.collection('facility').snapshots(),
+                  builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Column(
+                          children: [
+                            Image.asset("assets/images/wrong.png",width: 150,height: 150,),
+                            Text("Something Went Wrong")
+
+                          ],
+                        ),
+                      );
                     }
-                    else if (snapshot.hasError) {
-                      return Text('Error : ${snapshot.error}');
-                    } else {
-                      return new Center(
+
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Center(
                         child: CircularProgressIndicator(),
                       );
                     }
+                    if (snapshot.data.size==0){
+                      return Center(
+                        child: Column(
+                          children: [
+                            Image.asset("assets/images/empty.png",width: 150,height: 150,),
+                            Text("No facilities Added")
+
+                          ],
+                        ),
+                      );
+
+                    }
+
+                    return new ListView(
+                      shrinkWrap: true,
+                      children: snapshot.data.docs.map((DocumentSnapshot document) {
+                        Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+                        FacilitiesModel model=new FacilitiesModel(
+                          document.reference.id,
+                          data['facilityName'],
+                          data['image'],
+
+                        );
+                        return ListTile(
+                          onTap: (){
+                            setState(() {
+                              facilitySelected=model.name;
+                              selectedFacilityId=model.id;
+                            });
+                            Navigator.pop(context);
+                          },
+                          leading: CircleAvatar(
+                            radius: 25,
+                            backgroundImage: NetworkImage(model.image),
+                            backgroundColor: Colors.indigoAccent,
+                            foregroundColor: Colors.white,
+                          ),
+                          //leading: Image.network(model.image),
+                          title: Text(model.name,textAlign: TextAlign.center,style: TextStyle(fontSize: 16,color:Colors.black),
+                          ),
+                        );
+                      }).toList(),
+                    );
                   },
                 ),
+
                 SizedBox(
                   height: 15,
                 )
@@ -323,7 +306,6 @@ class _CreateReservationState extends State<CreateReservation> {
     final ProgressDialog pr = ProgressDialog(context);
     await pr.show();
     User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
 
     var storage = FirebaseStorage.instance;
 
@@ -335,7 +317,7 @@ class _CreateReservationState extends State<CreateReservation> {
       setState(() {
         photoUrl = downloadUrl;
       });
-      databaseReference.child("reservation").child(qrKey).set({
+      FirebaseFirestore.instance.collection("reservation").doc(qrKey).set({
         'date': dateSelected,
         'dateNoFormat':dateFullFormat,
         'facilityName': facilitySelected,
@@ -345,6 +327,7 @@ class _CreateReservationState extends State<CreateReservation> {
         'hourEnd':timeLimit,
         'user':user.uid,
         'qr':photoUrl,
+        'status':"pending"
       }).then((value) {
         pr.hide();
         _showSuccessDailog();
@@ -363,9 +346,7 @@ class _CreateReservationState extends State<CreateReservation> {
   String timeLimit="Hours Allowed";
   saveInfoInDb(){
     User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    databaseReference.child("reservation").push().set({
-      //id,date,facilityName,facilityId,totalGuests,hourStart,hourEnd;
+    FirebaseFirestore.instance.collection("reservation").add({
       'date': dateSelected,
       'dateNoFormat':dateFullFormat,
       'facilityName': facilitySelected,
@@ -374,6 +355,7 @@ class _CreateReservationState extends State<CreateReservation> {
       'hourStart':timeLimit,
       'hourEnd':timeLimit,
       'user':user.uid,
+      'status':"pending"
     }).then((value) {
       _showSuccessDailog();
     })

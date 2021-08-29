@@ -1,10 +1,12 @@
 import 'package:accessify/constants.dart';
 import 'package:accessify/screens/home.dart';
+import 'package:accessify/screens/my_home/vehicle.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_mailer/flutter_mailer.dart';
+
 import 'package:lottie/lottie.dart';
 class CreateVehicle extends StatefulWidget {
   @override
@@ -68,8 +70,8 @@ class _CreateVehicleState extends State<CreateVehicle> {
                 ),
                 GestureDetector(
                   onTap: (){
-                    Navigator.push(
-                        context, MaterialPageRoute(builder: (BuildContext context) => Home()));
+                    Navigator.pushReplacement(
+                        context, MaterialPageRoute(builder: (BuildContext context) => MyVehicle()));
                   },
                   child: Container(
                     alignment: Alignment.center,
@@ -167,8 +169,7 @@ class _CreateVehicleState extends State<CreateVehicle> {
 
   saveInfo(){
     User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    databaseReference.child("home").child("vehicles").child(user.uid).push().set({
+    FirebaseFirestore.instance.collection('home').doc('vehicles').collection(user.uid).add({
       'make': makeController.text,
       'model': modelController.text,
       'color': colorController.text,
@@ -177,6 +178,13 @@ class _CreateVehicleState extends State<CreateVehicle> {
       'newTag': newTag,
       'feeAcceptance': agreement,
     }).then((value) {
+      FirebaseFirestore.instance.collection('payment').add({
+        'userId': user.uid,
+        'title': "Vehicle Tag Payment",
+        'prefix': "\$",
+        'amount': "not assigned",
+        'status': "Requested",
+      });
       _showSuccessDailog();
     })
         .catchError((error, stackTrace) {

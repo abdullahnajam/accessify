@@ -8,7 +8,6 @@ class EventModel{
 }
 class EventGuestList{
   String id,name,email;
-
   EventGuestList(this.id,this.name, this.email);
 
 }

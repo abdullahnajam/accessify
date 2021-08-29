@@ -11,7 +11,7 @@ class StripeTransactionResponse {
 
 class StripeService {
   static String apiBase = 'https://api.stripe.com/v1';
-  static String paymentApiUrl = '${StripeService.apiBase}/payment_intents';
+  static String paymentApiUrl = '${StripeService.apiBase}/+';
   static String secret = 'sk_test_51IBfRbE9NEzcI9oqWBIhu6mngqpIXmnbKTi8jsBJDARXFGBru3D16LvkUd6TPIyxe9Q71wWIa5wx95eaWgR2ehUm00q7hSspCJ';
   static Map<String, String> headers = {
     'Authorization': 'Bearer ${StripeService.secret}',
@@ -119,7 +119,7 @@ class StripeService {
         'payment_method_types[]': 'card'
       };
       var response = await http.post(
-          StripeService.paymentApiUrl,
+          Uri.parse(StripeService.paymentApiUrl),
           body: body,
           headers: StripeService.headers
       );
@@ -130,3 +130,8 @@ class StripeService {
     return null;
   }
 }
+
+/*String url='https://fcm.googleapis.com/fcm/send';
+    Uri myUri = Uri.parse(url);
+    await http.post(
+      myUri,*/

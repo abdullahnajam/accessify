@@ -2,8 +2,9 @@ import 'package:accessify/constants.dart';
 import 'package:accessify/model/resident_model.dart';
 import 'package:accessify/screens/my_home/create_resident.dart';
 import 'package:accessify/screens/my_home/edit_resident.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
@@ -13,7 +14,7 @@ class MyResidence extends StatefulWidget {
 }
 
 class _MyResidenceState extends State<MyResidence> {
-
+  User user=FirebaseAuth.instance.currentUser;
   Future<void> _showInfoDailog(ResidentsModel resident) async {
     return showDialog<void>(
       context: context,
@@ -86,9 +87,7 @@ class _MyResidenceState extends State<MyResidence> {
                             children: [
                               InkWell(
                                 onTap: ()async{
-                                  User user=FirebaseAuth.instance.currentUser;
-                                  final databaseReference = FirebaseDatabase.instance.reference();
-                                  await databaseReference.child("home").child("residents").child(user.uid).child(resident.id).remove().then((value) {
+                                  FirebaseFirestore.instance.collection("home").doc("residents").collection(user.uid).doc(resident.id).delete().then((value) {
                                     Navigator.pop(context);
                                     Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => MyResidence()));
                                   });
@@ -175,34 +174,7 @@ class _MyResidenceState extends State<MyResidence> {
     );
   }
 
-  Future<List<ResidentsModel>> getPartnersList() async {
-    List<ResidentsModel> list=new List();
-    User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("home").child("residents").child(user.uid).once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.value.keys;
-        var DATA=dataSnapshot.value;
 
-        for(var individualKey in KEYS) {
-          ResidentsModel residentsModel = new ResidentsModel(
-            individualKey,
-            DATA[individualKey]['firstName'],
-            DATA[individualKey]['lastName'],
-            DATA[individualKey]['relation'],
-            DATA[individualKey]['age'],
-            DATA[individualKey]['phone'],
-            DATA[individualKey]['email'],
-            DATA[individualKey]['passcode'],
-          );
-          print("key ${residentsModel.id}");
-          list.add(residentsModel);
-
-        }
-      }
-    });
-    return list;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -301,20 +273,60 @@ class _MyResidenceState extends State<MyResidence> {
                 )
               ),
 
+              StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance.collection('home').doc('residents').collection(user.uid).snapshots(),
+                builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Column(
+                        children: [
+                          Image.asset("assets/images/wrong.png",width: 150,height: 150,),
+                          Text("Something Went Wrong")
 
-              FutureBuilder<List<ResidentsModel>>(
-                future: getPartnersList(),
-                builder: (context,snapshot){
-                  if (snapshot.hasData) {
-                    if (snapshot.data != null && snapshot.data.length>0) {
-                      return ListView.builder(
-                        physics: NeverScrollableScrollPhysics(),
-                        shrinkWrap: true,
-                        //scrollDirection: Axis.horizontal,
-                        itemCount: snapshot.data.length,
-                        itemBuilder: (BuildContext context,int index){
-                          return InkWell(
-                            onTap: ()=>_showInfoDailog(snapshot.data[index]),
+                        ],
+                      ),
+                    );
+                  }
+
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+                  if (snapshot.data.size==0){
+                    return Center(
+                      child: Column(
+                        children: [
+                          Image.asset("assets/images/empty.png",width: 150,height: 150,),
+                          Text("No Residents Added")
+
+                        ],
+                      ),
+                    );
+
+                  }
+
+                  return new ListView(
+                    shrinkWrap: true,
+                    children: snapshot.data.docs.map((DocumentSnapshot document) {
+                      Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+                      ResidentsModel model=new ResidentsModel(
+                        document.reference.id,
+                        data['firstName'],
+                        data['lastName'],
+                        data['relation'],
+                        data['age'],
+                        data['phone'],
+                        data['email'],
+                        data['passcode'],
+                      );
+                      return new Padding(
+                          padding: const EdgeInsets.only(top: 15.0),
+                          child: InkWell(
+                            onTap: (){
+
+                              _showInfoDailog(model);
+                            },
                             child: Slidable(
                               actionPane: SlidableDrawerActionPane(),
                               actionExtentRatio: 0.25,
@@ -328,8 +340,8 @@ class _MyResidenceState extends State<MyResidence> {
                                     ),
                                     foregroundColor: Colors.white,
                                   ),
-                                  title: Text("${snapshot.data[index].firstName} ${snapshot.data[index].lastName}"),
-                                  subtitle: Text(snapshot.data[index].relation),
+                                  title: Text("${model.firstName} ${model.lastName}"),
+                                  subtitle: Text(model.relation),
                                 ),
                               ),
                               secondaryActions: <Widget>[
@@ -337,7 +349,7 @@ class _MyResidenceState extends State<MyResidence> {
                                   caption: 'Edit',
                                   color: Colors.indigo,
                                   icon: Icons.edit_outlined,
-                                  onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => EditResident(snapshot.data[index]))),
+                                  onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => EditResident(model))),
                                 ),
                                 IconSlideAction(
                                   caption: 'Delete',
@@ -345,8 +357,7 @@ class _MyResidenceState extends State<MyResidence> {
                                   icon: Icons.delete_forever_outlined,
                                   onTap: () async{
                                     User user=FirebaseAuth.instance.currentUser;
-                                    final databaseReference = FirebaseDatabase.instance.reference();
-                                    await databaseReference.child("home").child("residents").child(user.uid).child(snapshot.data[index].id).remove().then((value) {
+                                    await FirebaseFirestore.instance.collection("home").doc("residents").collection(user.uid).doc(model.id).delete().then((value) {
                                       Navigator.pop(context);
                                       Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => MyResidence()));
                                     });
@@ -355,97 +366,19 @@ class _MyResidenceState extends State<MyResidence> {
                               ],
 
                             ),
-                          );
-                        },
+                          )
                       );
-                    }
-                    else {
-                      return new Center(
-                        child: Container(
-                            margin: EdgeInsets.only(top: 100),
-                            child: Text("You currently don't have any residents")
-                        ),
-                      );
-                    }
-                  }
-                  else if (snapshot.hasError) {
-                    return Text('Error : ${snapshot.error}');
-                  } else {
-                    return new Center(
-                      child: CircularProgressIndicator(),
-                    );
-                  }
+                    }).toList(),
+                  );
                 },
               ),
-              SizedBox(
-                height: 20.0,
-              )
+
+
             ],
           ),
         ),
       ),
     );
   }
-  Widget _card(IconData _icon, String title, GestureTapCallback onTap) {
-    return Padding(
-        padding: const EdgeInsets.only(top: 15.0),
-        child: InkWell(
-          onTap: onTap,
-          child: Stack(
-            children: <Widget>[
-              Padding(
-                padding: const EdgeInsets.only(left: 30.0, right: 20.0, top: 0.0),
-                child: Container(
-                  height: 55.0,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                      borderRadius: BorderRadius.all(Radius.circular(70.0)),
-                      color: Colors.white),
-                  child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 80.0),
-                        child: Text(
-                          title,
-                          style: TextStyle(
-                              fontFamily: "Sofia",
-                              fontWeight: FontWeight.w300,
-                              fontSize: 15.5,color: Colors.black),
-                        ),
-                      )),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(left: 25.0),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Container(
-                    height: 55.0,
-                    width: 55.0,
-                    decoration: BoxDecoration(
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey,
-                          offset: Offset(0.0, 1.0), //(x,y)
-                          blurRadius: 6.0,
-                        ),
-                      ],
-                      color: kPrimaryColor,
-                      borderRadius: BorderRadius.all(Radius.circular(50.0)),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        _icon,
-                        color: Colors.white,
-                        size: 26.0,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        )
-    );
-  }
+
 }

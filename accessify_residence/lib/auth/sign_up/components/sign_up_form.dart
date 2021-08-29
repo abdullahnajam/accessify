@@ -1,7 +1,7 @@
 import 'package:accessify/navigator/bottom_navigation.dart';
 import 'package:accessify/screens/home.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:accessify/components/custom_surfix_icon.dart';
@@ -61,7 +61,7 @@ class _SignUpFormState extends State<SignUpForm> {
           DefaultButton(
             text: "Continue",
             press: () async{
-              if (_formKey.currentState.validate()) {
+              /*if (_formKey.currentState.validate()) {
                 _formKey.currentState.save();
                 final ProgressDialog pr = ProgressDialog(context);
                 pr.show();
@@ -78,7 +78,7 @@ class _SignUpFormState extends State<SignUpForm> {
                         print('User is currently signed out!');
                       } else {
                         print('User is signed in!');
-                        final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
+                        final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
                         _firebaseMessaging.subscribeToTopic('resident');
                         _firebaseMessaging.getToken().then((token) {
                           print(token);
@@ -112,7 +112,7 @@ class _SignUpFormState extends State<SignUpForm> {
                   Toast.show(e.toString(), context, duration: Toast.LENGTH_LONG, gravity:  Toast.TOP);
                 }
 
-              }
+              }*/
             },
           ),
         ],

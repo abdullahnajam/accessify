@@ -7,9 +7,10 @@ import 'package:accessify/model/access/event.dart';
 import 'package:accessify/model/single_var.dart';
 import 'package:accessify/model/user_model.dart';
 import 'package:accessify/screens/access_control/event/view_event.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:date_format/date_format.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -59,27 +60,6 @@ class _CreateEventState extends State<CreateEvent> {
   File file;
   String key=DateTime.now().millisecondsSinceEpoch.toString();
 
-  Future<List<SingleValueModel>> getAmenitiesList() async {
-    List<SingleValueModel> list=new List();
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("amenities").once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.value.keys;
-        var DATA=dataSnapshot.value;
-
-        for(var individualKey in KEYS) {
-          SingleValueModel amenities = new SingleValueModel(
-            individualKey,
-            DATA[individualKey]['name'],
-          );
-          list.add(amenities);
-
-        }
-      }
-    });
-
-    return list;
-  }
   Future<void> _showAmenitiesDailog() async {
     return showDialog<void>(
       context: context,
@@ -106,50 +86,60 @@ class _CreateEventState extends State<CreateEvent> {
                   margin: EdgeInsets.all(10),
                   child: Text("Amenities",textAlign: TextAlign.center,style: TextStyle(fontSize: 20,color:Colors.black,fontWeight: FontWeight.w600),),
                 ),
-                FutureBuilder<List<SingleValueModel>>(
-                  future: getAmenitiesList(),
-                  builder: (context,snapshot){
-                    if (snapshot.hasData) {
-                      if (snapshot.data != null && snapshot.data.length>0) {
-                        return Container(
-                          margin: EdgeInsets.all(10),
-                          child: ListView.builder(
-                            shrinkWrap: true,
-                            itemCount: snapshot.data.length,
-                            itemBuilder: (BuildContext context,int index){
-                              return GestureDetector(
-                                onTap: (){
-                                  setState(() {
-                                    nameText=snapshot.data[index].name;
-                                  });
-                                  Navigator.pop(context);
-                                },
-                                child: Container(
-                                  child: Text(snapshot.data[index].name,textAlign: TextAlign.center,style: TextStyle(fontSize: 16,color:Colors.black),),
-                                ),
-                              );
-                            },
-                          ),
-                        );
-                      }
-                      else {
-                        return new Center(
-                          child: Container(
-                              margin: EdgeInsets.only(top: 100),
-                              child: Text("You currently don't have any employees")
-                          ),
-                        );
-                      }
+                StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance.collection('home').doc('employees').collection(FirebaseAuth.instance.currentUser.uid).snapshots(),
+                  builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Column(
+                          children: [
+                            Image.asset("assets/images/wrong.png",width: 150,height: 150,),
+                            Text("Something Went Wrong")
+
+                          ],
+                        ),
+                      );
                     }
-                    else if (snapshot.hasError) {
-                      return Text('Error : ${snapshot.error}');
-                    } else {
-                      return new Center(
+
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Center(
                         child: CircularProgressIndicator(),
                       );
                     }
+                    if (snapshot.data.size==0){
+                      return Center(
+                        child: Column(
+                          children: [
+                            Image.asset("assets/images/empty.png",width: 150,height: 150,),
+                            Text("No Amenities")
+
+                          ],
+                        ),
+                      );
+
+                    }
+
+                    return new ListView(
+                      shrinkWrap: true,
+                      children: snapshot.data.docs.map((DocumentSnapshot document) {
+                        Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+
+                        return GestureDetector(
+                          onTap: (){
+                            setState(() {
+                              nameText=data['name'];
+                            });
+                            Navigator.pop(context);
+                          },
+                          child: Container(
+                            child: Text(data['name'],textAlign: TextAlign.center,style: TextStyle(fontSize: 16,color:Colors.black),),
+                          ),
+                        );
+                      }).toList(),
+                    );
                   },
                 ),
+
                 SizedBox(
                   height: 15,
                 )
@@ -457,8 +447,6 @@ class _CreateEventState extends State<CreateEvent> {
     final ProgressDialog pr = ProgressDialog(context);
     await pr.show();
     User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-
     var storage = FirebaseStorage.instance;
 
     TaskSnapshot snapshot = await storage.ref()
@@ -469,7 +457,7 @@ class _CreateEventState extends State<CreateEvent> {
       setState(() {
         photoUrl = downloadUrl;
       });
-      databaseReference.child("access_control").child("event").child(key).set({
+      FirebaseFirestore.instance.collection("c").doc(key).set({
         'name': nameController.text,
         'date':startDate,
         'startTime':time,
@@ -479,7 +467,7 @@ class _CreateEventState extends State<CreateEvent> {
       }).then((value) {
         pr.hide();
         for(int i=0;i<visitors.length;i++){
-          databaseReference.child("access_control").child("event").child(key).child('visitors').child("visitor$i").set({
+          FirebaseFirestore.instance.collection("event_access").doc(key).collection("visitors").doc("visitor$i").set({
             "name":visitors[i].name,
             "email":visitors[i].email,
           });
@@ -502,20 +490,24 @@ class _CreateEventState extends State<CreateEvent> {
 
   getUserData()async{
     User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("users").child(user.uid).once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        print(dataSnapshot.value);
-        userModel = new UserModel(
-            user.uid,
-            dataSnapshot.value['name'],
-            dataSnapshot.value['email'],
-            dataSnapshot.value['type'],
-            dataSnapshot.value['isActive']
+    FirebaseFirestore.instance
+        .collection('homeowner')
+        .doc(user.uid)
+        .get()
+        .then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+
+        Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
+        userModel=new UserModel(
+          documentSnapshot.reference.id,
+          data['firstName'],
+          data['lastName'],
+          data['email'],
+          data['phone'],
         );
-        print("username = ${userModel.username}");
       }
     });
+
   }
 
 
@@ -526,8 +518,10 @@ class _CreateEventState extends State<CreateEvent> {
   sendNotification() async{
 
 
+    String url='https://fcm.googleapis.com/fcm/send';
+    Uri myUri = Uri.parse(url);
     await http.post(
-      'https://fcm.googleapis.com/fcm/send',
+      myUri,
       headers: <String, String>{
         'Content-Type': 'application/json',
         'Authorization': 'key=$serverToken',
@@ -536,7 +530,7 @@ class _CreateEventState extends State<CreateEvent> {
         <String, dynamic>{
           'notification': <String, dynamic>{
             'body': 'Event Access',
-            'title': 'Event Access control requested by ${userModel.username}'
+            'title': 'Event Access control requested by ${userModel.firstName}'
           },
           'priority': 'high',
           'data': <String, dynamic>{
@@ -549,14 +543,12 @@ class _CreateEventState extends State<CreateEvent> {
       ),
     ).whenComplete(()  {
       User user=FirebaseAuth.instance.currentUser;
-      final databaseReference = FirebaseDatabase.instance.reference();
-      databaseReference.child("notifications").child("guard").push().set({
-
+      FirebaseFirestore.instance.collection("guard_notifications").add({
         'isOpened': false,
         'type':"event",
         'name':nameController.text,
         'date':DateTime.now().toString(),
-        'body':'Event Service Access from ${userModel.username}',
+        'body':'Event Service Access from ${userModel.firstName}',
         'title':"Event Service Access",
         'icon':'https://img.flaticon.com/icons/png/512/185/185527.png?size=1200x630f&pad=10,10,10,10&ext=png&bg=FFFFFFFF',
         'userId':user.uid

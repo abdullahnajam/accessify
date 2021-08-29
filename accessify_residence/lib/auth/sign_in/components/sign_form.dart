@@ -1,6 +1,8 @@
 import 'package:accessify/navigator/bottom_navigation.dart';
 import 'package:accessify/screens/home.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:accessify/components/custom_surfix_icon.dart';
 import 'package:accessify/components/form_error.dart';
@@ -96,8 +98,21 @@ class _SignFormState extends State<SignForm> {
                       } else {
                         print('User is signed in!');
                         pr.hide();
+                        final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+                        _firebaseMessaging.subscribeToTopic('resident');
+                        _firebaseMessaging.getToken().then((token){
+                          FirebaseFirestore.instance.collection("homeowner").doc(user.uid).update({
+                            "token":token,
+                          }).then((value){
+                            Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => BottomBar()));
+                          }).onError((error, stackTrace) {
+                            Toast.show("DB Error : ${errors.toString()}", context, duration: Toast.LENGTH_LONG, gravity:  Toast.TOP);
+                          });
 
-                        Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => BottomBar()));
+                        }).onError((error, stackTrace) {
+                          Toast.show("Token Error : ${errors.toString()}", context, duration: Toast.LENGTH_LONG, gravity:  Toast.TOP);
+                        });
+                        
                       }
                     });
                   });

@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:guard/model/access/employee_frequent_model.dart';
 import 'package:guard/model/access/event.dart';
 import 'package:guard/model/access/guest.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -26,12 +27,11 @@ class AddAccessControlMember extends StatefulWidget {
 
 class _AddAccessControlMemberState extends State<AddAccessControlMember> {
 
-  sendNotification(UserModel user) async{
+  sendNotification(String token) async{
     String url='https://fcm.googleapis.com/fcm/send';
-
-
+    Uri myUri = Uri.parse(url);
     await http.post(
-      'https://fcm.googleapis.com/fcm/send',
+      myUri,
       headers: <String, String>{
         'Content-Type': 'application/json',
         'Authorization': 'key=$serverToken',
@@ -48,7 +48,7 @@ class _AddAccessControlMemberState extends State<AddAccessControlMember> {
             'id': '1',
             'status': 'done'
           },
-          'to': "${user.token}",
+          'to': token,
         },
       ),
     ).whenComplete(()  {
@@ -72,27 +72,19 @@ class _AddAccessControlMemberState extends State<AddAccessControlMember> {
 
 
 
-  Future<UserModel> getUserData()async{
-    UserModel userModel;
+
+
+  Future<String> getUserData()async{
+    String token;
     User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("users").child(widget.notificationModel.userId).once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        print(dataSnapshot.value);
-        userModel = new UserModel(
-            user.uid,
-            dataSnapshot.value['name'],
-            dataSnapshot.value['email'],
-            dataSnapshot.value['type'],
-            dataSnapshot.value['isActive'],
-            dataSnapshot.value['token']
-        );
-        print("username = ${userModel.username}");
+    FirebaseFirestore.instance.collection('homeowner').doc(user.uid).get().then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+        Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
+        token=data['token'];
       }
     });
-    return userModel;
+    return token;
   }
-
 
 
   final idNumberController=TextEditingController();
@@ -146,7 +138,7 @@ class _AddAccessControlMemberState extends State<AddAccessControlMember> {
     return Scaffold(
       body: SafeArea(
         child: Container(
-          child: FutureBuilder<UserModel>(
+          child: FutureBuilder<String>(
             future: getUserData(),
             builder: (context,snapshot){
               if (snapshot.hasData) {

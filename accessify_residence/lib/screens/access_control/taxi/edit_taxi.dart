@@ -4,14 +4,14 @@ import 'package:accessify/constants.dart';
 import 'package:accessify/model/access/taxi_model.dart';
 import 'package:accessify/model/user_model.dart';
 import 'package:accessify/screens/home.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:date_format/date_format.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
-import 'package:flutter_mailer/flutter_mailer.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lottie/lottie.dart';
 import 'package:http/http.dart' as http;
@@ -190,8 +190,7 @@ class _EditTaxiState extends State<EditTaxi> {
 
   saveInfo(){
     User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    databaseReference.child("access_control").child("taxi").child(widget.model.id).set({
+    FirebaseFirestore.instance.collection("taxi_access").doc(widget.model.id).set({
       'name': nameController.text,
       'date':startDate,
       'hour':time,

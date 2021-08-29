@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +17,7 @@ import 'package:guard/model/notification_model.dart';
 import 'package:guard/model/user_model.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:lottie/lottie.dart';
 import 'package:toast/toast.dart';
 import '../../constants.dart';
 class AddAccess extends StatefulWidget {
@@ -33,96 +35,102 @@ class _AddAccessState extends State<AddAccess> {
   GuestModel guest;
   TaxiModel taxi;
   EmployeeAccessModel employee;
-
-  getEmployeeFrequentList() async {
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("access_control").child("employee").child(widget.barcode).once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var DATA=dataSnapshot.value; 
-        setState(() {
-          employee= new EmployeeAccessModel(
-            dataSnapshot.key,
-            DATA['emp'],
-            DATA['qr'],
-            DATA['fromDate'],
-            DATA['expDate'],
-            DATA['userId'],
-            DATA['type'],
-          );
-        });
-      }
-    });
-  }
-
+  bool isUserDataLoaded=false;
+  UserModel model;
 
   getDeliveryList() async {
     print("added");
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("access_control").child("delivery").child(widget.barcode).once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var DATA=dataSnapshot.value;
+    FirebaseFirestore.instance.collection('delivery_access').doc(widget.barcode).get().then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+        Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
+        delivery = new Delivery(
+          documentSnapshot.reference.id,
+            data['name'],
+            data['date'],
+            data['hour'],
+            data['status'],
+            data['userId']
+        );
+      }
+    });
+  }
+  getEventList() async {
+    FirebaseFirestore.instance.collection('event_access').doc(widget.barcode).get().then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+        Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
+        event = new EventModel(
+          documentSnapshot.reference.id,
+          data['name'],
+          data['location'],
+          data['date'],
+          data['startTime'],
+          data['guests'],
+          data['qr'],
+          data['userId'],
+          data['status'],
+        );
+      }
+    });
 
-         setState(() {
-           delivery = new Delivery(
-               dataSnapshot.key,
-               DATA['name'],
-               DATA['date'],
-               DATA['hour'],
-               DATA['status'],
-               DATA['userId']
-           );
-           print("addeddd ${widget.barcode} ${delivery.id}");
-         });
+  }
+  getEmployeeFrequentList() async {
+    FirebaseFirestore.instance.collection('employee_access').doc(widget.barcode).get().then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+        Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
+        employee = new EmployeeAccessModel(
+          documentSnapshot.reference.id,
+          data['emp'],
+          data['qr'],
+          data['fromDate'],
+          data['expDate'],
+          data['userId'],
+          data['type'],
+          data['status'],
+        );
       }
     });
 
   }
   getGuestList() async {
-    List<GuestModel> list=new List();
-    User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("access_control").child("guest").child(widget.barcode).once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var DATA=dataSnapshot.value;
+    FirebaseFirestore.instance.collection('guest_access').doc(widget.barcode).get().then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+        Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
+        guest = new GuestModel(
+          documentSnapshot.reference.id,
+          data['name'],
+          data['email'],
+          data['date'],
+          data['hour'],
+          data['status'],
+          data['userId'],
+          data['vehicle'],
+          data['qr'],
+        );
+      }
+    });
+
+  }
+
+
+  getUserData()async{
+
+    print("my user id ${widget.userId}");
+    FirebaseFirestore.instance.collection('homeowner').doc(widget.userId).get().then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+        Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
 
         setState(() {
-          guest=new GuestModel(
-            dataSnapshot.key,
-            DATA['name'],
-            DATA['email'],
-            DATA['date'],
-            DATA['hour'],
-            DATA['status'],
-            DATA['userId'],
-            DATA['vehicle'],
-            DATA['qr'],
-          );
+          model=UserModel.fromMap(data,documentSnapshot.reference.id);
+          isUserDataLoaded=true;
         });
       }
-    });
-    return list;
-  }
-
-
-  Future<UserModel> getUserData()async{
-    UserModel userModel;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("users").child(widget.userId).once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        print(dataSnapshot.value);
-        userModel = new UserModel(
-            dataSnapshot.key,
-            dataSnapshot.value['name'],
-            dataSnapshot.value['email'],
-            dataSnapshot.value['type'],
-            dataSnapshot.value['isActive'],
-            dataSnapshot.value['token']
-        );
-        print("username = ${userModel.username}");
+      else{
+        return null;
       }
     });
-    return userModel;
+
   }
+
   @override
   void initState() {
     super.initState();
@@ -131,36 +139,15 @@ class _AddAccessState extends State<AddAccess> {
     getGuestList();
     getEmployeeFrequentList();
     getEventList();
-  }
-  getEventList() async {
-    List<EventModel> list=new List();
-    User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("access_control").child("event").child(widget.barcode).once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.value.keys;
-        var DATA=dataSnapshot.value;
-        setState(() {
-          event= new EventModel(
-          dataSnapshot.key,
-          DATA['name'],
-          DATA['location'],
-          DATA['date'],
-          DATA['startTime'],
-          DATA['guests'],
-          DATA['qr'],
-          DATA['userId'],
-          );
-        });
-      }
-    });
-    return list;
+    getUserData();
   }
 
+
   sendNotification(String userToken,userId) async{
-    print("token $userToken");
+    String url='https://fcm.googleapis.com/fcm/send';
+    Uri myUri = Uri.parse(url);
     await http.post(
-      'https://fcm.googleapis.com/fcm/send',
+      myUri,
       headers: <String, String>{
         'Content-Type': 'application/json',
         'Authorization': 'key=$serverToken',
@@ -182,13 +169,11 @@ class _AddAccessState extends State<AddAccess> {
       ),
     ).whenComplete(()  {
       User user=FirebaseAuth.instance.currentUser;
-      final databaseReference = FirebaseDatabase.instance.reference();
-      databaseReference.child("notifications").child("guard").child(widget.barcode).update({
+      FirebaseFirestore.instance.collection("guard_notifications").doc(widget.barcode).update({
         'isOpened': true,
       });
       //final databaseReference = FirebaseDatabase.instance.reference();
-      databaseReference.child("notifications").child("user").push().set({
-
+      FirebaseFirestore.instance.collection("notifications").add({
         'isOpened': false,
         'type':widget.type,
         'date':DateTime.now().toString(),
@@ -202,10 +187,7 @@ class _AddAccessState extends State<AddAccess> {
   }
   List<String> urls=[];
   addAccessToDb(String token,userId){
-    User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    databaseReference.child("access_log").push().set({
-
+   FirebaseFirestore.instance.collection("access_log").add({
       'name': widget.name,
       'id':widget.barcode,
       'type':widget.type,
@@ -214,7 +196,23 @@ class _AddAccessState extends State<AddAccess> {
       'scanId':idNumberController.text,
       'vehiclePlate':plateController.text,
       'images':urls
-    }).then((value) => sendNotification(token,userId)).catchError((onError){
+    }).then((value) {
+     sendNotification(token,userId);
+     String path;
+     if(delivery!=null)
+       path="delivery_access";
+     else if(event!=null)
+       path="event_access";
+     else if(guest!=null)
+       path="guest_access";
+     else if(taxi!=null)
+       path="taxi_access";
+     else if(employee!=null)
+       path="employee_access";
+     FirebaseFirestore.instance.collection(path).doc(widget.barcode).update({
+       "status":"Accessed"
+     });
+   }).catchError((onError){
       Toast.show(onError.toString(), context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM);
 
     });
@@ -256,378 +254,363 @@ class _AddAccessState extends State<AddAccess> {
       body: SafeArea(
         child: Container(
           margin: EdgeInsets.all(10),
-          child: FutureBuilder<UserModel>(
-            future: getUserData(),
-            builder: (context,snapshot){
-              if (snapshot.hasData) {
-                if (snapshot.data != null) {
-                  return Form(
-                    key: _formKey,
-                    child: ListView(
+          child:isUserDataLoaded?
+          Form(
+            key: _formKey,
+            child: ListView(
 
+              children: [
+
+                Container(
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border(
+                      bottom: BorderSide(width: 0.2, color: Colors.grey[500]),
+                    ),
+
+                  ),
+                  child: Stack(
+                    children: [
+                      Container(
+                        alignment: Alignment.center,
+                        child: Text("Register Access",style: TextStyle(fontWeight: FontWeight.w700,fontSize: 13),),
+                      ),
+
+
+                    ],
+                  ),
+                ),
+                event!=null?Container(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-
-                        Container(
-                          height: 60,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            border: Border(
-                              bottom: BorderSide(width: 0.2, color: Colors.grey[500]),
-                            ),
-
-                          ),
-                          child: Stack(
-                            children: [
-                              Container(
-                                alignment: Alignment.center,
-                                child: Text("Register Access",style: TextStyle(fontWeight: FontWeight.w700,fontSize: 13),),
-                              ),
-
-
-                            ],
-                          ),
-                        ),
-                        event!=null?Container(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Event Information",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
-                                SizedBox(height: 10,),
-                                Text("Description",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
-                                Text("${event.name}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-
-                                SizedBox(height: 10,),
-                                Text("Location",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
-                                Text("${event.location}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-
-                                SizedBox(height: 10,),
-                                Text("Date",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
-                                Text("${event.date}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-
-
-                                SizedBox(height: 10,),
-                                Text("Start Time",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
-                                Text("${event.startTime}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-
-
-                                SizedBox(height: 10,),
-                                Text("QR Code",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
-                                Container(
-                                  height: 100,
-                                  width: 100,
-                                  decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(20),
-                                      image: DecorationImage(
-                                          image: NetworkImage(event.qr),
-                                          fit: BoxFit.cover
-                                      )
-                                  ),
-                                ),
-
-
-
-
-
-                              ],
-                            )
-
-                        ):Container(),
-                        guest!=null? Container(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Guest Information",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
-                                SizedBox(height: 10,),
-                                Text("Name",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
-                                Text("${guest.name}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-
-                                SizedBox(height: 10,),
-                                Text("Email",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
-                                Text("${guest.email}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-
-                                SizedBox(height: 10,),
-                                Text("Vehicle",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
-                                Text("${guest.vehicle}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-
-
-                                SizedBox(height: 10,),
-                                Text("Start Date",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
-                                Text("${guest.date}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-
-                                SizedBox(height: 10,),
-                                Text("Start Hour",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
-                                Text("${guest.hour}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-
-                                SizedBox(height: 10,),
-                                Text("QR Code",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
-                                Container(
-                                  height: 100,
-                                  width: 100,
-                                  decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(20),
-                                      image: DecorationImage(
-                                          image: NetworkImage(guest.qr),
-                                          fit: BoxFit.cover
-                                      )
-                                  ),
-                                ),
-
-
-
-
-
-                              ],
-                            )
-
-                        ):Container(),
-                        employee!=null? Container(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Text("Employee/Frequent Information",textAlign: TextAlign.center,style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
-                                SizedBox(height: 10,),
-                                Text("Name",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
-                                Text("${employee.emp}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-
-
-                                SizedBox(height: 10,),
-                                Text("Date",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
-                                Text("${employee.fromDate} - ${employee.expDate}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-
-
-
-
-
-                                SizedBox(height: 10,),
-                                Text("QR Code",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
-                                Container(
-                                  height: 100,
-                                  width: 100,
-                                  decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(20),
-                                      image: DecorationImage(
-                                          image: NetworkImage(employee.qr),
-                                          fit: BoxFit.cover
-                                      )
-                                  ),
-                                ),
-
-
-
-
-
-                              ],
-                            )
-
-                        ):Container(),
-                        delivery!=null?Container(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Delivery Information",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
-                                SizedBox(height: 10,),
-                                Text("Name",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
-                                Text("${delivery.name}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-
-                                SizedBox(height: 10,),
-                                Text("Start Date",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
-                                Text("${delivery.date}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-
-                                SizedBox(height: 10,),
-                                Text("Start Hour",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
-                                Text("${delivery.hour}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-
-
-
-
-
-
-                              ],
-                            )
-
-                        ):Container(),
-                        Container(
-                          margin:EdgeInsets.only(top: 30,left: 10),
-                          child: Text(
-                            "Please fill the form to add the user",
-                            style: TextStyle(
-                                color: Colors.grey[700],
-                                fontWeight: FontWeight.w500,
-                                fontSize: 17.0),
-                          ),
-                          alignment: Alignment.centerLeft,
-                        ),
-                        SizedBox(height: 50,),
-                        TextFormField(
-                          controller: idNumberController,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
-                            }
-                            return null;
-                          },
-                          decoration: InputDecoration(
-                            contentPadding: EdgeInsets.all(15),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(7.0),
-                              borderSide: BorderSide(
-                                color: Colors.transparent,
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(7.0),
-                              borderSide: BorderSide(
-                                  color: Colors.transparent,
-                                  width: 0.5
-                              ),
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(7.0),
-                              borderSide: BorderSide(
-                                color: Colors.transparent,
-                                width: 0.5,
-                              ),
-                            ),
-                            filled: true,
-                            prefixIcon: Icon(Icons.contact_mail_outlined,color: Colors.black,size: 22,),
-                            fillColor: Colors.grey[200],
-                            hintText: "Enter ID Number",
-                            // If  you are using latest version of flutter then lable text and hint text shown like this
-                            // if you r using flutter less then 1.20.* then maybe this is not working properly
-                            floatingLabelBehavior: FloatingLabelBehavior.always,
-                          ),
-                        ),
-                        SizedBox(height: 20,),
-                        TextFormField(
-                          controller: plateController,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
-                            }
-                            return null;
-                          },
-                          decoration: InputDecoration(
-                            contentPadding: EdgeInsets.all(15),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(7.0),
-                              borderSide: BorderSide(
-                                color: Colors.transparent,
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(7.0),
-                              borderSide: BorderSide(
-                                  color: Colors.transparent,
-                                  width: 0.5
-                              ),
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(7.0),
-                              borderSide: BorderSide(
-                                color: Colors.transparent,
-                                width: 0.5,
-                              ),
-                            ),
-                            filled: true,
-                            prefixIcon: Icon(Icons.car_repair,color: Colors.black,size: 22,),
-                            fillColor: Colors.grey[200],
-                            hintText: "Enter Vehicle Number",
-                            // If  you are using latest version of flutter then lable text and hint text shown like this
-                            // if you r using flutter less then 1.20.* then maybe this is not working properly
-                            floatingLabelBehavior: FloatingLabelBehavior.always,
-                          ),
-                        ),
-
-                        SizedBox(height: 30,),
-
-                        Container(
-                          margin:EdgeInsets.only(top: 5),
-                          child: Text(
-                            "Photo Evidence",
-                            style: TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 18.0),
-                          ),
-                          alignment: Alignment.center,
-                        ),
-                        Container(
-                          alignment: Alignment.center,
-                          child: RaisedButton(
-                            onPressed: ()=>pickImage(),
-                            color: kPrimaryColor,
-                            child: Text("Add Image",style: TextStyle(color: Colors.white),),
-                          ),
-                        ),
+                        Text("Event Information",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
                         SizedBox(height: 10,),
-                        _imageFiles.length>0?Container(
-                          height: 60,
-                          child: ListView.builder(
-                            shrinkWrap: true,
-                            scrollDirection: Axis.horizontal,
-                            itemCount: _imageFiles.length,
-                            itemBuilder: (BuildContext context,int index){
-                              return Container(
-                                height: 60,
-                                width: 60,
-                                margin: EdgeInsets.only(right: 10),
-                                decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(10),
-                                    image: DecorationImage(
-                                        image: FileImage(_imageFiles[index]),
-                                        fit: BoxFit.cover
-                                    )
-                                ),
-                              );
-                            },
-                          ),
-                        ):Container(),
+                        Text("Description",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Text("${event.name}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
 
-                        SizedBox(height: 20,),
+                        SizedBox(height: 10,),
+                        Text("Location",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Text("${event.location}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+
+                        SizedBox(height: 10,),
+                        Text("Date",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Text("${event.date}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+
+
+                        SizedBox(height: 10,),
+                        Text("Start Time",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Text("${event.startTime}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+
+
+                        SizedBox(height: 10,),
+                        Text("QR Code",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
                         Container(
-                          child: DefaultButton(
-                            text: "Continue",
-                            press: () {
-                              if (_formKey.currentState.validate()) {
-                                print(urls.length);
-                                if(urls.length>0){
-
-                                  addAccessToDb(snapshot.data.token,snapshot.data.id);
-                                }
-                                else{
-                                  if(_imageFiles.length==0)
-                                    Toast.show("Please add an image", context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM);
-                                  else
-                                    Toast.show("Image uploading", context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM);
-                                }
-                              }
-
-                            },
+                          height: 100,
+                          width: 100,
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              image: DecorationImage(
+                                  image: NetworkImage(event.qr),
+                                  fit: BoxFit.cover
+                              )
                           ),
-                          margin: EdgeInsets.all(10),
-                        )
+                        ),
+
+
+
+
+
                       ],
+                    )
+
+                ):Container(),
+                guest!=null? Container(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Guest Information",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
+                        SizedBox(height: 10,),
+                        Text("Name",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Text("${guest.name}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+
+                        SizedBox(height: 10,),
+                        Text("Email",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Text("${guest.email}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+
+                        SizedBox(height: 10,),
+                        Text("Vehicle",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Text("${guest.vehicle}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+
+
+                        SizedBox(height: 10,),
+                        Text("Start Date",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Text("${guest.date}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+
+                        SizedBox(height: 10,),
+                        Text("Start Hour",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Text("${guest.hour}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+
+                        SizedBox(height: 10,),
+                        Text("QR Code",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Container(
+                          height: 100,
+                          width: 100,
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              image: DecorationImage(
+                                  image: NetworkImage(guest.qr),
+                                  fit: BoxFit.cover
+                              )
+                          ),
+                        ),
+
+
+
+
+
+                      ],
+                    )
+
+                ):Container(),
+                employee!=null? Container(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text("Employee/Frequent Information",textAlign: TextAlign.center,style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
+                        SizedBox(height: 10,),
+                        Text("Name",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Text("${employee.emp}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+
+
+                        SizedBox(height: 10,),
+                        Text("Date",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Text("${employee.fromDate} - ${employee.expDate}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+
+
+
+
+
+                        SizedBox(height: 10,),
+                        Text("QR Code",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Container(
+                          height: 100,
+                          width: 100,
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              image: DecorationImage(
+                                  image: NetworkImage(employee.qr),
+                                  fit: BoxFit.cover
+                              )
+                          ),
+                        ),
+
+
+
+
+
+                      ],
+                    )
+
+                ):Container(),
+                delivery!=null?Container(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Delivery Information",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
+                        SizedBox(height: 10,),
+                        Text("Name",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Text("${delivery.name}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+
+                        SizedBox(height: 10,),
+                        Text("Start Date",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Text("${delivery.date}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+
+                        SizedBox(height: 10,),
+                        Text("Start Hour",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Text("${delivery.hour}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+
+
+
+
+
+
+                      ],
+                    )
+
+                ):Container(),
+                Container(
+                  margin:EdgeInsets.only(top: 30,left: 10),
+                  child: Text(
+                    "Please fill the form to add the user",
+                    style: TextStyle(
+                        color: Colors.grey[700],
+                        fontWeight: FontWeight.w500,
+                        fontSize: 17.0),
+                  ),
+                  alignment: Alignment.centerLeft,
+                ),
+                SizedBox(height: 50,),
+                TextFormField(
+                  controller: idNumberController,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter some text';
+                    }
+                    return null;
+                  },
+                  decoration: InputDecoration(
+                    contentPadding: EdgeInsets.all(15),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(7.0),
+                      borderSide: BorderSide(
+                        color: Colors.transparent,
+                      ),
                     ),
-                  );
-                }
-                else {
-                  return new Center(
-                    child: Container(
-                        margin: EdgeInsets.only(top: 100),
-                        child: Text("Unable to load data")
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(7.0),
+                      borderSide: BorderSide(
+                          color: Colors.transparent,
+                          width: 0.5
+                      ),
                     ),
-                  );
-                }
-              }
-              else if (snapshot.hasError) {
-                return Text('Error : ${snapshot.error}');
-              } else {
-                return new Center(
-                  child: CircularProgressIndicator(),
-                );
-              }
-            },
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(7.0),
+                      borderSide: BorderSide(
+                        color: Colors.transparent,
+                        width: 0.5,
+                      ),
+                    ),
+                    filled: true,
+                    prefixIcon: Icon(Icons.contact_mail_outlined,color: Colors.black,size: 22,),
+                    fillColor: Colors.grey[200],
+                    hintText: "Enter ID Number",
+                    // If  you are using latest version of flutter then lable text and hint text shown like this
+                    // if you r using flutter less then 1.20.* then maybe this is not working properly
+                    floatingLabelBehavior: FloatingLabelBehavior.always,
+                  ),
+                ),
+                SizedBox(height: 20,),
+                TextFormField(
+                  controller: plateController,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter some text';
+                    }
+                    return null;
+                  },
+                  decoration: InputDecoration(
+                    contentPadding: EdgeInsets.all(15),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(7.0),
+                      borderSide: BorderSide(
+                        color: Colors.transparent,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(7.0),
+                      borderSide: BorderSide(
+                          color: Colors.transparent,
+                          width: 0.5
+                      ),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(7.0),
+                      borderSide: BorderSide(
+                        color: Colors.transparent,
+                        width: 0.5,
+                      ),
+                    ),
+                    filled: true,
+                    prefixIcon: Icon(Icons.car_repair,color: Colors.black,size: 22,),
+                    fillColor: Colors.grey[200],
+                    hintText: "Enter Vehicle Number",
+                    // If  you are using latest version of flutter then lable text and hint text shown like this
+                    // if you r using flutter less then 1.20.* then maybe this is not working properly
+                    floatingLabelBehavior: FloatingLabelBehavior.always,
+                  ),
+                ),
+
+                SizedBox(height: 30,),
+
+                Container(
+                  margin:EdgeInsets.only(top: 5),
+                  child: Text(
+                    "Photo Evidence",
+                    style: TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 18.0),
+                  ),
+                  alignment: Alignment.center,
+                ),
+                Container(
+                  alignment: Alignment.center,
+                  child: RaisedButton(
+                    onPressed: ()=>pickImage(),
+                    color: kPrimaryColor,
+                    child: Text("Add Image",style: TextStyle(color: Colors.white),),
+                  ),
+                ),
+                SizedBox(height: 10,),
+                _imageFiles.length>0?Container(
+                  height: 60,
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _imageFiles.length,
+                    itemBuilder: (BuildContext context,int index){
+                      return Container(
+                        height: 60,
+                        width: 60,
+                        margin: EdgeInsets.only(right: 10),
+                        decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            image: DecorationImage(
+                                image: FileImage(_imageFiles[index]),
+                                fit: BoxFit.cover
+                            )
+                        ),
+                      );
+                    },
+                  ),
+                ):Container(),
+
+                SizedBox(height: 20,),
+                Container(
+                  child: DefaultButton(
+                    text: "Continue",
+                    press: () {
+                      if (_formKey.currentState.validate()) {
+                        print(urls.length);
+                        if(urls.length>0){
+
+                          addAccessToDb(model.token,model.id);
+                        }
+                        else{
+                          if(_imageFiles.length==0)
+                            Toast.show("Please add an image", context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM);
+                          else
+                            Toast.show("Image uploading", context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM);
+                        }
+                      }
+
+                    },
+                  ),
+                  margin: EdgeInsets.all(10),
+                )
+              ],
+            ),
+    ):Center(
+            child: Lottie.asset(
+              'assets/json/loading.json',
+              width: 200,
+              height: 200,
+              fit: BoxFit.cover,
+            ),
           ),
+
         )
       ),
     );

@@ -5,16 +5,17 @@ import 'dart:ui';
 import 'package:accessify/constants.dart';
 import 'package:accessify/model/user_model.dart';
 import 'package:accessify/screens/home.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:date_format/date_format.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
-import 'package:flutter_mailer/flutter_mailer.dart';
+
 import 'package:image_picker/image_picker.dart';
 import 'package:lottie/lottie.dart';
 import 'package:path_provider/path_provider.dart';
@@ -37,20 +38,23 @@ class _CreateGuestState extends State<CreateGuest> {
 
   getUserData()async{
     User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("users").child(user.uid).once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        print(dataSnapshot.value);
-        userModel = new UserModel(
-            user.uid,
-            dataSnapshot.value['name'],
-            dataSnapshot.value['email'],
-            dataSnapshot.value['type'],
-            dataSnapshot.value['isActive']
+    FirebaseFirestore.instance
+        .collection('homeowner')
+        .doc(user.uid)
+        .get()
+        .then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+        Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
+        userModel=new UserModel(
+          documentSnapshot.reference.id,
+          data['firstName'],
+          data['lastName'],
+          data['email'],
+          data['phone'],
         );
-        print("username = ${userModel.username}");
       }
     });
+
   }
 
 
@@ -60,10 +64,9 @@ class _CreateGuestState extends State<CreateGuest> {
   }
   sendNotification() async{
     String url='https://fcm.googleapis.com/fcm/send';
-
-
+    Uri myUri = Uri.parse(url);
     await http.post(
-      'https://fcm.googleapis.com/fcm/send',
+      myUri,
       headers: <String, String>{
         'Content-Type': 'application/json',
         'Authorization': 'key=$serverToken',
@@ -72,7 +75,7 @@ class _CreateGuestState extends State<CreateGuest> {
         <String, dynamic>{
           'notification': <String, dynamic>{
             'body': 'Guest Access',
-            'title': 'Guest Access control requested by ${userModel.username}'
+            'title': 'Guest Access control requested by ${userModel.firstName}'
           },
           'priority': 'high',
           'data': <String, dynamic>{
@@ -85,14 +88,13 @@ class _CreateGuestState extends State<CreateGuest> {
       ),
     ).whenComplete(()  {
       User user=FirebaseAuth.instance.currentUser;
-      final databaseReference = FirebaseDatabase.instance.reference();
-      databaseReference.child("notifications").child("guard").push().set({
+      FirebaseFirestore.instance.collection("guard_notifications").add({
 
         'isOpened': false,
         'type':"guest",
         'name':nameController.text,
         'date':DateTime.now().toString(),
-        'body':'Guest Service Access from ${userModel.username}',
+        'body':'Guest Service Access from ${userModel.firstName}',
         'title':"Guest Service Access",
         'icon':'https://img.flaticon.com/icons/png/512/185/185527.png?size=1200x630f&pad=10,10,10,10&ext=png&bg=FFFFFFFF',
         'userId':user.uid
@@ -269,9 +271,9 @@ class _CreateGuestState extends State<CreateGuest> {
                           child: QrImage(
                             data: key,
                             size: 200,
-                            embeddedImage: AssetImage('assets/images/qr_logo.png'),
+                            embeddedImage: AssetImage('assets/images/logo.png'),
                             embeddedImageStyle: QrEmbeddedImageStyle(
-                              size: Size(50, 50),
+                              size: Size(30, 30),
                             ),
                             backgroundColor: Colors.white,
                           ),
@@ -407,7 +409,6 @@ class _CreateGuestState extends State<CreateGuest> {
     final ProgressDialog pr = ProgressDialog(context);
     await pr.show();
     User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
 
     var storage = FirebaseStorage.instance;
 
@@ -419,7 +420,7 @@ class _CreateGuestState extends State<CreateGuest> {
       setState(() {
         photoUrl = downloadUrl;
       });
-      databaseReference.child("access_control").child("guest").child(key).set({
+      FirebaseFirestore.instance.collection("guest_access").doc(key).set({
         'name': nameController.text,
         'date':startDate,
         'hour':time,

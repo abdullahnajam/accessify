@@ -6,16 +6,16 @@ import 'package:accessify/constants.dart';
 import 'package:accessify/model/employee_model.dart';
 import 'package:accessify/model/user_model.dart';
 import 'package:accessify/screens/home.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:date_format/date_format.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
-import 'package:flutter_mailer/flutter_mailer.dart';
+
 import 'package:image_picker/image_picker.dart';
 import 'package:lottie/lottie.dart';
 import 'package:path_provider/path_provider.dart';
@@ -45,20 +45,24 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
 
   getUserData()async{
     User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("users").child(user.uid).once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        print(dataSnapshot.value);
-        userModel = new UserModel(
-            user.uid,
-            dataSnapshot.value['name'],
-            dataSnapshot.value['email'],
-            dataSnapshot.value['type'],
-            dataSnapshot.value['isActive']
+    FirebaseFirestore.instance
+        .collection('homeowner')
+        .doc(user.uid)
+        .get()
+        .then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+
+        Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
+        userModel=new UserModel(
+          documentSnapshot.reference.id,
+          data['firstName'],
+          data['lastName'],
+          data['email'],
+          data['phone'],
         );
-        print("username = ${userModel.username}");
       }
     });
+
   }
 
 
@@ -68,10 +72,9 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
   }
   sendNotification() async{
     String url='https://fcm.googleapis.com/fcm/send';
-
-
+    Uri myUri = Uri.parse(url);
     await http.post(
-      'https://fcm.googleapis.com/fcm/send',
+      myUri,
       headers: <String, String>{
         'Content-Type': 'application/json',
         'Authorization': 'key=$serverToken',
@@ -80,7 +83,7 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
         <String, dynamic>{
           'notification': <String, dynamic>{
             'body': 'Employee/Frequent Access',
-            'title': 'Employee/Frequent Access control requested by ${userModel.username}'
+            'title': 'Employee/Frequent Access control requested by ${userModel.firstName} ${userModel.lastName}'
           },
           'priority': 'high',
           'data': <String, dynamic>{
@@ -93,14 +96,13 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
       ),
     ).whenComplete(()  {
       User user=FirebaseAuth.instance.currentUser;
-      final databaseReference = FirebaseDatabase.instance.reference();
-      databaseReference.child("notifications").child("guard").push().set({
+      FirebaseFirestore.instance.collection("guard_notifications").add({
 
         'isOpened': false,
         'type':"employee",
         'name':emp,
         'date':DateTime.now().toString(),
-        'body':'Employee/Frequent Access from ${userModel.username}',
+        'body':'Employee/Frequent Access from ${userModel.firstName} ${userModel.lastName}',
         'title':"Employee/Frequent Access",
         'icon':'https://www.kindpng.com/picc/m/255-2553833_employee-icon-png-white-employee-icon-png-transparent.png',
         'userId':user.uid
@@ -161,70 +163,6 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
       print(e.toString());
     }
   }
-
-  Future<List<EmployeeModel>> getEmpList() async {
-    List<EmployeeModel> list=new List();
-    User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("home").child("employees").child(user.uid).once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.value.keys;
-        var DATA=dataSnapshot.value;
-
-        for(var individualKey in KEYS) {
-          EmployeeModel employeeModel = new EmployeeModel(
-            individualKey,
-            DATA[individualKey]['name'],
-            DATA[individualKey]['email'],
-            DATA[individualKey]['fromDate'],
-            DATA[individualKey]['expDate'],
-            DATA[individualKey]['vehicle'],
-            DATA[individualKey]['photo'],
-            DATA[individualKey]['hoursAllowed'],
-            DATA[individualKey]['daysAllowed'],
-          );
-          print("key ${employeeModel.id}");
-          list.add(employeeModel);
-
-        }
-      }
-    });
-
-    return list;
-  }
-  Future<List<EmployeeModel>> getFreqList() async {
-    List<EmployeeModel> list=new List();
-    User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("home").child("frequents").child(user.uid).once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.value.keys;
-        var DATA=dataSnapshot.value;
-
-        for(var individualKey in KEYS) {
-          EmployeeModel employeeModel = new EmployeeModel(
-            individualKey,
-            DATA[individualKey]['name'],
-            DATA[individualKey]['email'],
-            DATA[individualKey]['fromDate'],
-            DATA[individualKey]['expDate'],
-            DATA[individualKey]['vehicle'],
-            DATA[individualKey]['photo'],
-            DATA[individualKey]['hoursAllowed'],
-            DATA[individualKey]['daysAllowed'],
-          );
-          print("key ${employeeModel.id}");
-          list.add(employeeModel);
-
-        }
-      }
-    });
-
-    return list;
-  }
-
-
-
 
   Future<void> _showSuccessDailog() async {
     return showDialog<void>(
@@ -325,49 +263,68 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
                   margin: EdgeInsets.all(10),
                   child: Text("Employees",textAlign: TextAlign.center,style: TextStyle(fontSize: 20,color:Colors.black,fontWeight: FontWeight.w600),),
                 ),
-                FutureBuilder<List<EmployeeModel>>(
-                  future: getEmpList(),
-                  builder: (context,snapshot){
-                    if (snapshot.hasData) {
-                      if (snapshot.data != null && snapshot.data.length>0) {
-                        return Container(
-                          margin: EdgeInsets.all(10),
-                          child: ListView.builder(
-                            shrinkWrap: true,
-                            itemCount: snapshot.data.length,
-                            itemBuilder: (BuildContext context,int index){
-                              return GestureDetector(
-                                onTap: (){
-                                  setState(() {
-                                    nameText=snapshot.data[index].name;
-                                    emp=snapshot.data[index];
-                                  });
-                                  Navigator.pop(context);
-                                },
-                                child: Container(
-                                  child: Text(snapshot.data[index].name,textAlign: TextAlign.center,style: TextStyle(fontSize: 16,color:Colors.black),),
-                                ),
-                              );
-                            },
-                          ),
-                        );
-                      }
-                      else {
-                        return new Center(
-                          child: Container(
-                              margin: EdgeInsets.only(top: 100),
-                              child: Text("You currently don't have any employees")
-                          ),
-                        );
-                      }
+                StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance.collection('home').doc('employees').collection(FirebaseAuth.instance.currentUser.uid).snapshots(),
+                  builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Column(
+                          children: [
+                            Image.asset("assets/images/wrong.png",width: 150,height: 150,),
+                            Text("Something Went Wrong")
+
+                          ],
+                        ),
+                      );
                     }
-                    else if (snapshot.hasError) {
-                      return Text('Error : ${snapshot.error}');
-                    } else {
-                      return new Center(
+
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Center(
                         child: CircularProgressIndicator(),
                       );
                     }
+                    if (snapshot.data.size==0){
+                      return Center(
+                        child: Column(
+                          children: [
+                            Image.asset("assets/images/empty.png",width: 150,height: 150,),
+                            Text("No Employees")
+
+                          ],
+                        ),
+                      );
+
+                    }
+
+                    return new ListView(
+                      shrinkWrap: true,
+                      children: snapshot.data.docs.map((DocumentSnapshot document) {
+                        Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+                        EmployeeModel model=new EmployeeModel(
+                          document.reference.id,
+                          data['name'],
+                          data['email'],
+                          data['fromDate'],
+                          data['expDate'],
+                          data['vehicle'],
+                          data['photo'],
+                          data['hoursAllowed'],
+                          data['daysAllowed'],
+                        );
+                        return GestureDetector(
+                          onTap: (){
+                            setState(() {
+                              nameText=model.name;
+                              emp=model;
+                            });
+                            Navigator.pop(context);
+                          },
+                          child: Container(
+                            child: Text(model.name,textAlign: TextAlign.center,style: TextStyle(fontSize: 16,color:Colors.black),),
+                          ),
+                        );
+                      }).toList(),
+                    );
                   },
                 ),
                 SizedBox(
@@ -406,49 +363,68 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
                   margin: EdgeInsets.all(10),
                   child: Text("Frequents",textAlign: TextAlign.center,style: TextStyle(fontSize: 20,color:Colors.black,fontWeight: FontWeight.w600),),
                 ),
-                FutureBuilder<List<EmployeeModel>>(
-                  future: getFreqList(),
-                  builder: (context,snapshot){
-                    if (snapshot.hasData) {
-                      if (snapshot.data != null && snapshot.data.length>0) {
-                        return Container(
-                          margin: EdgeInsets.all(10),
-                          child: ListView.builder(
-                            shrinkWrap: true,
-                            itemCount: snapshot.data.length,
-                            itemBuilder: (BuildContext context,int index){
-                              return GestureDetector(
-                                onTap: (){
-                                  setState(() {
-                                    nameText=snapshot.data[index].name;
-                                    emp=snapshot.data[index];
-                                  });
-                                  Navigator.pop(context);
-                                },
-                                child: Container(
-                                  child: Text(snapshot.data[index].name,textAlign: TextAlign.center,style: TextStyle(fontSize: 16,color:Colors.black),),
-                                ),
-                              );
-                            },
-                          ),
-                        );
-                      }
-                      else {
-                        return new Center(
-                          child: Container(
-                              margin: EdgeInsets.only(top: 100),
-                              child: Text("You currently don't have any frequents")
-                          ),
-                        );
-                      }
+                StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance.collection('home').doc('frequents').collection(FirebaseAuth.instance.currentUser.uid).snapshots(),
+                  builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Column(
+                          children: [
+                            Image.asset("assets/images/wrong.png",width: 150,height: 150,),
+                            Text("Something Went Wrong")
+
+                          ],
+                        ),
+                      );
                     }
-                    else if (snapshot.hasError) {
-                      return Text('Error : ${snapshot.error}');
-                    } else {
-                      return new Center(
+
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Center(
                         child: CircularProgressIndicator(),
                       );
                     }
+                    if (snapshot.data.size==0){
+                      return Center(
+                        child: Column(
+                          children: [
+                            Image.asset("assets/images/empty.png",width: 150,height: 150,),
+                            Text("No Frequents")
+
+                          ],
+                        ),
+                      );
+
+                    }
+
+                    return new ListView(
+                      shrinkWrap: true,
+                      children: snapshot.data.docs.map((DocumentSnapshot document) {
+                        Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+                        EmployeeModel model=new EmployeeModel(
+                          document.reference.id,
+                          data['name'],
+                          data['email'],
+                          data['fromDate'],
+                          data['expDate'],
+                          data['vehicle'],
+                          data['photo'],
+                          data['hoursAllowed'],
+                          data['daysAllowed'],
+                        );
+                        return GestureDetector(
+                          onTap: (){
+                            setState(() {
+                              nameText=model.name;
+                              emp=model;
+                            });
+                            Navigator.pop(context);
+                          },
+                          child: Container(
+                            child: Text(model.name,textAlign: TextAlign.center,style: TextStyle(fontSize: 16,color:Colors.black),),
+                          ),
+                        );
+                      }).toList(),
+                    );
                   },
                 ),
                 SizedBox(
@@ -636,7 +612,6 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
     final ProgressDialog pr = ProgressDialog(context);
     await pr.show();
     User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
 
     var storage = FirebaseStorage.instance;
 
@@ -648,8 +623,9 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
       setState(() {
         photoUrl = downloadUrl;
       });
-      databaseReference.child("access_control").child("employee").child(qrKey).set({
-        'emp': nameText,
+      FirebaseFirestore.instance.collection("employee_access").doc(qrKey).set({
+        'name': nameText,
+        'emp':nameText,
         'fromDate':startDate,
         'expDate':time,
         'userId':user.uid,

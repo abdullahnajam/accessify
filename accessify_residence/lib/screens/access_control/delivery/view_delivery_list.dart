@@ -6,8 +6,9 @@ import 'package:accessify/screens/access_control/delivery/create_delivery.dart';
 import 'package:accessify/screens/access_control/delivery/edit_delivery.dart';
 import 'package:accessify/screens/my_home/create_pet.dart';
 import 'package:accessify/screens/my_home/create_vehicle.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
@@ -90,9 +91,7 @@ class _DeliveryAccessState extends State<DeliveryAccess> with SingleTickerProvid
                             children: [
                               InkWell(
                                 onTap: ()async{
-                                  User user=FirebaseAuth.instance.currentUser;
-                                  final databaseReference = FirebaseDatabase.instance.reference();
-                                  await databaseReference.child("access_control").child("delivery").child(user.uid).child(model.id).remove().then((value) {
+                                  FirebaseFirestore.instance.collection("delivery_access").doc(model.id).delete().then((value) {
                                     Navigator.pop(context);
                                     Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => DeliveryAccess()));
                                   });
@@ -183,65 +182,7 @@ class _DeliveryAccessState extends State<DeliveryAccess> with SingleTickerProvid
   }
 
 
-  Future<List<Delivery>> getDeliveryList() async {
-    List<Delivery> list=[];
-    User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("access_control").child("delivery").once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.value.keys;
-        var DATA=dataSnapshot.value;
 
-        for(var individualKey in KEYS) {
-          Delivery delivery = new Delivery(
-            individualKey,
-            DATA[individualKey]['name'],
-            DATA[individualKey]['date'],
-            DATA[individualKey]['hour'],
-            DATA[individualKey]['status'],
-              DATA[individualKey]['userId']
-          );
-          print("key ${delivery.id}");
-          if(delivery.status=="scheduled" && user.uid==delivery.userId){
-            list.add(delivery);
-          }
-
-
-        }
-      }
-    });
-    return list;
-  }
-
-  Future<List<Delivery>> getDeliveryHistoryList() async {
-    List<Delivery> list=[];
-    User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("access_control").child("delivery").once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.value.keys;
-        var DATA=dataSnapshot.value;
-
-        for(var individualKey in KEYS) {
-          Delivery delivery = new Delivery(
-              individualKey,
-              DATA[individualKey]['name'],
-              DATA[individualKey]['date'],
-              DATA[individualKey]['hour'],
-              DATA[individualKey]['status'],
-              DATA[individualKey]['userId']
-          );
-          print("key ${delivery.id}");
-          if(delivery.status=="history" && user.uid==delivery.userId){
-            list.add(delivery);
-          }
-
-
-        }
-      }
-    });
-    return list;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -339,83 +280,101 @@ class _DeliveryAccessState extends State<DeliveryAccess> with SingleTickerProvid
                     ],
                   )
               ),
-              FutureBuilder<List<Delivery>>(
-                future: getDeliveryList(),
-                builder: (context,snapshot){
-                  if (snapshot.hasData) {
-                    if (snapshot.data != null && snapshot.data.length>0) {
-                      return ListView.builder(
-                        physics: NeverScrollableScrollPhysics(),
-                        shrinkWrap: true,
-                        itemCount: snapshot.data.length,
-                        itemBuilder: (BuildContext context,int index){
-                          return InkWell(
-                            onTap: (){
-                              _showInfoDailog(snapshot.data[index]);
-                            },
-                            child:Slidable(
-                              actionPane: SlidableDrawerActionPane(),
-                              actionExtentRatio: 0.25,
-                              child: Container(
-                                color: Colors.white,
-                                child: ListTile(
-                                  leading: CircleAvatar(
-                                    backgroundColor: Colors.indigoAccent,
-                                    child:  Icon(
-                                      Icons.delivery_dining,
-                                    ),
-                                    foregroundColor: Colors.white,
-                                  ),
-                                  title: Text("${snapshot.data[index].name}"),
-                                  subtitle: Text(snapshot.data[index].date),
-                                  trailing: Text(snapshot.data[index].hour),
-                                ),
-                              ),
-                              secondaryActions: <Widget>[
-                                IconSlideAction(
-                                  caption: 'Edit',
-                                  color: Colors.indigo,
-                                  icon: Icons.edit_outlined,
-                                  onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => EditDelivery(snapshot.data[index]))),
-                                ),
-                                IconSlideAction(
-                                  caption: 'Delete',
-                                  color: Colors.indigo,
-                                  icon: Icons.delete_forever_outlined,
-                                  onTap: () async{
-                                    User user=FirebaseAuth.instance.currentUser;
-                                    final databaseReference = FirebaseDatabase.instance.reference();
-                                    await databaseReference.child("access_control").child("delivery").child(user.uid).child(snapshot.data[index].id).remove().then((value) {
-                                      Navigator.pop(context);
-                                      Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => DeliveryAccess()));
-                                    });
-                                  },
-                                ),
-                              ],
+              StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance.collection('delivery_access').where('userId', isEqualTo: FirebaseAuth.instance.currentUser.uid).snapshots(),
+                builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Column(
+                        children: [
+                          Image.asset("assets/images/wrong.png",width: 150,height: 150,),
+                          Text("Something Went Wrong")
 
-                            ),
-                          );
-                        },
-                      );
-                    }
-                    else {
-                      return new Center(
-                        child: Container(
-                            margin: EdgeInsets.only(top: 100),
-                            child: Text("You currently don't have any deliveries")
-                        ),
-                      );
-                    }
+                        ],
+                      ),
+                    );
                   }
-                  else if (snapshot.hasError) {
-                    return Text('Error : ${snapshot.error}');
-                  } else {
-                    return new Center(
+
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(
                       child: CircularProgressIndicator(),
                     );
                   }
+                  if (snapshot.data.size==0){
+                    return Center(
+                      child: Column(
+                        children: [
+                          Image.asset("assets/images/empty.png",width: 150,height: 150,),
+                          Text("No Delivery Added")
+
+                        ],
+                      ),
+                    );
+
+                  }
+
+                  return new ListView(
+                    shrinkWrap: true,
+                    children: snapshot.data.docs.map((DocumentSnapshot document) {
+                      Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+                      Delivery model=new Delivery(
+                        document.reference.id,
+                        data['name'],
+                        data['date'],
+                        data['hour'],
+                        data['status'],
+                        data['userId'],
+                      );
+                      return InkWell(
+                        onTap: (){
+                          _showInfoDailog(model);
+                        },
+                        child: Slidable(
+                          actionPane: SlidableDrawerActionPane(),
+                          actionExtentRatio: 0.25,
+                          child: Container(
+                            color: Colors.white,
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: Colors.indigoAccent,
+                                child:  Icon(
+                                  Icons.delivery_dining,
+                                ),
+                                foregroundColor: Colors.white,
+                              ),
+                              title: Text("${model.name}"),
+                              subtitle: Text(model.date),
+                              trailing: Text(model.hour),
+                            ),
+                          ),
+                          secondaryActions: <Widget>[
+                            IconSlideAction(
+                              caption: 'Edit',
+                              color: Colors.indigo,
+                              icon: Icons.edit_outlined,
+                              onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => EditDelivery(model))),
+                            ),
+                            IconSlideAction(
+                              caption: 'Delete',
+                              color: Colors.indigo,
+                              icon: Icons.delete_forever_outlined,
+                              onTap: () async{
+                                User user=FirebaseAuth.instance.currentUser;
+                                await FirebaseFirestore.instance.collection("delivery_access").doc(model.id).delete().then((value) {
+                                  Navigator.pop(context);
+                                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => DeliveryAccess()));
+                                });
+                              },
+                            ),
+                          ],
+
+                        ),
+                      );
+                    }).toList(),
+                  );
                 },
               ),
+
 
 
 

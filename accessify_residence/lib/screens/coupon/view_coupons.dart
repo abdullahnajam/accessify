@@ -1,5 +1,8 @@
 import 'package:accessify/model/coupon_model.dart';
-import 'package:firebase_database/firebase_database.dart';
+import 'package:accessify/screens/coupon/create_coupons.dart';
+import 'package:accessify/screens/coupon/view_my_coupons.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -10,31 +13,7 @@ class ViewCoupons extends StatefulWidget {
 }
 
 class _ViewCouponsState extends State<ViewCoupons> {
-  Future<List<CouponModel>> getEmpList() async {
-    List<CouponModel> list=new List();
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("coupons").once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.value.keys;
-        var DATA=dataSnapshot.value;
-
-        for(var individualKey in KEYS) {
-          CouponModel incidentModel = new CouponModel(
-            individualKey,
-            DATA[individualKey]['title'],
-            DATA[individualKey]['description'],
-            DATA[individualKey]['logo'],
-            DATA[individualKey]['photo'],
-            DATA[individualKey]['expiration']
-          );
-          print("key ${incidentModel.id}");
-          list.add(incidentModel);
-
-        }
-      }
-    });
-    return list;
-  }
+  
   @override
   Widget build(BuildContext context) {
     return  Scaffold(
@@ -89,6 +68,7 @@ class _ViewCouponsState extends State<ViewCoupons> {
                                   fontWeight: FontWeight.w800,
                                   fontSize: 25.0),
                             ),
+
                             SizedBox(height: 10,),
                             Container(
                               child: Text(
@@ -115,13 +95,25 @@ class _ViewCouponsState extends State<ViewCoupons> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        "Coupons",
-                        style: TextStyle(
-                            fontFamily: "Sofia",
-                            fontWeight: FontWeight.w700,
-                            fontSize: 16.0),
+                      InkWell(
+                        onTap: (){
+                          Navigator.push(context, MaterialPageRoute(builder: (BuildContext context) => ViewMyCoupons()));
+                        },
+                        child: Text(
+                          "View My Coupons",
+                          style: TextStyle(
+                              fontFamily: "Sofia",
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16.0),
+                        ),
                       ),
+                      IconButton(
+                        onPressed: (){
+                          Navigator.push(
+                              context, MaterialPageRoute(builder: (BuildContext context) => CreateCoupon()));
+                        },
+                        icon: Icon(Icons.add),
+                      )
                       /*IconButton(icon: Icon(Icons.add), onPressed:() {
                         Navigator.push(context, new MaterialPageRoute(
                             builder: (context) => CreateIncident()));
@@ -129,107 +121,129 @@ class _ViewCouponsState extends State<ViewCoupons> {
                     ],
                   )
               ),
+              StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance.collection('coupons').
+                  where("status",isEqualTo: "Approved").snapshots(),
+                builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Column(
+                        children: [
+                          Image.asset("assets/images/wrong.png",width: 150,height: 150,),
+                          Text("Something Went Wrong")
 
-              FutureBuilder<List<CouponModel>>(
-                future: getEmpList(),
-                builder: (context,snapshot){
-                  if (snapshot.hasData) {
-                    if (snapshot.data != null && snapshot.data.length>0) {
-                      return ListView.builder(
-                        shrinkWrap: true,
-                        //scrollDirection: Axis.horizontal,
-                        itemCount: snapshot.data.length,
-                        itemBuilder: (BuildContext context,int index){
-                          return Padding(
-                              padding: const EdgeInsets.only(top: 1.0),
-                              child: InkWell(
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(10),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.grey.withOpacity(0.5),
-                                        spreadRadius:1,
-                                        blurRadius: 2,
-                                        offset: Offset(0, 1), // changes position of shadow
-                                      ),
-                                    ],
-                                  ),
-                                  margin: EdgeInsets.all(5),
-                                  child: Column(
-                                    children: <Widget>[
-                                      Container(
-                                        margin: EdgeInsets.all(10),
-                                        child: Row(
-                                          children: [
-                                            Container(
-                                              height: 50,
-                                              width: 50,
-                                              decoration: BoxDecoration(
-                                                  image:  DecorationImage(
-                                                    image: NetworkImage(snapshot.data[index].logo),
-                                                    fit: BoxFit.cover,
-                                                  ),
-                                                  borderRadius: BorderRadius.circular(100)
-                                              ),
-                                            ),
-                                            SizedBox(width: 10,),
-                                            Container(
-                                              child: Column(
-                                                mainAxisAlignment: MainAxisAlignment.center,
-                                                children: [
-                                                  Text(snapshot.data[index].title,style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w700),),
-                                                  Text(snapshot.data[index].expiration)
-                                                ],
-                                              ),
-                                            )
-                                          ],
-                                        ),
-                                      ),
-
-                                      Container(
-                                        margin: EdgeInsets.all(10),
-                                        child: Text(snapshot.data[index].description),
-                                      ),
-                                      Container(
-                                        height: 150,
-
-                                        decoration: BoxDecoration(
-                                            image:  DecorationImage(
-                                              image: NetworkImage(snapshot.data[index].photo),
-                                              fit: BoxFit.cover,
-                                            ),
-                                            //borderRadius: BorderRadius.only(topRight: Radius.circular(10),topLeft:  Radius.circular(10))
-                                        ),
-                                      ),
-
-                                    ],
-                                  ),
-                                ),
-                              )
-                          );
-                        },
-                      );
-                    }
-                    else {
-                      return new Center(
-                        child: Container(
-                            margin: EdgeInsets.only(top: 100),
-                            child: Text("You currently don't have any employees")
-                        ),
-                      );
-                    }
+                        ],
+                      ),
+                    );
                   }
-                  else if (snapshot.hasError) {
-                    return Text('Error : ${snapshot.error}');
-                  } else {
-                    return new Center(
+
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(
                       child: CircularProgressIndicator(),
                     );
                   }
+                  if (snapshot.data.size==0){
+                    return Center(
+                      child: Column(
+                        children: [
+                          Image.asset("assets/images/empty.png",width: 150,height: 150,),
+                          Text("No Coupons Added")
+
+                        ],
+                      ),
+                    );
+
+                  }
+
+                  return new ListView(
+                    shrinkWrap: true,
+                    children: snapshot.data.docs.map((DocumentSnapshot document) {
+                      Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+                      CouponsModel model=CouponsModel.fromMap(data, document.reference.id);
+                      return Padding(
+                          padding: const EdgeInsets.only(top: 1.0),
+                          child: InkWell(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(10),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.grey.withOpacity(0.5),
+                                    spreadRadius:1,
+                                    blurRadius: 2,
+                                    offset: Offset(0, 1), // changes position of shadow
+                                  ),
+                                ],
+                              ),
+                              margin: EdgeInsets.all(5),
+                              child: Column(
+                                children: <Widget>[
+                                  Container(
+                                    margin: EdgeInsets.all(10),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          width: MediaQuery.of(context).size.width*0.2,
+                                          height: MediaQuery.of(context).size.height*0.1,
+                                          decoration: BoxDecoration(
+                                              image:  DecorationImage(
+                                                image: NetworkImage(model.image),
+                                                fit: BoxFit.cover,
+                                              ),
+                                              borderRadius: BorderRadius.circular(100)
+                                          ),
+                                        ),
+                                        SizedBox(width: 10,),
+                                        Container(
+                                          child: Column(
+                                            mainAxisAlignment: MainAxisAlignment.start,
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(model.title.toUpperCase(),style: TextStyle(color: Colors.black,fontSize: 18,fontWeight: FontWeight.w700),),
+                                              SizedBox(height: 5,),
+                                              Text("\$${model.price}"),
+                                              SizedBox(height: 5,),
+                                              Text("${model.phone}"),
+                                              SizedBox(height: 5,),
+                                              Text(model.description)
+                                            ],
+                                          ),
+                                        )
+                                      ],
+                                    ),
+                                  ),
+
+                                  Container(
+                                    width: MediaQuery.of(context).size.width,
+                                    decoration: BoxDecoration(
+                                      color: kPrimaryLightColor,
+                                      borderRadius: BorderRadius.only(
+                                        bottomLeft: Radius.circular(10),
+                                        bottomRight: Radius.circular(10)
+                                      )
+                                    ),
+                                    padding: EdgeInsets.all(10),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(model.expiration,style: TextStyle(color: Colors.white),),
+                                        Text(model.classification,style: TextStyle(color: Colors.white),),
+                                      ],
+                                    )
+                                  ),
+
+
+                                ],
+                              ),
+                            ),
+                          )
+                      );
+                    }).toList(),
+                  );
                 },
               ),
+
               SizedBox(
                 height: 20.0,
               )

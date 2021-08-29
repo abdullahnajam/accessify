@@ -4,9 +4,11 @@ import 'dart:ui';
 
 import 'package:accessify/constants.dart';
 import 'package:accessify/model/access/employee_frequent_model.dart';
+import 'package:accessify/model/employee_model.dart';
 import 'package:accessify/screens/access_control/employee/edit_employee_frequent.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -98,8 +100,7 @@ class _EmployeeFrequentAccessState extends State<EmployeeFrequentAccess> {
                               InkWell(
                                 onTap: ()async{
                                   User user=FirebaseAuth.instance.currentUser;
-                                  final databaseReference = FirebaseDatabase.instance.reference();
-                                  await databaseReference.child("access_control").child("employee").child(user.uid).child(model.id).remove().then((value) {
+                                  FirebaseFirestore.instance.collection("employee_access").doc(model.id).delete().then((value) {
                                     Navigator.pop(context);
                                     Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => EmployeeFrequentAccess()));
                                   });
@@ -210,35 +211,7 @@ class _EmployeeFrequentAccessState extends State<EmployeeFrequentAccess> {
       print(e.toString());
     }
   }
-  Future<List<EmployeeAccessModel>> getEmployeeFrequentList() async {
-    List<EmployeeAccessModel> list=new List();
-    User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("access_control").child("employee").once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.value.keys;
-        var DATA=dataSnapshot.value;
 
-        for(var individualKey in KEYS) {
-          EmployeeAccessModel empfrequentModel = new EmployeeAccessModel(
-            individualKey,
-            DATA[individualKey]['emp'],
-            DATA[individualKey]['qr'],
-            DATA[individualKey]['fromDate'],
-            DATA[individualKey]['expDate'],
-            DATA[individualKey]['userId'],
-            DATA[individualKey]['type'],
-          );
-          if(user.uid==empfrequentModel.userId){
-            list.add(empfrequentModel);
-          }
-
-
-        }
-      }
-    });
-    return list;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -337,8 +310,110 @@ class _EmployeeFrequentAccessState extends State<EmployeeFrequentAccess> {
                   )
               ),
 
+              StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance.collection('employee_access').where('userId', isEqualTo: FirebaseAuth.instance.currentUser.uid).snapshots(),
+                builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Column(
+                        children: [
+                          Image.asset("assets/images/wrong.png",width: 150,height: 150,),
+                          Text("Something Went Wrong")
 
-              FutureBuilder<List<EmployeeAccessModel>>(
+                        ],
+                      ),
+                    );
+                  }
+
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+                  if (snapshot.data.size==0){
+                    return Center(
+                      child: Column(
+                        children: [
+                          Image.asset("assets/images/empty.png",width: 150,height: 150,),
+                          Text("No Employee")
+
+                        ],
+                      ),
+                    );
+
+                  }
+
+                  return new ListView(
+                    shrinkWrap: true,
+                    children: snapshot.data.docs.map((DocumentSnapshot document) {
+                      Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+                      EmployeeAccessModel model=new EmployeeAccessModel(
+                        document.reference.id,
+                        data['emp'],
+                        data['qr'],
+                        data['fromDate'],
+                        data['expDate'],
+                        data['userId'],
+                        data['type'],
+                      );
+                      return Padding(
+                          padding: const EdgeInsets.only(top: 15.0),
+                          child: InkWell(
+                            onTap: (){
+                              _showInfoDailog(model);
+                            },
+                            child: Slidable(
+                              actionPane: SlidableDrawerActionPane(),
+                              actionExtentRatio: 0.25,
+                              child: Container(
+                                color: Colors.white,
+                                child: ListTile(
+                                  leading: CircleAvatar(
+                                    backgroundColor: Colors.indigoAccent,
+                                    child:  Icon(
+                                      Icons.contact_mail_outlined,
+                                    ),
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  title: Text("${model.emp}"),
+                                  subtitle: Text(model.type),
+                                ),
+                              ),
+                              secondaryActions: <Widget>[
+                                IconSlideAction(
+                                    caption: 'Share',
+                                    color: Colors.indigo,
+                                    icon: Icons.share_outlined,
+                                    onTap: () => Share.share(model.qr, subject: 'QR Code for accesfy')
+                                ),
+                                IconSlideAction(
+                                  caption: 'Edit',
+                                  color: Colors.indigo,
+                                  icon: Icons.edit_outlined,
+                                  onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => EditEmployeeFrequent(model))),
+                                ),
+                                IconSlideAction(
+                                  caption: 'Delete',
+                                  color: Colors.indigo,
+                                  icon: Icons.delete_forever_outlined,
+                                  onTap: () async{
+                                    User user=FirebaseAuth.instance.currentUser;
+                                    await FirebaseFirestore.instance.collection("employee_access").doc(model.id).delete().then((value) {
+                                      Navigator.pop(context);
+                                      Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => EmployeeFrequentAccess()));
+                                    });
+                                  },
+                                ),
+                              ],
+
+                            ),
+                          )
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
+              /*FutureBuilder<List<EmployeeAccessModel>>(
                 future: getEmployeeFrequentList(),
                 builder: (context,snapshot){
                   if (snapshot.hasData) {
@@ -353,7 +428,7 @@ class _EmployeeFrequentAccessState extends State<EmployeeFrequentAccess> {
                               padding: const EdgeInsets.only(top: 15.0),
                               child: InkWell(
                                 onTap: (){
-                                  _showInfoDailog(snapshot.data[index]);
+                                  _showInfoDailog(model);
                                 },
                                 child: Slidable(
                                   actionPane: SlidableDrawerActionPane(),
@@ -368,8 +443,8 @@ class _EmployeeFrequentAccessState extends State<EmployeeFrequentAccess> {
                                         ),
                                         foregroundColor: Colors.white,
                                       ),
-                                      title: Text("${snapshot.data[index].emp}"),
-                                      subtitle: Text(snapshot.data[index].type),
+                                      title: Text("${model.emp}"),
+                                      subtitle: Text(model.type),
                                     ),
                                   ),
                                   secondaryActions: <Widget>[
@@ -377,13 +452,13 @@ class _EmployeeFrequentAccessState extends State<EmployeeFrequentAccess> {
                                         caption: 'Share',
                                         color: Colors.indigo,
                                         icon: Icons.share_outlined,
-                                        onTap: () => Share.share(snapshot.data[index].qr, subject: 'QR Code for accesfy')
+                                        onTap: () => Share.share(model.qr, subject: 'QR Code for accesfy')
                                     ),
                                     IconSlideAction(
                                       caption: 'Edit',
                                       color: Colors.indigo,
                                       icon: Icons.edit_outlined,
-                                      onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => EditEmployeeFrequent(snapshot.data[index]))),
+                                      onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => EditEmployeeFrequent(model))),
                                     ),
                                     IconSlideAction(
                                       caption: 'Delete',
@@ -392,7 +467,7 @@ class _EmployeeFrequentAccessState extends State<EmployeeFrequentAccess> {
                                       onTap: () async{
                                         User user=FirebaseAuth.instance.currentUser;
                                         final databaseReference = FirebaseDatabase.instance.reference();
-                                        await databaseReference.child("access_control").child("employee").child(user.uid).child(snapshot.data[index].id).remove().then((value) {
+                                        await databaseReference.child("access_control").child("employee").child(user.uid).child(model.id).remove().then((value) {
                                           Navigator.pop(context);
                                           Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => EmployeeFrequentAccess()));
                                         });
@@ -423,7 +498,7 @@ class _EmployeeFrequentAccessState extends State<EmployeeFrequentAccess> {
                     );
                   }
                 },
-              ),
+              ),*/
               SizedBox(
                 height: 20.0,
               )

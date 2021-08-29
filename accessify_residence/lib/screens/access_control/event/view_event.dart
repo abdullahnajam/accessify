@@ -1,7 +1,8 @@
 import 'package:accessify/model/access/event.dart';
 import 'package:accessify/screens/access_control/event/create_event.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -18,28 +19,6 @@ class ViewEvents extends StatefulWidget {
 }
 
 class _ViewEventsState extends State<ViewEvents> {
-  Future<List<EventGuestList>> getGuestList(String id) async {
-    List<EventGuestList> list=new List();
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("access_control").child("event").child(id).child("visitors").once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.value.keys;
-        var DATA=dataSnapshot.value;
-
-        for(var individualKey in KEYS) {
-          EventGuestList visitor = new EventGuestList(
-            individualKey,
-            DATA[individualKey]['name'],
-            DATA[individualKey]['email'],
-          );
-          list.add(visitor);
-
-        }
-      }
-    });
-
-    return list;
-  }
   Future<void> _showGuestDailog(String id) async {
     return showDialog<void>(
       context: context,
@@ -66,52 +45,61 @@ class _ViewEventsState extends State<ViewEvents> {
                   margin: EdgeInsets.all(10),
                   child: Text("Visitors List",textAlign: TextAlign.center,style: TextStyle(fontSize: 20,color:Colors.black,fontWeight: FontWeight.w600),),
                 ),
-                FutureBuilder<List<EventGuestList>>(
-                  future: getGuestList(id),
-                  builder: (context,snapshot){
-                    if (snapshot.hasData) {
-                      if (snapshot.data != null && snapshot.data.length>0) {
-                        return Container(
-                          margin: EdgeInsets.all(10),
-                          child: ListView.builder(
-                            shrinkWrap: true,
-                            itemCount: snapshot.data.length,
-                            itemBuilder: (BuildContext context,int index){
-                              return Container(
-                                color: Colors.white,
-                                child: ListTile(
-                                  leading: CircleAvatar(
-                                    radius: 25,
-                                    child: Text(snapshot.data[index].name[0].toUpperCase()),
-                                    backgroundColor: Colors.indigoAccent,
-                                    foregroundColor: Colors.white,
-                                  ),
-                                  title: Text("${snapshot.data[index].name}"),
-                                  subtitle: Text(snapshot.data[index].email),
-                                ),
-                              );
-                            },
-                          ),
-                        );
-                      }
-                      else {
-                        return new Center(
-                          child: Container(
-                              margin: EdgeInsets.only(top: 100),
-                              child: Text("You currently don't have any employees")
-                          ),
-                        );
-                      }
+                StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance.collection("event_access").doc(id).collection("visitors").snapshots(),
+                  builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Column(
+                          children: [
+                            Image.asset("assets/images/wrong.png",width: 150,height: 150,),
+                            Text("Something Went Wrong")
+
+                          ],
+                        ),
+                      );
                     }
-                    else if (snapshot.hasError) {
-                      return Text('Error : ${snapshot.error}');
-                    } else {
-                      return new Center(
+
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Center(
                         child: CircularProgressIndicator(),
                       );
                     }
+                    if (snapshot.data.size==0){
+                      return Center(
+                        child: Column(
+                          children: [
+                            Image.asset("assets/images/empty.png",width: 150,height: 150,),
+                            Text("No Delivery Added")
+
+                          ],
+                        ),
+                      );
+
+                    }
+
+                    return new ListView(
+                      shrinkWrap: true,
+                      children: snapshot.data.docs.map((DocumentSnapshot document) {
+                        Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+                        return Container(
+                          color: Colors.white,
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              radius: 25,
+                              child: Text(data['name'][0].toUpperCase()),
+                              backgroundColor: Colors.indigoAccent,
+                              foregroundColor: Colors.white,
+                            ),
+                            title: Text("${data['name']}"),
+                            subtitle: Text("${data['email']}"),
+                          ),
+                        );
+                      }).toList(),
+                    );
                   },
                 ),
+
                 SizedBox(
                   height: 15,
                 )
@@ -223,8 +211,7 @@ class _ViewEventsState extends State<ViewEvents> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               IconButton(icon: Icon(Icons.delete_forever_outlined), onPressed: ()async{
-                                final databaseReference = FirebaseDatabase.instance.reference();
-                                await databaseReference.child("access_control").child("event").child(model.id).remove().then((value) {
+                                FirebaseFirestore.instance.collection("event_access").doc(model.id).delete().then((value) {
                                   Navigator.pop(context);
                                   Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => ViewEvents()));
                                 });
@@ -274,35 +261,6 @@ class _ViewEventsState extends State<ViewEvents> {
     );
   }
 
-  Future<List<EventModel>> getEventList() async {
-    List<EventModel> list=new List();
-    User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("access_control").child("event").once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.value.keys;
-        var DATA=dataSnapshot.value;
-
-        for(var individualKey in KEYS) {
-          EventModel eventModel = new EventModel(
-            individualKey,
-            DATA[individualKey]['name'],
-            DATA[individualKey]['location'],
-            DATA[individualKey]['date'],
-            DATA[individualKey]['startTime'],
-            DATA[individualKey]['guests'],
-            DATA[individualKey]['qr'],
-            DATA[individualKey]['userId'],
-          );
-          if(user.uid==eventModel.userId){
-            list.add(eventModel);
-          }
-
-        }
-      }
-    });
-    return list;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -401,92 +359,111 @@ class _ViewEventsState extends State<ViewEvents> {
                   )
               ),
 
+              StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance.collection('event_access').where('userId', isEqualTo: FirebaseAuth.instance.currentUser.uid).snapshots(),
+                builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Column(
+                        children: [
+                          Image.asset("assets/images/wrong.png",width: 150,height: 150,),
+                          Text("Something Went Wrong")
 
-              FutureBuilder<List<EventModel>>(
-                future: getEventList(),
-                builder: (context,snapshot){
-                  if (snapshot.hasData) {
-                    if (snapshot.data != null && snapshot.data.length>0) {
-                      return ListView.builder(
-                        shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
-                        itemCount: snapshot.data.length,
-                        itemBuilder: (BuildContext context,int index){
-                          return Padding(
-                              padding: const EdgeInsets.only(top: 15.0),
-                              child: InkWell(
-                                onTap: (){
-                                  _showInfoDailog(snapshot.data[index]);
-                                },
-                                child: Slidable(
-                                  actionPane: SlidableDrawerActionPane(),
-                                  actionExtentRatio: 0.25,
-                                  child: Container(
-                                    color: Colors.white,
-                                    child: ListTile(
-                                      leading: CircleAvatar(
-                                        backgroundColor: Colors.indigoAccent,
-                                        child:  Icon(
-                                          Icons.calendar_today_outlined,
-                                        ),
-                                        foregroundColor: Colors.white,
-                                      ),
-                                      title: Text("${snapshot.data[index].name}"),
-                                      subtitle: Text(snapshot.data[index].date),
-                                    ),
-                                  ),
-                                  secondaryActions: <Widget>[
-                                    IconSlideAction(
-                                        caption: 'Share',
-                                        color: Colors.indigo,
-                                        icon: Icons.share_outlined,
-                                        onTap: () => Share.share(snapshot.data[index].qr, subject: 'QR Code for accesfy')
-                                    ),
-                                    IconSlideAction(
-                                      caption: 'Guest List',
-                                      color: Colors.indigo,
-                                      icon: Icons.assignment_outlined,
-                                      onTap: ()=>_showGuestDailog(snapshot.data[index].id)
-                                    ),
-                                    IconSlideAction(
-                                      caption: 'Delete',
-                                      color: Colors.indigo,
-                                      icon: Icons.delete_forever_outlined,
-                                      onTap: () async{
-                                        User user=FirebaseAuth.instance.currentUser;
-                                        final databaseReference = FirebaseDatabase.instance.reference();
-                                        await databaseReference.child("access_control").child("event").child(user.uid).child(snapshot.data[index].id).remove().then((value) {
-                                          Navigator.pop(context);
-                                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => ViewEvents()));
-                                        });
-                                      },
-                                    ),
-                                  ],
-
-                                ),
-                              )
-                          );
-                        },
-                      );
-                    }
-                    else {
-                      return new Center(
-                        child: Container(
-                            margin: EdgeInsets.only(top: 100),
-                            child: Text("You currently don't have any events")
-                        ),
-                      );
-                    }
+                        ],
+                      ),
+                    );
                   }
-                  else if (snapshot.hasError) {
-                    return Text('Error : ${snapshot.error}');
-                  } else {
-                    return new Center(
+
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(
                       child: CircularProgressIndicator(),
                     );
                   }
+                  if (snapshot.data.size==0){
+                    return Center(
+                      child: Column(
+                        children: [
+                          Image.asset("assets/images/empty.png",width: 150,height: 150,),
+                          Text("No Events Added")
+
+                        ],
+                      ),
+                    );
+
+                  }
+
+                  return new ListView(
+                    shrinkWrap: true,
+                    children: snapshot.data.docs.map((DocumentSnapshot document) {
+                      Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+                      EventModel model=new EventModel(
+                        document.reference.id,
+                        data['name'],
+                        data['location'],
+                        data['date'],
+                        data['startTime'],
+                        data['guests'],
+                        data['qr'],
+                        data['userId'],
+                      );
+                      return Padding(
+                          padding: const EdgeInsets.only(top: 15.0),
+                          child: InkWell(
+                            onTap: (){
+                              _showInfoDailog(model);
+                            },
+                            child: Slidable(
+                              actionPane: SlidableDrawerActionPane(),
+                              actionExtentRatio: 0.25,
+                              child: Container(
+                                color: Colors.white,
+                                child: ListTile(
+                                  leading: CircleAvatar(
+                                    backgroundColor: Colors.indigoAccent,
+                                    child:  Icon(
+                                      Icons.calendar_today_outlined,
+                                    ),
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  title: Text("${model.name}"),
+                                  subtitle: Text(model.date),
+                                ),
+                              ),
+                              secondaryActions: <Widget>[
+                                IconSlideAction(
+                                    caption: 'Share',
+                                    color: Colors.indigo,
+                                    icon: Icons.share_outlined,
+                                    onTap: () => Share.share(model.qr, subject: 'QR Code for accesfy')
+                                ),
+                                IconSlideAction(
+                                    caption: 'Guest List',
+                                    color: Colors.indigo,
+                                    icon: Icons.assignment_outlined,
+                                    onTap: ()=>_showGuestDailog(model.id)
+                                ),
+                                IconSlideAction(
+                                  caption: 'Delete',
+                                  color: Colors.indigo,
+                                  icon: Icons.delete_forever_outlined,
+                                  onTap: () async{
+                                    User user=FirebaseAuth.instance.currentUser;
+                                    FirebaseFirestore.instance.collection("event_access").doc(model.id).delete().then((value) {
+                                      Navigator.pop(context);
+                                      Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => ViewEvents()));
+                                    });
+                                  },
+                                ),
+                              ],
+
+                            ),
+                          )
+                      );
+                    }).toList(),
+                  );
                 },
               ),
+
               SizedBox(
                 height: 20.0,
               )

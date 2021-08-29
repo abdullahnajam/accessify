@@ -1,4 +1,5 @@
-import 'package:firebase_database/firebase_database.dart';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:guard/components/default_button.dart';
 import 'package:guard/constants.dart';
 import 'package:flutter/cupertino.dart';
@@ -20,64 +21,6 @@ class _InventoryState extends State<Inventory> with SingleTickerProviderStateMix
     _tabController = TabController(length: 2, vsync: this);
     super.initState();
 
-  }
-  Future<List<AssetModel>> getAssets() async {
-    List<AssetModel> list=new List();
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("inventory").child("asset").once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.value.keys;
-        var DATA=dataSnapshot.value;
-
-        for(var individualKey in KEYS) {
-          AssetModel assetModel = new AssetModel(
-            individualKey,
-            DATA[individualKey]['assignedTo'],
-            DATA[individualKey]['condition'],
-            DATA[individualKey]['datePurchased'],
-            DATA[individualKey]['description'],
-            DATA[individualKey]['lastScanDate'],
-            DATA[individualKey]['location'],
-            DATA[individualKey]['photo'],
-            DATA[individualKey]['serialNumber'],
-            DATA[individualKey]['warranty'],
-          );
-          list.add(assetModel);
-
-        }
-      }
-    });
-
-    return list;
-  }
-  Future<List<SupplyModel>> getSupply() async {
-    List<SupplyModel> list=new List();
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("inventory").child("supply").once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.value.keys;
-        var DATA=dataSnapshot.value;
-
-        for(var individualKey in KEYS) {
-          SupplyModel assetModel = new SupplyModel(
-            individualKey,
-            DATA[individualKey]['assignedTo'],
-            DATA[individualKey]['condition'],
-            DATA[individualKey]['datePurchased'],
-            DATA[individualKey]['description'],
-            DATA[individualKey]['lastScanDate'],
-            DATA[individualKey]['location'],
-            DATA[individualKey]['photo'],
-            DATA[individualKey]['serialNumber'],
-            DATA[individualKey]['warranty'],
-          );
-          list.add(assetModel);
-
-        }
-      }
-    });
-
-    return list;
   }
   final GlobalKey<ScaffoldState> _drawerKey = GlobalKey();
 
@@ -246,142 +189,166 @@ class _InventoryState extends State<Inventory> with SingleTickerProviderStateMix
                             height: MediaQuery.of(context).size.height*0.74,
 
                             child: TabBarView(children: <Widget>[
-                              FutureBuilder<List<AssetModel>>(
-                                future: getAssets(),
-                                builder: (context,snapshot){
-                                  if (snapshot.hasData) {
-                                    if (snapshot.data != null && snapshot.data.length>0) {
-                                      return ListView.builder(
-                                        shrinkWrap: true,
-                                        //scrollDirection: Axis.horizontal,
-                                        itemCount: snapshot.data.length,
-                                        itemBuilder: (BuildContext context,int index){
-                                          return Container(
-                                            decoration: BoxDecoration(
-                                              color: Colors.white,
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: Colors.grey,
-                                                  offset: Offset(0.0, 1.0), //(x,y)
-                                                  blurRadius: 2.0,
-                                                ),
-                                              ],
-                                            ),
+                              StreamBuilder<QuerySnapshot>(
+                                stream: FirebaseFirestore.instance.collection('inventory_assets').snapshots(),
+                                builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                                  if (snapshot.hasError) {
+                                    return Center(
+                                      child: Column(
+                                        children: [
+                                          Image.asset("assets/images/wrong.png",width: 150,height: 150,),
+                                          Text("Something Went Wrong")
 
-                                            margin: EdgeInsets.all(10),
-                                            padding: EdgeInsets.all(10),
-                                            child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                              children: [
-                                                Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(snapshot.data[index].description,style: TextStyle(fontSize: 16,fontWeight: FontWeight.w600),),
-
-
-                                                  ],
-                                                ),
-                                                Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(snapshot.data[index].lastScanDate,style: TextStyle(fontSize: 15,fontWeight: FontWeight.w300),),
-                                                    Text(snapshot.data[index].condition,style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-                                                    //Text("Approved",style: TextStyle(color:Colors.green,fontSize: 13,fontWeight: FontWeight.w300),),
-
-                                                  ],
-                                                ),
-
-                                              ],
-                                            ),
-                                          );
-                                        },
-                                      );
-                                    }
-                                    else {
-                                      return new Center(
-                                        child: Container(
-                                            margin: EdgeInsets.only(top: 100),
-                                            child: Text("You currently don't have any assets")
-                                        ),
-                                      );
-                                    }
+                                        ],
+                                      ),
+                                    );
                                   }
-                                  else if (snapshot.hasError) {
-                                    return Text('Error : ${snapshot.error}');
-                                  } else {
-                                    return new Center(
+
+                                  if (snapshot.connectionState == ConnectionState.waiting) {
+                                    return Center(
                                       child: CircularProgressIndicator(),
                                     );
                                   }
+                                  if (snapshot.data.size==0){
+                                    return Center(
+                                      child: Column(
+                                        children: [
+                                          Image.asset("assets/images/empty.png",width: 150,height: 150,),
+                                          Text("No Assets")
+
+                                        ],
+                                      ),
+                                    );
+
+                                  }
+
+                                  return new ListView(
+                                    shrinkWrap: true,
+                                    children: snapshot.data.docs.map((DocumentSnapshot document) {
+                                      Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+                                      
+                                      final model = AssetModel.fromMap(data,document.reference.id);
+                                      
+                                      return Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.grey,
+                                              offset: Offset(0.0, 1.0), //(x,y)
+                                              blurRadius: 2.0,
+                                            ),
+                                          ],
+                                        ),
+
+                                        margin: EdgeInsets.all(10),
+                                        padding: EdgeInsets.all(10),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(model.description,style: TextStyle(fontSize: 16,fontWeight: FontWeight.w600),),
+                                              ],
+                                            ),
+                                            Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(model.lastScanDate,style: TextStyle(fontSize: 15,fontWeight: FontWeight.w300),),
+                                                Text(model.condition,style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+                                                //Text("Approved",style: TextStyle(color:Colors.green,fontSize: 13,fontWeight: FontWeight.w300),),
+
+                                              ],
+                                            ),
+
+                                          ],
+                                        ),
+                                      );
+                                    }).toList(),
+                                  );
                                 },
                               ),
-                              FutureBuilder<List<SupplyModel>>(
-                                future: getSupply(),
-                                builder: (context,snapshot){
-                                  if (snapshot.hasData) {
-                                    if (snapshot.data != null && snapshot.data.length>0) {
-                                      return ListView.builder(
-                                        shrinkWrap: true,
-                                        //scrollDirection: Axis.horizontal,
-                                        itemCount: snapshot.data.length,
-                                        itemBuilder: (BuildContext context,int index){
-                                          return Container(
-                                            decoration: BoxDecoration(
-                                              color: Colors.white,
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: Colors.grey,
-                                                  offset: Offset(0.0, 1.0), //(x,y)
-                                                  blurRadius: 2.0,
-                                                ),
-                                              ],
-                                            ),
+                              StreamBuilder<QuerySnapshot>(
+                                stream: FirebaseFirestore.instance.collection('inventory_supply').snapshots(),
+                                builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                                  if (snapshot.hasError) {
+                                    return Center(
+                                      child: Column(
+                                        children: [
+                                          Image.asset("assets/images/wrong.png",width: 150,height: 150,),
+                                          Text("Something Went Wrong")
 
-                                            margin: EdgeInsets.all(10),
-                                            padding: EdgeInsets.all(10),
-                                            child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                              children: [
-                                                Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(snapshot.data[index].description,style: TextStyle(fontSize: 16,fontWeight: FontWeight.w600),),
-
-
-                                                  ],
-                                                ),
-                                                Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(snapshot.data[index].lastScanDate,style: TextStyle(fontSize: 15,fontWeight: FontWeight.w300),),
-                                                    Text(snapshot.data[index].condition,style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
-                                                    //Text("Approved",style: TextStyle(color:Colors.green,fontSize: 13,fontWeight: FontWeight.w300),),
-
-                                                  ],
-                                                ),
-
-                                              ],
-                                            ),
-                                          );
-                                        },
-                                      );
-                                    }
-                                    else {
-                                      return new Center(
-                                        child: Container(
-                                            margin: EdgeInsets.only(top: 50),
-                                            child: Text("You currently don't have any supplies")
-                                        ),
-                                      );
-                                    }
+                                        ],
+                                      ),
+                                    );
                                   }
-                                  else if (snapshot.hasError) {
-                                    return Text('Error : ${snapshot.error}');
-                                  } else {
-                                    return new Center(
+
+                                  if (snapshot.connectionState == ConnectionState.waiting) {
+                                    return Center(
                                       child: CircularProgressIndicator(),
                                     );
                                   }
+                                  if (snapshot.data.size==0){
+                                    return Center(
+                                      child: Column(
+                                        children: [
+                                          Image.asset("assets/images/empty.png",width: 150,height: 150,),
+                                          Text("No Supplies")
+
+                                        ],
+                                      ),
+                                    );
+
+                                  }
+
+                                  return new ListView(
+                                    shrinkWrap: true,
+                                    children: snapshot.data.docs.map((DocumentSnapshot document) {
+                                      Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+
+                                      final model = SupplyModel.fromMap(data,document.reference.id);
+
+                                      return Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.grey,
+                                              offset: Offset(0.0, 1.0), //(x,y)
+                                              blurRadius: 2.0,
+                                            ),
+                                          ],
+                                        ),
+
+                                        margin: EdgeInsets.all(10),
+                                        padding: EdgeInsets.all(10),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(model.description,style: TextStyle(fontSize: 16,fontWeight: FontWeight.w600),),
+
+
+                                              ],
+                                            ),
+                                            Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(model.lastInventoryDate,style: TextStyle(fontSize: 15,fontWeight: FontWeight.w300),),
+                                                Text(model.condition,style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+                                                //Text("Approved",style: TextStyle(color:Colors.green,fontSize: 13,fontWeight: FontWeight.w300),),
+
+                                              ],
+                                            ),
+
+                                          ],
+                                        ),
+                                      );
+                                    }).toList(),
+                                  );
                                 },
                               ),
 

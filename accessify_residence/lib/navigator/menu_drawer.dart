@@ -1,7 +1,9 @@
 import 'package:accessify/auth/sign_in/sign_in_screen.dart';
+import 'package:accessify/screens/annoucments/announcement.dart';
 import 'package:accessify/screens/bottom_nav_screens/notifications.dart';
 import 'package:accessify/screens/coupon/view_coupons.dart';
 import 'package:accessify/screens/payments/my_payments.dart';
+import 'package:accessify/screens/survey_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:accessify/data/img.dart';
@@ -34,10 +36,11 @@ class MenuDrawerState extends State<MenuDrawer> {
           children: <Widget>[
             Container(
               height: 200,
+              padding: EdgeInsets.all(10),
               decoration: BoxDecoration(
                 image: DecorationImage(
                   image: AssetImage("assets/images/logo.png"),
-                  fit: BoxFit.cover
+                  fit: BoxFit.fitHeight
                 )
               ),
             ),
@@ -83,6 +86,35 @@ class MenuDrawerState extends State<MenuDrawer> {
                     Icon(Icons.notifications_none, color: MyColors.grey_20, size: 20),
                     Container(width: 20),
                     Expanded(child: Text("Notifications", style: MyText.body2(context).copyWith(color: MyColors.grey_80))),
+                  ],
+                ),
+              ),
+            ),
+            Container(height: 10),
+            InkWell(onTap: (){
+              Navigator.push(context, new MaterialPageRoute(builder: (context) => Announcements()));
+            },
+              child: Container(height: 40, padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: <Widget>[
+                    Icon(Icons.speaker_outlined, color: MyColors.grey_20, size: 20),
+                    Container(width: 20),
+                    Expanded(child: Text("Announcements", style: MyText.body2(context).copyWith(color: MyColors.grey_80))),
+                  ],
+                ),
+              ),
+            ),
+            Container(height: 10),
+            InkWell(onTap: (){
+              Navigator.push(context, new MaterialPageRoute(
+                  builder: (context) => Survey()));
+            },
+              child: Container(height: 40, padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: <Widget>[
+                    Icon(Icons.assignment_outlined, color: MyColors.grey_20, size: 20),
+                    Container(width: 20),
+                    Expanded(child: Text("Survey", style: MyText.body2(context).copyWith(color: MyColors.grey_80))),
                   ],
                 ),
               ),

@@ -2,8 +2,10 @@ import 'dart:io';
 
 import 'package:accessify/constants.dart';
 import 'package:accessify/screens/home.dart';
+import 'package:accessify/screens/incidents/view_incidents.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -22,7 +24,7 @@ class _CreateIncidentState extends State<CreateIncident> {
   var breedController=TextEditingController();
   var colorController=TextEditingController();
   String dropdownValue = 'Incident';
-  String photoUrl;
+  String photoUrl,classification;
 
   File _imageFile;
 
@@ -46,6 +48,89 @@ class _CreateIncidentState extends State<CreateIncident> {
     });
     uploadImageToFirebase(context);
   }
+  Future<void> _showchoiceDailog() async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: true, // user must tap button!
+      builder: (BuildContext context) {
+        return Card(
+          margin: EdgeInsets.only(top: MediaQuery.of(context).size.height*0.8),
+          shape: RoundedRectangleBorder(
+            borderRadius: const BorderRadius.only(
+              topRight: Radius.circular(30.0),
+              topLeft: Radius.circular(30.0),
+            ),
+          ),
+          elevation: 2,
+
+          child: Container(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GestureDetector(
+                  onTap: (){
+                    pickImage();
+                    Navigator.pop(context);
+                  },
+                  child: Container(
+                    alignment: Alignment.center,
+                    width: double.maxFinite,
+                    height: 40,
+                    margin: EdgeInsets.only(left: 40,right: 40),
+                    child:Text("Take Picture From Camera",style: TextStyle(color:Colors.black,fontSize: 15,fontWeight: FontWeight.w400),),
+                    decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(30)
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  height: 15,
+                ),
+                GestureDetector(
+                  onTap: (){
+                    Navigator.pop(context);
+                    pickImageFromGallery();
+                  },
+                  child: Container(
+                    alignment: Alignment.center,
+                    width: double.maxFinite,
+                    height: 40,
+                    margin: EdgeInsets.only(left: 40,right: 40),
+                    child:Text("Choose From Gallery",style: TextStyle(color:Colors.black,fontSize: 15,fontWeight: FontWeight.w400),),
+                    decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(30)
+                    ),
+                  ),
+                ),
+
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /*@override
+  void initState() {
+    FirebaseFirestore.instance
+        .collection('classification_incident')
+        .get()
+        .then((QuerySnapshot querySnapshot) {
+      querySnapshot.docs.forEach((doc) {
+        setState(() {
+          classification=doc['name'];
+        });
+      });
+      if(classification==null){
+        setState(() {
+          classification="No classification found";
+        });
+      }
+
+    });
+  }*/
 
   Future uploadImageToFirebase(BuildContext context) async {
     String fileName = _imageFile.path;
@@ -111,8 +196,8 @@ class _CreateIncidentState extends State<CreateIncident> {
                 ),
                 GestureDetector(
                   onTap: (){
-                    Navigator.push(
-                        context, MaterialPageRoute(builder: (BuildContext context) => Home()));
+                    Navigator.pushReplacement(
+                        context, MaterialPageRoute(builder: (BuildContext context) => ViewIncidents()));
                   },
                   child: Container(
                     alignment: Alignment.center,
@@ -246,14 +331,14 @@ class _CreateIncidentState extends State<CreateIncident> {
 
   saveInfo(){
     User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    databaseReference.child("reports").push().set({
+    FirebaseFirestore.instance.collection("reports").add({
       'title': nameController.text,
       'description': desController.text,
       'time': DateTime.now().toString(),
       'type': dropdownValue,
       'photo': photoUrl,
-      'location':"location",
+      'status':"pending",
+
       'user':user.uid,
     }).then((value) {
       _showSuccessDailog();
@@ -474,70 +559,83 @@ class _CreateIncidentState extends State<CreateIncident> {
                               ),
                             )
                         ),
-
+                        SizedBox(height: 20),
+                        StreamBuilder<QuerySnapshot>(
+                            stream: FirebaseFirestore.instance.collection('classification_incident').snapshots(),
+                            builder: (context, snapshot){
+                              if (!snapshot.hasData)
+                                return const Center(child: const CircularProgressIndicator(),);
+                              var length = snapshot.data.docs.length;
+                              DocumentSnapshot ds = snapshot.data.docs[length - 1];
+                              Map<String, dynamic> data = ds.data() as Map<String, dynamic>;
+                              return new Container(
+                                padding: EdgeInsets.only(left: 10),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(7.0),
+                                  color: Colors.grey[200]
+                                ),
+                                child: new DropdownButton<String>(
+                                  underline: Container(),
+                                  isExpanded: true,
+                                  style: const TextStyle(color: Colors.black),
+                                  value: classification!=null?classification:data['name'],
+                                  onChanged: (String newValue) {
+                                    setState(() {
+                                      classification = newValue;
+                                      print(classification);
+                                    });
+                                  },
+                                  items: snapshot.data.docs.map((DocumentSnapshot document) {
+                                    Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+                                    return DropdownMenuItem<String>(
+                                        value: data['name'],
+                                        child: Text(data['name'])
+                                    );
+                                  }).toList(),
+                                ),
+                              );
+                            }
+                        ),
 
                         SizedBox(height: 20),
-                        Container(
-                            padding: EdgeInsets.only(left:10,right: 10,top: 10,bottom: 10),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(7),
-                              color: Colors.grey[200],
-                            ),
-                            child: _imageFile==null?
-                            Column(
-                              children: [
-                                InkWell(
-                                  onTap: pickImageFromGallery,
-                                  child: Container(
-                                    alignment: Alignment.center,
-                                    width: double.maxFinite,
-                                    height: 50,
-                                    decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(5),
-                                        color: Colors.blueGrey,
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Color.fromRGBO(196, 135, 198, .3),
-                                            blurRadius: 20,
-                                            offset: Offset(0, 10),
-                                          )
-                                        ]
-                                    ),
-                                    child: Text('Upload From Device',textAlign: TextAlign.center,style: TextStyle(fontSize:16,color: Colors.white),),
-                                  ),
-                                ),
-                                SizedBox(height: 10,),
-                                Text('OR',textAlign: TextAlign.center,style: TextStyle(fontSize:18,fontWeight:FontWeight.w400),),
-                                SizedBox(height: 10,),
-                                InkWell(
-                                  onTap: pickImage,
-                                  child: Container(
-                                    alignment: Alignment.center,
-                                    width: double.maxFinite,
-                                    height: 50,
-                                    decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(5),
-                                        color: Colors.blueGrey,
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Color.fromRGBO(196, 135, 198, .3),
-                                            blurRadius: 20,
-                                            offset: Offset(0, 10),
-                                          )
-                                        ]
-                                    ),
-                                    child: Text('Take Picture From Camera',textAlign: TextAlign.center,style: TextStyle(fontSize:16,color: Colors.white),),
-                                  ),
-                                ),
-                              ],
-                            ):
-                            Container(
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: Image.file(_imageFile,width: double.maxFinite,height: 150,fit: BoxFit.cover,),
+                        GestureDetector(
+                          onTap: () =>_showchoiceDailog(),
+                          child: Container(
+                              height: 50,
+                              padding: EdgeInsets.only(left:10,right: 10),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(7),
+                                color: Colors.grey[200],
                               ),
-                              margin: EdgeInsets.only(left: 20,right: 20),
-                            ),
+                              child:  _imageFile==null?Row(
+                                children: [
+                                  Expanded(
+                                    flex: 1,
+                                    child: Icon(Icons.photo_outlined,color: Colors.black,size: 22,),
+                                  ),
+
+                                  Expanded(
+                                      flex: 9,
+                                      child: Container(
+                                        padding: EdgeInsets.only(left:12),
+                                        child:Text("Add Photo",style: TextStyle(
+                                            fontSize: 17,
+                                            color: Colors.grey[700]
+                                        ),),
+                                      )
+                                  )
+                                ],
+                              ):GestureDetector(
+                                onTap: _showchoiceDailog,
+                                child: Container(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Image.file(_imageFile,width: double.maxFinite,height: 150,fit: BoxFit.cover,),
+                                  ),
+                                  margin: EdgeInsets.only(left: 20,right: 20),
+                                ),
+                              )
+                          ),
                         ),
                         SizedBox(height: 20),
                         GestureDetector(

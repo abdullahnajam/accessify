@@ -1,11 +1,13 @@
 import 'package:accessify/model/vehicle_model.dart';
 import 'package:accessify/screens/my_home/create_vehicle.dart';
 import 'package:accessify/screens/my_home/edit_vehicle.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:lottie/lottie.dart';
 
 import '../../constants.dart';
 class MyVehicle extends StatefulWidget {
@@ -81,9 +83,7 @@ class _MyVehicleState extends State<MyVehicle> {
                             children: [
                               InkWell(
                                 onTap: ()async{
-                                  User user=FirebaseAuth.instance.currentUser;
-                                  final databaseReference = FirebaseDatabase.instance.reference();
-                                  await databaseReference.child("home").child("vehicles").child(user.uid).child(vehicleModel.id).remove().then((value) {
+                                  FirebaseFirestore.instance.collection("home").doc("vehicles").collection(user.uid).doc(vehicleModel.id).delete().then((value) {
                                     Navigator.pop(context);
                                     Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => MyVehicle()));
                                   });
@@ -170,34 +170,9 @@ class _MyVehicleState extends State<MyVehicle> {
     );
   }
 
-  Future<List<VehicleModel>> getVehicleList() async {
-    List<VehicleModel> list=new List();
-    User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("home").child("vehicles").child(user.uid).once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.value.keys;
-        var DATA=dataSnapshot.value;
 
-        for(var individualKey in KEYS) {
-          VehicleModel vehicleModel = new VehicleModel(
-            individualKey,
-            DATA[individualKey]['make'],
-            DATA[individualKey]['model'],
-            DATA[individualKey]['color'],
-            DATA[individualKey]['plate'],
-            DATA[individualKey]['year'],
-            DATA[individualKey]['newTag'],
-            DATA[individualKey]['feeAcceptance'],
-          );
-          print("key ${vehicleModel.id}");
-          list.add(vehicleModel);
 
-        }
-      }
-    });
-    return list;
-  }
+  User user=FirebaseAuth.instance.currentUser;
 
   @override
   Widget build(BuildContext context) {
@@ -295,91 +270,111 @@ class _MyVehicleState extends State<MyVehicle> {
                     ],
                   )
               ),
+              StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance.collection('home').doc('vehicles').collection(user.uid).snapshots(),
+                builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Column(
+                        children: [
+                          Image.asset("assets/images/wrong.png",width: 150,height: 150,),
+                          Text("Something Went Wrong")
 
-
-              FutureBuilder<List<VehicleModel>>(
-                future: getVehicleList(),
-                builder: (context,snapshot){
-                  if (snapshot.hasData) {
-                    if (snapshot.data != null && snapshot.data.length>0) {
-                      return ListView.builder(
-                        shrinkWrap: true,
-                        //scrollDirection: Axis.horizontal,
-                        itemCount: snapshot.data.length,
-                        physics: NeverScrollableScrollPhysics(),
-                        itemBuilder: (BuildContext context,int index){
-                          return Padding(
-                              padding: const EdgeInsets.only(top: 15.0),
-                              child: InkWell(
-                                onTap: (){
-                                  _showInfoDailog(snapshot.data[index]);
-                                },
-                                child: Slidable(
-                                  actionPane: SlidableDrawerActionPane(),
-                                  actionExtentRatio: 0.25,
-                                  child: Container(
-                                    color: Colors.white,
-                                    child: ListTile(
-                                      leading: CircleAvatar(
-                                        backgroundColor: Colors.indigoAccent,
-                                        child:  Icon(
-                                          Icons.car_repair,
-                                        ),
-                                        foregroundColor: Colors.white,
-                                      ),
-                                      title: Text("${snapshot.data[index].model} ${snapshot.data[index].year}"),
-                                      subtitle: Text(snapshot.data[index].plate),
-                                    ),
-                                  ),
-                                  secondaryActions: <Widget>[
-                                    IconSlideAction(
-                                      caption: 'Edit',
-                                      color: Colors.indigo,
-                                      icon: Icons.edit_outlined,
-                                      onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => EditVehicle(snapshot.data[index]))),
-                                    ),
-                                    IconSlideAction(
-                                      caption: 'Delete',
-                                      color: Colors.indigo,
-                                      icon: Icons.delete_forever_outlined,
-                                      onTap: () async{
-                                        User user=FirebaseAuth.instance.currentUser;
-                                        final databaseReference = FirebaseDatabase.instance.reference();
-                                        await databaseReference.child("home").child("vehicles").child(user.uid).child(snapshot.data[index].id).remove().then((value) {
-                                          Navigator.pop(context);
-                                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => MyVehicle()));
-                                        });
-                                      },
-                                    ),
-                                  ],
-
-                                ),
-                              )
-                          );
-                        },
-                      );
-                    }
-                    else {
-                      return new Center(
-                        child: Container(
-                            margin: EdgeInsets.only(top: 100),
-                            child: Text("You currently don't have any vehicle")
-                        ),
-                      );
-                    }
+                        ],
+                      ),
+                    );
                   }
-                  else if (snapshot.hasError) {
-                    return Text('Error : ${snapshot.error}');
-                  } else {
-                    return new Center(
+
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(
                       child: CircularProgressIndicator(),
                     );
                   }
+                  if (snapshot.data.size==0){
+                    return Center(
+                      child: Column(
+                        children: [
+                          Image.asset("assets/images/empty.png",width: 150,height: 150,),
+                          Text("No Vehicles Added")
+
+                        ],
+                      ),
+                    );
+
+                  }
+
+                  return new ListView(
+                    shrinkWrap: true,
+                    children: snapshot.data.docs.map((DocumentSnapshot document) {
+                      Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+                      VehicleModel vehicle=new VehicleModel(
+                        document.reference.id,
+                        data['make'],
+                        data['model'],
+                        data['color'],
+                        data['plate'],
+                        data['year'],
+                        data['newTag'],
+                        data['feeAcceptance'],
+
+                      );
+                      return new Padding(
+                          padding: const EdgeInsets.only(top: 15.0),
+                          child: InkWell(
+                            onTap: (){
+
+                              _showInfoDailog(vehicle);
+                            },
+                            child: Slidable(
+                              actionPane: SlidableDrawerActionPane(),
+                              actionExtentRatio: 0.25,
+                              child: Container(
+                                color: Colors.white,
+                                child: ListTile(
+                                  leading: CircleAvatar(
+                                    backgroundColor: Colors.indigoAccent,
+                                    child:  Icon(
+                                      Icons.car_repair,
+                                    ),
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  title: Text("${data['model']} ${data['year']}"),
+                                  subtitle: Text(data['plate']),
+                                ),
+                              ),
+                              secondaryActions: <Widget>[
+                                IconSlideAction(
+                                  caption: 'Edit',
+                                  color: Colors.indigo,
+                                  icon: Icons.edit_outlined,
+                                  onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => EditVehicle(vehicle))),
+                                ),
+                                IconSlideAction(
+                                  caption: 'Delete',
+                                  color: Colors.indigo,
+                                  icon: Icons.delete_forever_outlined,
+                                  onTap: () async{
+                                    User user=FirebaseAuth.instance.currentUser;
+                                    await FirebaseFirestore.instance.collection("home").doc("vehicles").collection(user.uid).doc(document.reference.id).delete().then((value) {
+                                      Navigator.pop(context);
+                                      Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => MyVehicle()));
+                                    });
+                                  },
+                                ),
+                              ],
+
+                            ),
+                          )
+                      );
+                    }).toList(),
+                  );
                 },
               ),
-              SizedBox(
-                height: 20.0,
-              )
+
+
+
+
+
             ],
           ),
         ),

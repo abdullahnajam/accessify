@@ -3,14 +3,14 @@ import 'dart:io';
 import 'package:accessify/constants.dart';
 import 'package:accessify/model/user_model.dart';
 import 'package:accessify/screens/home.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:date_format/date_format.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
-import 'package:flutter_mailer/flutter_mailer.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lottie/lottie.dart';
 import 'package:http/http.dart' as http;
@@ -34,20 +34,24 @@ class _CreateTaxiState extends State<CreateTaxi> {
 
   getUserData()async{
     User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("users").child(user.uid).once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        print(dataSnapshot.value);
-        userModel = new UserModel(
-            user.uid,
-            dataSnapshot.value['name'],
-            dataSnapshot.value['email'],
-            dataSnapshot.value['type'],
-            dataSnapshot.value['isActive']
+    FirebaseFirestore.instance
+        .collection('homeowner')
+        .doc(user.uid)
+        .get()
+        .then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+
+        Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
+        userModel=new UserModel(
+          documentSnapshot.reference.id,
+          data['firstName'],
+          data['lastName'],
+          data['email'],
+          data['phone'],
         );
-        print("username = ${userModel.username}");
       }
     });
+
   }
 
 
@@ -57,10 +61,9 @@ class _CreateTaxiState extends State<CreateTaxi> {
   }
   sendNotification() async{
     String url='https://fcm.googleapis.com/fcm/send';
-
-
+    Uri myUri = Uri.parse(url);
     await http.post(
-      'https://fcm.googleapis.com/fcm/send',
+      myUri,
       headers: <String, String>{
         'Content-Type': 'application/json',
         'Authorization': 'key=$serverToken',
@@ -69,7 +72,7 @@ class _CreateTaxiState extends State<CreateTaxi> {
         <String, dynamic>{
           'notification': <String, dynamic>{
             'body': 'Delivery Access',
-            'title': 'Access control requested by ${userModel.username}'
+            'title': 'Access control requested by ${userModel.firstName}'
           },
           'priority': 'high',
           'data': <String, dynamic>{
@@ -82,14 +85,13 @@ class _CreateTaxiState extends State<CreateTaxi> {
       ),
     ).whenComplete(()  {
       User user=FirebaseAuth.instance.currentUser;
-      final databaseReference = FirebaseDatabase.instance.reference();
-      databaseReference.child("notifications").child("guard").push().set({
+      FirebaseFirestore.instance.collection("guard_notifications").add({
 
         'isOpened': false,
         'type':"taxi",
         'name':nameController.text,
         'date':DateTime.now().toString(),
-        'body':'Taxi Access from ${userModel.username}',
+        'body':'Taxi Access from ${userModel.firstName}',
         'title':"Taxi Access",
         'icon':'https://cdn1.iconfinder.com/data/icons/logistics-transportation-vehicles/202/logistic-shipping-vehicles-002-512.png',
         'userId':user.uid
@@ -242,8 +244,7 @@ class _CreateTaxiState extends State<CreateTaxi> {
 
   saveInfo(){
     User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    databaseReference.child("access_control").child("taxi").push().set({
+    FirebaseFirestore.instance.collection("taxi_access").add({
       'name': nameController.text,
       'date':startDate,
       'hour':time,

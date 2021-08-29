@@ -7,8 +7,9 @@ import 'package:accessify/model/access/guest.dart';
 import 'package:accessify/model/access/qr_image.dart';
 import 'package:accessify/screens/access_control/guest/create_guest.dart';
 import 'package:accessify/screens/access_control/guest/edit_guest.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -106,8 +107,7 @@ class _GuestAccessState extends State<GuestAccess> {
                               InkWell(
                                 onTap: ()async{
                                   User user=FirebaseAuth.instance.currentUser;
-                                  final databaseReference = FirebaseDatabase.instance.reference();
-                                  await databaseReference.child("access_control").child("guest").child(user.uid).child(model.id).remove().then((value) {
+                                  FirebaseFirestore.instance.collection("guest_control").doc(model.id).delete().then((value) {
                                     Navigator.pop(context);
                                     Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => GuestAccess()));
                                   });
@@ -220,35 +220,6 @@ class _GuestAccessState extends State<GuestAccess> {
     }
   }
 
-  Future<List<GuestModel>> getGuestList() async {
-    List<GuestModel> list=new List();
-    User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("access_control").child("guest").once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.value.keys;
-        var DATA=dataSnapshot.value;
-
-        for(var individualKey in KEYS) {
-          GuestModel guestModel = new GuestModel(
-            individualKey,
-            DATA[individualKey]['name'],
-            DATA[individualKey]['email'],
-            DATA[individualKey]['date'],
-            DATA[individualKey]['hour'],
-            DATA[individualKey]['status'],
-            DATA[individualKey]['userId'],
-            DATA[individualKey]['vehicle'],
-            DATA[individualKey]['qr'],
-          );
-          if(user.uid==guestModel.userId)
-            list.add(guestModel);
-
-        }
-      }
-    });
-    return list;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -346,94 +317,112 @@ class _GuestAccessState extends State<GuestAccess> {
                     ],
                   )
               ),
+              StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance.collection('guest_access').where('userId', isEqualTo: FirebaseAuth.instance.currentUser.uid).snapshots(),
+                builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Column(
+                        children: [
+                          Image.asset("assets/images/wrong.png",width: 150,height: 150,),
+                          Text("Something Went Wrong")
 
-
-              FutureBuilder<List<GuestModel>>(
-                future: getGuestList(),
-                builder: (context,snapshot){
-                  if (snapshot.hasData) {
-                    if (snapshot.data != null && snapshot.data.length>0) {
-                      return ListView.builder(
-                        shrinkWrap: true,
-                        //scrollDirection: Axis.horizontal,
-                        physics: NeverScrollableScrollPhysics(),
-                        itemCount: snapshot.data.length,
-                        itemBuilder: (BuildContext context,int index){
-                          return Padding(
-                              padding: const EdgeInsets.only(top: 15.0),
-                              child: InkWell(
-                                onTap: (){
-                                  _showInfoDailog(snapshot.data[index]);
-                                },
-                                child:Slidable(
-                                  actionPane: SlidableDrawerActionPane(),
-                                  actionExtentRatio: 0.25,
-                                  child: Container(
-                                    color: Colors.white,
-                                    child: ListTile(
-                                      leading: CircleAvatar(
-                                        backgroundColor: Colors.indigoAccent,
-                                        child:  Icon(
-                                          Icons.person,
-                                        ),
-                                        foregroundColor: Colors.white,
-                                      ),
-                                      title: Text("${snapshot.data[index].name}"),
-                                      subtitle: Text(snapshot.data[index].date),
-                                    ),
-                                  ),
-                                  secondaryActions: <Widget>[
-                                    IconSlideAction(
-                                        caption: 'Share',
-                                        color: Colors.indigo,
-                                        icon: Icons.share_outlined,
-                                        onTap: () => Share.share(snapshot.data[index].qr, subject: 'QR Code for accesfy')
-                                    ),
-                                    IconSlideAction(
-                                      caption: 'Edit',
-                                      color: Colors.indigo,
-                                      icon: Icons.edit_outlined,
-                                      onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => EditGuest(snapshot.data[index]))),
-                                    ),
-                                    IconSlideAction(
-                                      caption: 'Delete',
-                                      color: Colors.indigo,
-                                      icon: Icons.delete_forever_outlined,
-                                      onTap: () async{
-                                        User user=FirebaseAuth.instance.currentUser;
-                                        final databaseReference = FirebaseDatabase.instance.reference();
-                                        await databaseReference.child("access_control").child("guest").child(user.uid).child(snapshot.data[index].id).remove().then((value) {
-                                          Navigator.pop(context);
-                                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => GuestAccess()));
-                                        });
-                                      },
-                                    ),
-                                  ],
-
-                                ),
-                              )
-                          );
-                        },
-                      );
-                    }
-                    else {
-                      return new Center(
-                        child: Container(
-                            margin: EdgeInsets.only(top: 100),
-                            child: Text("You currently don't have any Guests")
-                        ),
-                      );
-                    }
+                        ],
+                      ),
+                    );
                   }
-                  else if (snapshot.hasError) {
-                    return Text('Error : ${snapshot.error}');
-                  } else {
-                    return new Center(
+
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(
                       child: CircularProgressIndicator(),
                     );
                   }
+                  if (snapshot.data.size==0){
+                    return Center(
+                      child: Column(
+                        children: [
+                          Image.asset("assets/images/empty.png",width: 150,height: 150,),
+                          Text("No Guests Added")
+
+                        ],
+                      ),
+                    );
+
+                  }
+
+                  return new ListView(
+                    shrinkWrap: true,
+                    children: snapshot.data.docs.map((DocumentSnapshot document) {
+                      Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+                      GuestModel model=new GuestModel(
+                        document.reference.id,
+                        data['name'],
+                        data['email'],
+                        data['date'],
+                        data['hour'],
+                        data['status'],
+                        data['userId'],
+                        data['vehicle'],
+                        data['qr'],
+                      );
+                      return Padding(
+                          padding: const EdgeInsets.only(top: 15.0),
+                          child: InkWell(
+                            onTap: (){
+                              _showInfoDailog(model);
+                            },
+                            child:Slidable(
+                              actionPane: SlidableDrawerActionPane(),
+                              actionExtentRatio: 0.25,
+                              child: Container(
+                                color: Colors.white,
+                                child: ListTile(
+                                  leading: CircleAvatar(
+                                    backgroundColor: Colors.indigoAccent,
+                                    child:  Icon(
+                                      Icons.person,
+                                    ),
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  title: Text("${model.name}"),
+                                  subtitle: Text(model.date),
+                                ),
+                              ),
+                              secondaryActions: <Widget>[
+                                IconSlideAction(
+                                    caption: 'Share',
+                                    color: Colors.indigo,
+                                    icon: Icons.share_outlined,
+                                    onTap: () => Share.share(model.qr, subject: 'QR Code for accesfy')
+                                ),
+                                IconSlideAction(
+                                  caption: 'Edit',
+                                  color: Colors.indigo,
+                                  icon: Icons.edit_outlined,
+                                  onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => EditGuest(model))),
+                                ),
+                                IconSlideAction(
+                                  caption: 'Delete',
+                                  color: Colors.indigo,
+                                  icon: Icons.delete_forever_outlined,
+                                  onTap: () async{
+                                    FirebaseFirestore.instance.collection("guest_access").doc(model.id).delete().then((value) {
+                                      Navigator.pop(context);
+                                      Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => GuestAccess()));
+                                    });
+                                  },
+                                ),
+                              ],
+
+                            ),
+                          )
+                      );
+                    }).toList(),
+                  );
                 },
               ),
+
+
               SizedBox(
                 height: 20.0,
               )

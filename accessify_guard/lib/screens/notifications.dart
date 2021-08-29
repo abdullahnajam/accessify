@@ -1,7 +1,8 @@
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:guard/components/default_button.dart';
 import 'package:guard/constants.dart';
@@ -24,7 +25,7 @@ class Notifications extends StatefulWidget {
 }
 
 class _AccessControlState extends State<Notifications> {
-  final GlobalKey<ScaffoldState> _drawerKey = GlobalKey();
+
   static String timeAgoSinceDate(String dateString, {bool numericDates = true}) {
     DateTime date = DateTime.parse(dateString);
     final date2 = DateTime.now();
@@ -67,66 +68,65 @@ class _AccessControlState extends State<Notifications> {
 
   Future<EventModel> getEventList(String id) async {
     EventModel eventModel;
-    User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("access_control").child("event").child(id).once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.key;
-
+    FirebaseFirestore.instance.collection('event_access').doc(id).get().then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+        Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
         eventModel = new EventModel(
-          KEYS,
-          dataSnapshot.value['name'],
-          dataSnapshot.value['location'],
-          dataSnapshot.value['date'],
-          dataSnapshot.value['startTime'],
-          dataSnapshot.value['guests'],
-          dataSnapshot.value['qr'],
-          dataSnapshot.value['userId'],
+          documentSnapshot.reference.id,
+          data['name'],
+          data['location'],
+          data['date'],
+          data['startTime'],
+          data['guests'],
+          data['qr'],
+          data['userId'],
+          data['status'],
         );
       }
     });
+    
     return eventModel;
   }
   Future<EmployeeAccessModel> getEmployeeFrequentList(String id) async {
     EmployeeAccessModel empfrequentModel;
     User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("access_control").child("employee").child(id).once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.key;
+    FirebaseFirestore.instance.collection('employee_access').doc(id).get().then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+        Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
         empfrequentModel = new EmployeeAccessModel(
-          KEYS,
-          dataSnapshot.value['emp'],
-          dataSnapshot.value['qr'],
-          dataSnapshot.value['fromDate'],
-          dataSnapshot.value['expDate'],
-          dataSnapshot.value['userId'],
-          dataSnapshot.value['type'],
+          documentSnapshot.reference.id,
+          data['emp'],
+          data['qr'],
+          data['fromDate'],
+          data['expDate'],
+          data['userId'],
+          data['type'],
+          data['status'],
         );
       }
     });
+
     return empfrequentModel;
   }
   Future<GuestModel> getGuestList(String id) async {
     GuestModel guestModel;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("access_control").child("guest").child(id).once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.key;
-
+    FirebaseFirestore.instance.collection('guest_access').doc(id).get().then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+        Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
         guestModel = new GuestModel(
-          KEYS,
-          dataSnapshot.value['name'],
-          dataSnapshot.value['email'],
-          dataSnapshot.value['date'],
-          dataSnapshot.value['hour'],
-          dataSnapshot.value['status'],
-          dataSnapshot.value['userId'],
-          dataSnapshot.value['vehicle'],
-          dataSnapshot.value['qr'],
+          documentSnapshot.reference.id,
+          data['name'],
+          data['email'],
+          data['date'],
+          data['hour'],
+          data['status'],
+          data['userId'],
+          data['vehicle'],
+          data['qr'],
         );
       }
     });
+
     return guestModel;
   }
 
@@ -174,45 +174,11 @@ class _AccessControlState extends State<Notifications> {
 
   }
 
+  final GlobalKey<ScaffoldState> _drawerKey = GlobalKey();
   void _openDrawer () {
     _drawerKey.currentState.openDrawer();
   }
 
-  Future<List<NotificationModel>> getNotificationList() async {
-    List<NotificationModel> list=[];
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("notifications").child("guard").once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.value.keys;
-        var DATA=dataSnapshot.value;
-
-        for(var individualKey in KEYS) {
-          NotificationModel notificationModel = new NotificationModel(
-              individualKey,
-              DATA[individualKey]['isOpened'],
-              DATA[individualKey]['type'],
-              DATA[individualKey]['date'],
-              DATA[individualKey]['body'],
-              DATA[individualKey]['title'],
-              DATA[individualKey]['icon'],
-              DATA[individualKey]['userId'],
-            DATA[individualKey]['name'],
-          );
-          if(!notificationModel.isOpened)
-            list.add(notificationModel);
-
-
-
-        }
-      }
-    });
-    list.sort((a, b) => DateTime.parse(a.date).millisecondsSinceEpoch.compareTo(DateTime.parse(b.date).millisecondsSinceEpoch));
-    print(list[0]);
-    print(list[1]);
-    print(list[2]);
-    list.reversed;
-    return list;
-  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -299,112 +265,133 @@ class _AccessControlState extends State<Notifications> {
                 ],
               ),
               Container(
-                child: FutureBuilder<List<NotificationModel>>(
-                  future: getNotificationList(),
-                  builder: (context,snapshot){
-                    if (snapshot.hasData) {
-                      if (snapshot.data != null && snapshot.data.length>0) {
-                        return ListView.builder(
-                          shrinkWrap: true,
-                          physics: NeverScrollableScrollPhysics(),
-                          //scrollDirection: Axis.horizontal,
-                          itemCount: snapshot.data.length,
-                          itemBuilder: (BuildContext context,int index){
-                            return Padding(
-                                padding: const EdgeInsets.only(top: 15.0),
-                                child: InkWell(
-                                  onTap: (){
-                                      if(snapshot.data[index].type=="delivery" || snapshot.data[index].type=="taxi"){
-                                        print("${snapshot.data[index].id} id");
-                                        Navigator.push(context, new MaterialPageRoute(
-                                            builder: (context) => AddAccess(snapshot.data[index].id, snapshot.data[index].type,  snapshot.data[index].userId,  snapshot.data[index].name)));
-                                      }
-                                      else{
-                                        showDeliveryServiceDailog(snapshot.data[index].type);
-                                      }
-                                  },
-                                  child: Container(
-                                    height: 60,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      border: Border(
-                                        top: BorderSide(width: 0.2, color: Colors.grey[500]),
-                                      ),
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance.collection('guard_notifications').snapshots(),
+                  builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Column(
+                          children: [
+                            Image.asset("assets/images/wrong.png",width: 150,height: 150,),
+                            Text("Something Went Wrong")
 
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                            flex: 2,
-                                            child:Container(
-                                                margin: EdgeInsets.all(10),
-                                                decoration: new BoxDecoration(
-                                                    shape: BoxShape.circle,
-                                                    image: new DecorationImage(
-                                                      fit: BoxFit.fill,
-                                                      image: new NetworkImage(snapshot.data[index].icon),
-                                                    )
-                                                )
-                                            )
-
-
-                                        ),
-                                        Expanded(
-                                            flex: 5,
-                                            child: Container(
-                                              margin: EdgeInsets.only(left: 5),
-                                              child: Column(
-                                                mainAxisAlignment: MainAxisAlignment.center,
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(snapshot.data[index].title,style: TextStyle(fontWeight: FontWeight.w400,fontSize: 15),),
-                                                  Text(snapshot.data[index].body,style: TextStyle(fontWeight: FontWeight.w300,fontSize: 10,color: Colors.grey[500]),)
-                                                ],
-                                              ),
-                                            )
-                                        ),
-                                        Expanded(
-                                            flex: 3,
-                                            child: Container(
-                                              margin: EdgeInsets.only(right: 5),
-                                              child: Column(
-                                                mainAxisAlignment: MainAxisAlignment.center,
-                                                crossAxisAlignment: CrossAxisAlignment.end,
-                                                children: [
-                                                  snapshot.data[index].date==null?Text(""):Text(timeAgoSinceDate(snapshot.data[index].date),style: TextStyle(fontWeight: FontWeight.w400,fontSize: 10),),
-                                                  Text(snapshot.data[index].type,style: TextStyle(fontWeight: FontWeight.w300,fontSize: 10,color: Colors.grey[500]),)
-                                                ],
-                                              ),
-                                            )
-                                        ),
-
-                                      ],
-                                    ),
-                                  ),
-                                )
-                            );
-                          },
-                        );
-                      }
-                      else {
-                        return new Center(
-                          child: Container(
-                              margin: EdgeInsets.only(top: 100),
-                              child: Text("You currently don't have any notifications")
-                          ),
-                        );
-                      }
+                          ],
+                        ),
+                      );
                     }
-                    else if (snapshot.hasError) {
-                      return Text('Error : ${snapshot.error}');
-                    } else {
-                      return new Center(
+
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Center(
                         child: CircularProgressIndicator(),
                       );
                     }
+                    if (snapshot.data.size==0){
+                      return Center(
+                        child: Column(
+                          children: [
+                            Image.asset("assets/images/empty.png",width: 150,height: 150,),
+                            Text("No Notifications")
+
+                          ],
+                        ),
+                      );
+
+                    }
+
+                    return new ListView(
+                      shrinkWrap: true,
+                      children: snapshot.data.docs.map((DocumentSnapshot document) {
+                        Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+                        NotificationModel model=NotificationModel(
+                          document.reference.id,
+                          data['isOpened'],
+                          data['type'],
+                          data['date'],
+                          data['body'],
+                          data['title'],
+                          data['icon'],
+                          data['userId'],
+                          data['name'],
+                        );
+                        return Padding(
+                            padding: const EdgeInsets.only(top: 15.0),
+                            child: InkWell(
+                              onTap: (){
+                                if(model.type=="delivery" || model.type=="taxi"){
+                                  print("${model.id} id");
+                                  Navigator.push(context, new MaterialPageRoute(
+                                      builder: (context) => AddAccess(model.id, model.type,  model.userId,  model.name)));
+                                }
+                                else{
+                                  showDeliveryServiceDailog(model.type);
+                                }
+                              },
+                              child: Container(
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  border: Border(
+                                    top: BorderSide(width: 0.2, color: Colors.grey[500]),
+                                  ),
+
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                        flex: 2,
+                                        child:Container(
+                                            margin: EdgeInsets.all(10),
+                                            decoration: new BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                image: new DecorationImage(
+                                                  fit: BoxFit.fill,
+                                                  image: new NetworkImage(model.icon),
+                                                )
+                                            )
+                                        )
+
+
+                                    ),
+                                    Expanded(
+                                        flex: 5,
+                                        child: Container(
+                                          margin: EdgeInsets.only(left: 5),
+                                          child: Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(model.title,style: TextStyle(fontWeight: FontWeight.w400,fontSize: 15),),
+                                              Text(model.body,style: TextStyle(fontWeight: FontWeight.w300,fontSize: 10,color: Colors.grey[500]),)
+                                            ],
+                                          ),
+                                        )
+                                    ),
+                                    Expanded(
+                                        flex: 3,
+                                        child: Container(
+                                          margin: EdgeInsets.only(right: 5),
+                                          child: Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            crossAxisAlignment: CrossAxisAlignment.end,
+                                            children: [
+                                              model.date==null?Text(""):Text(timeAgoSinceDate(model.date),style: TextStyle(fontWeight: FontWeight.w400,fontSize: 10),),
+                                              Text(model.type,style: TextStyle(fontWeight: FontWeight.w300,fontSize: 10,color: Colors.grey[500]),)
+                                            ],
+                                          ),
+                                        )
+                                    ),
+
+                                  ],
+                                ),
+                              ),
+                            )
+                        );
+                      }).toList(),
+                    );
                   },
                 ),
               ),
+
 
 
 

@@ -1,6 +1,6 @@
 class IncidentModel{
-  String id,title,description,photo,time,location,type,userId;
+  String id,title,description,photo,time,type,userId,status,classification;
 
   IncidentModel(this.id, this.title, this.description, this.photo, this.time,
-      this.location, this.type,this.userId);
+      this.type, this.userId, this.status, this.classification);
 }

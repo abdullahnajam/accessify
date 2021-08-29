@@ -1,7 +1,8 @@
 import 'package:accessify/model/notification_model.dart';
 import 'package:accessify/navigator/menu_drawer.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -53,36 +54,6 @@ class _NotificationsState extends State<Notifications> {
   void _openDrawer () {
     _drawerKey.currentState.openDrawer();
   }
-  Future<List<NotificationModel>> getNotificationList() async {
-    User user=FirebaseAuth.instance.currentUser;
-    List<NotificationModel> list=[];
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("notifications").child("user").once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.value.keys;
-        var DATA=dataSnapshot.value;
-
-        for(var individualKey in KEYS) {
-          NotificationModel notificationModel = new NotificationModel(
-              individualKey,
-              DATA[individualKey]['isOpened'],
-              DATA[individualKey]['type'],
-              DATA[individualKey]['date'],
-              DATA[individualKey]['body'],
-              DATA[individualKey]['title'],
-              DATA[individualKey]['icon'],
-              DATA[individualKey]['userId']
-          );
-          if(user.uid==notificationModel.userId || notificationModel.userId=="all")
-            list.add(notificationModel);
-
-
-
-        }
-      }
-    });
-    return list;
-  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -129,102 +100,124 @@ class _NotificationsState extends State<Notifications> {
             margin: EdgeInsets.all(5)
           ),
             Container(
-              child: FutureBuilder<List<NotificationModel>>(
-                future: getNotificationList(),
-                builder: (context,snapshot){
-                  if (snapshot.hasData) {
-                    if (snapshot.data != null && snapshot.data.length>0) {
-                      return ListView.builder(
-                        shrinkWrap: true,
-                        //scrollDirection: Axis.horizontal,
-                        itemCount: snapshot.data.length,
-                        itemBuilder: (BuildContext context,int index){
-                          return Padding(
-                              padding: const EdgeInsets.only(top: 15.0),
-                              child: InkWell(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance.collection('notifications').where('userId', isEqualTo: FirebaseAuth.instance.currentUser.uid).
+                  where('userId', isEqualTo: "all").snapshots(),
+                builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Column(
+                        children: [
+                          Image.asset("assets/images/wrong.png",width: 150,height: 150,),
+                          Text("Something Went Wrong")
 
-                                child: Container(
-                                  height: 60,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    border: Border(
-                                      top: BorderSide(width: 0.2, color: Colors.grey[500]),
-                                      bottom: BorderSide(width: 0.1, color: Colors.grey[500]),
-                                    ),
-
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                          flex: 2,
-                                          child:Container(
-                                              margin: EdgeInsets.all(10),
-                                              decoration: new BoxDecoration(
-                                                  image: new DecorationImage(
-                                                    fit: BoxFit.cover,
-                                                    image: new NetworkImage(snapshot.data[index].icon),
-                                                  )
-                                              )
-                                          )
-
-
-                                      ),
-                                      Expanded(
-                                          flex: 5,
-                                          child: Container(
-                                            margin: EdgeInsets.only(left: 5),
-                                            child: Column(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(snapshot.data[index].title,style: TextStyle(fontWeight: FontWeight.w400,fontSize: 15),),
-                                                Text(snapshot.data[index].body,style: TextStyle(fontWeight: FontWeight.w300,fontSize: 10,color: Colors.grey[500]),)
-                                              ],
-                                            ),
-                                          )
-                                      ),
-                                      Expanded(
-                                          flex: 3,
-                                          child: Container(
-                                            margin: EdgeInsets.only(right: 5),
-                                            child: Column(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              crossAxisAlignment: CrossAxisAlignment.end,
-                                              children: [
-                                                snapshot.data[index].date==null?Text(""):Text(timeAgoSinceDate(snapshot.data[index].date),style: TextStyle(fontWeight: FontWeight.w400,fontSize: 10),),
-                                                Text(snapshot.data[index].type,style: TextStyle(fontWeight: FontWeight.w300,fontSize: 10,color: Colors.grey[500]),)
-                                              ],
-                                            ),
-                                          )
-                                      ),
-
-                                    ],
-                                  ),
-                                ),
-                              )
-                          );
-                        },
-                      );
-                    }
-                    else {
-                      return new Center(
-                        child: Container(
-                            margin: EdgeInsets.only(top: 100),
-                            child: Text("You currently don't have any notifications")
-                        ),
-                      );
-                    }
+                        ],
+                      ),
+                    );
                   }
-                  else if (snapshot.hasError) {
-                    return Text('Error : ${snapshot.error}');
-                  } else {
-                    return new Center(
+
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(
                       child: CircularProgressIndicator(),
                     );
                   }
+                  if (snapshot.data.size==0){
+                    return Center(
+                      child: Column(
+                        children: [
+                          Image.asset("assets/images/empty.png",width: 150,height: 150,),
+                          Text("No Notifications")
+
+                        ],
+                      ),
+                    );
+
+                  }
+
+                  return new ListView(
+                    shrinkWrap: true,
+                    children: snapshot.data.docs.map((DocumentSnapshot document) {
+                      Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+                      NotificationModel model=new NotificationModel(
+                        document.reference.id,
+                        data['isOpened'],
+                        data['type'],
+                        data['date'],
+                        data['body'],
+                        data['title'],
+                        data['icon'],
+                        data['userId'],
+                      );
+                      return Padding(
+                          padding: const EdgeInsets.only(top: 15.0),
+                          child: InkWell(
+
+                            child: Container(
+                              height: 60,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                border: Border(
+                                  top: BorderSide(width: 0.2, color: Colors.grey[500]),
+                                  bottom: BorderSide(width: 0.1, color: Colors.grey[500]),
+                                ),
+
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                      flex: 2,
+                                      child:Container(
+                                          margin: EdgeInsets.all(10),
+                                          decoration: new BoxDecoration(
+                                              image: new DecorationImage(
+                                                fit: BoxFit.cover,
+                                                image: new NetworkImage(model.icon),
+                                              )
+                                          )
+                                      )
+
+
+                                  ),
+                                  Expanded(
+                                      flex: 5,
+                                      child: Container(
+                                        margin: EdgeInsets.only(left: 5),
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(model.title,style: TextStyle(fontWeight: FontWeight.w400,fontSize: 15),),
+                                            Text(model.body,style: TextStyle(fontWeight: FontWeight.w300,fontSize: 10,color: Colors.grey[500]),)
+                                          ],
+                                        ),
+                                      )
+                                  ),
+                                  Expanded(
+                                      flex: 3,
+                                      child: Container(
+                                        margin: EdgeInsets.only(right: 5),
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          crossAxisAlignment: CrossAxisAlignment.end,
+                                          children: [
+                                            model.date==null?Text(""):Text(timeAgoSinceDate(model.date),style: TextStyle(fontWeight: FontWeight.w400,fontSize: 10),),
+                                            Text(model.type,style: TextStyle(fontWeight: FontWeight.w300,fontSize: 10,color: Colors.grey[500]),)
+                                          ],
+                                        ),
+                                      )
+                                  ),
+
+                                ],
+                              ),
+                            ),
+                          )
+                      );
+                    }).toList(),
+                  );
                 },
               ),
             ),
+
           ],
         ),
       )

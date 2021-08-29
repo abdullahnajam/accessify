@@ -22,12 +22,12 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
   void _openDrawer () {
     _drawerKey.currentState.openDrawer();
   }
-  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
+  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   String _message = '';
 
 
 
-  void getMessage() {
+  /*void getMessage() {
     _firebaseMessaging.configure(
         onMessage: (Map<String, dynamic> message) async {
           print('received message');
@@ -55,12 +55,18 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
       print('on launch $message');
       setState(() => _message = message["notification"]["body"]);
     });
-  }
+  }*/
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-   getMessage();
+    FirebaseMessaging.onMessage.listen((RemoteMessage event) {
+      print("message recieved");
+      print(event.notification.body);
+    });
+    FirebaseMessaging.onMessageOpenedApp.listen((message) {
+      print('Message clicked!');
+    });
 
   }
   @override

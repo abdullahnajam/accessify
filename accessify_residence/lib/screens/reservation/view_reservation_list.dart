@@ -1,7 +1,8 @@
 import 'package:accessify/model/reservation_model.dart';
 import 'package:accessify/screens/reservation/create_reservation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -119,40 +120,7 @@ class _ViewReservationsState extends State<ViewReservations> {
       },
     );
   }
-  Future<List<ReservationModel>> getReservedDates() async {
-    List<ReservationModel> list=new List();
-    User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("reservation").once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.value.keys;
-        var DATA=dataSnapshot.value;
 
-        for(var individualKey in KEYS) {
-          ReservationModel reservationModel = new ReservationModel(
-            individualKey,
-            DATA[individualKey]['date'],
-            DATA[individualKey]['facilityName'],
-            DATA[individualKey]['facilityId'],
-            DATA[individualKey]['totalGuests'],
-            DATA[individualKey]['hourStart'],
-            DATA[individualKey]['hourEnd'],
-            DATA[individualKey]['user'],
-            DATA[individualKey]['dateNoFormat'],
-            DATA[individualKey]['qr'],
-          );
-          if(reservationModel.userId==user.uid){
-            list.add(reservationModel);
-          }
-
-          //DateTime parsedDate = DateTime.parse(reservationModel.dateNoFormat);
-
-        }
-      }
-    });
-
-    return list;
-  }
   @override
   Widget build(BuildContext context) {
     return  Scaffold(
@@ -247,38 +215,62 @@ class _ViewReservationsState extends State<ViewReservations> {
                   ],
                 )
               ),
-              FutureBuilder<List<ReservationModel>>(
-                future: getReservedDates(),
-                builder: (context,snapshot){
-                  if (snapshot.hasData) {
-                    if (snapshot.data != null && snapshot.data.length>0) {
-                      return ListView.builder(
-                        shrinkWrap: true,
-                        //scrollDirection: Axis.horizontal,
-                        itemCount: snapshot.data.length,
-                        itemBuilder: (BuildContext context,int index){
-                          return _card(snapshot.data[index]);
-                        },
-                      );
-                    }
-                    else {
-                      return new Center(
-                        child: Container(
-                            margin: EdgeInsets.only(top: 100),
-                            child: Text("You currently don't have any reservation")
-                        ),
-                      );
-                    }
+              StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance.collection('reservation').where('user', isEqualTo: FirebaseAuth.instance.currentUser.uid).snapshots(),
+                builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Column(
+                        children: [
+                          Image.asset("assets/images/wrong.png",width: 150,height: 150,),
+                          Text("Something Went Wrong")
+
+                        ],
+                      ),
+                    );
                   }
-                  else if (snapshot.hasError) {
-                    return Text('Error : ${snapshot.error}');
-                  } else {
-                    return new Center(
+
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(
                       child: CircularProgressIndicator(),
                     );
                   }
+                  if (snapshot.data.size==0){
+                    return Center(
+                      child: Column(
+                        children: [
+                          Image.asset("assets/images/empty.png",width: 150,height: 150,),
+                          Text("No Reservations Added")
+
+                        ],
+                      ),
+                    );
+
+                  }
+
+                  return new ListView(
+                    shrinkWrap: true,
+                    children: snapshot.data.docs.map((DocumentSnapshot document) {
+                      Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+                      ReservationModel model=new ReservationModel(
+                        //date,facilityName,facilityId,totalGuests,hourStart,hourEnd,userId,dateNoFormat,qr,status;
+                        document.reference.id,
+                        data['date'],
+                        data['facilityName'],
+                        data['facilityId'],
+                        data['totalGuests'],
+                        data['hourStart'],
+                        data['hourEnd'],
+                        data['userId'],
+                        data['dateNoFormat'],data['qr'],
+                        data['status'],
+                      );
+                      return _card(model);
+                    }).toList(),
+                  );
                 },
               ),
+
 
 
 
@@ -343,7 +335,7 @@ class _ViewReservationsState extends State<ViewReservations> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text("My Name",style: TextStyle(fontWeight: FontWeight.w700,color: Colors.black),),
+                              Text(reservation.status,style: TextStyle(fontWeight: FontWeight.w700,color: Colors.black),),
                               Row(
                                 children: [
                                   Text(reservation.totalGuests,style: TextStyle(fontWeight: FontWeight.w500,fontSize: 12),),

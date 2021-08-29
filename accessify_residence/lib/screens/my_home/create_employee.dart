@@ -1,16 +1,17 @@
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:accessify/constants.dart';
 import 'package:accessify/screens/home.dart';
+import 'package:accessify/screens/my_home/employee.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:date_format/date_format.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
-import 'package:flutter_mailer/flutter_mailer.dart';
+
 import 'package:image_picker/image_picker.dart';
 import 'package:lottie/lottie.dart';
 import 'package:time_range_picker/time_range_picker.dart';
@@ -156,8 +157,8 @@ class _CreateEmployeeState extends State<CreateEmployee> {
                 ),
                 GestureDetector(
                   onTap: (){
-                    Navigator.push(
-                        context, MaterialPageRoute(builder: (BuildContext context) => Home()));
+                    Navigator.pushReplacement(
+                        context, MaterialPageRoute(builder: (BuildContext context) => MyEmployees()));
                   },
                   child: Container(
                     alignment: Alignment.center,
@@ -325,8 +326,7 @@ class _CreateEmployeeState extends State<CreateEmployee> {
       }
     }
     User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    databaseReference.child("home").child("employees").child(user.uid).push().set({
+    FirebaseFirestore.instance.collection('home').doc('employees').collection(user.uid).add({
       'name': nameController.text,
       'email': emailController.text,
       'vehicle': vehicleController.text,

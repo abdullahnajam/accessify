@@ -5,8 +5,9 @@ import 'package:accessify/screens/my_home/create_employee.dart';
 import 'package:accessify/screens/my_home/create_pet.dart';
 import 'package:accessify/screens/my_home/create_vehicle.dart';
 import 'package:accessify/screens/my_home/edit_employee.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
@@ -18,6 +19,7 @@ class MyEmployees extends StatefulWidget {
 }
 
 class _MyEmployeesState extends State<MyEmployees> {
+  User user=FirebaseAuth.instance.currentUser;
   Future<void> _showInfoDailog(EmployeeModel model) async {
     return showDialog<void>(
       context: context,
@@ -106,9 +108,7 @@ class _MyEmployeesState extends State<MyEmployees> {
                             children: [
                               InkWell(
                                 onTap: ()async{
-                                  User user=FirebaseAuth.instance.currentUser;
-                                  final databaseReference = FirebaseDatabase.instance.reference();
-                                  await databaseReference.child("home").child("employees").child(user.uid).child(model.id).remove().then((value) {
+                                  FirebaseFirestore.instance.collection("home").doc("employees").collection(user.uid).doc(model.id).delete().then((value) {
                                     Navigator.pop(context);
                                     Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => MyEmployees()));
                                   });
@@ -196,38 +196,7 @@ class _MyEmployeesState extends State<MyEmployees> {
     );
   }
 
-  Future<List<EmployeeModel>> getEmpList() async {
-    List<EmployeeModel> list=new List();
-    User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("home").child("employees").child(user.uid).once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.value.keys;
-        var DATA=dataSnapshot.value;
 
-        for(var individualKey in KEYS) {
-          EmployeeModel employeeModel = new EmployeeModel(
-            individualKey,
-            DATA[individualKey]['name'],
-            DATA[individualKey]['email'],
-            DATA[individualKey]['fromDate'],
-            DATA[individualKey]['expDate'],
-            DATA[individualKey]['vehicle'],
-            DATA[individualKey]['photo'],
-            DATA[individualKey]['hoursAllowed'],
-            DATA[individualKey]['daysAllowed'],
-          );
-          print("key ${employeeModel.id}");
-          list.add(employeeModel);
-
-        }
-      }
-    });
-    list.sort((a, b) {
-      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-    });
-    return list;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -325,90 +294,108 @@ class _MyEmployeesState extends State<MyEmployees> {
                     ],
                   )
               ),
+              StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance.collection('home').doc('employees').collection(user.uid).snapshots(),
+                builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Column(
+                        children: [
+                          Image.asset("assets/images/wrong.png",width: 150,height: 150,),
+                          Text("Something Went Wrong")
 
-
-              FutureBuilder<List<EmployeeModel>>(
-                future: getEmpList(),
-                builder: (context,snapshot){
-                  if (snapshot.hasData) {
-                    if (snapshot.data != null && snapshot.data.length>0) {
-                      return ListView.builder(
-                        physics: NeverScrollableScrollPhysics(),
-                        shrinkWrap: true,
-                        //scrollDirection: Axis.horizontal,
-                        itemCount: snapshot.data.length,
-                        itemBuilder: (BuildContext context,int index){
-                          return Padding(
-                              padding: const EdgeInsets.only(top: 15.0),
-                              child: InkWell(
-                                onTap: (){
-                                  _showInfoDailog(snapshot.data[index]);
-                                },
-                                child: Slidable(
-                                  actionPane: SlidableDrawerActionPane(),
-                                  actionExtentRatio: 0.25,
-                                  child: Container(
-                                    color: Colors.white,
-                                    child: ListTile(
-                                      leading: CircleAvatar(
-                                        radius: 25,
-                                        child: Text(snapshot.data[index].name[0].toUpperCase()),
-                                        backgroundColor: Colors.indigoAccent,
-                                        foregroundColor: Colors.white,
-                                      ),
-                                      title: Text("${snapshot.data[index].name}"),
-                                      subtitle: Text(snapshot.data[index].email),
-                                    ),
-                                  ),
-                                  secondaryActions: <Widget>[
-                                    IconSlideAction(
-                                      caption: 'Edit',
-                                      color: Colors.indigo,
-                                      icon: Icons.edit_outlined,
-                                      onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => EditEmployee(snapshot.data[index]))),
-                                    ),
-                                    IconSlideAction(
-                                      caption: 'Delete',
-                                      color: Colors.indigo,
-                                      icon: Icons.delete_forever_outlined,
-                                      onTap: () async{
-                                        User user=FirebaseAuth.instance.currentUser;
-                                        final databaseReference = FirebaseDatabase.instance.reference();
-                                        await databaseReference.child("home").child("employees").child(user.uid).child(snapshot.data[index].id).remove().then((value) {
-                                          Navigator.pop(context);
-                                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => MyEmployees()));
-                                        });
-                                      },
-                                    ),
-                                  ],
-
-                                ),
-                              )
-                          );
-                        },
-                      );
-                    }
-                    else {
-                      return new Center(
-                        child: Container(
-                            margin: EdgeInsets.only(top: 100),
-                            child: Text("You currently don't have any employees")
-                        ),
-                      );
-                    }
+                        ],
+                      ),
+                    );
                   }
-                  else if (snapshot.hasError) {
-                    return Text('Error : ${snapshot.error}');
-                  } else {
-                    return new Center(
+
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(
                       child: CircularProgressIndicator(),
                     );
                   }
+                  if (snapshot.data.size==0){
+                    return Center(
+                      child: Column(
+                        children: [
+                          Image.asset("assets/images/empty.png",width: 150,height: 150,),
+                          Text("No Employees Added")
+
+                        ],
+                      ),
+                    );
+
+                  }
+
+                  return new ListView(
+                    shrinkWrap: true,
+                    children: snapshot.data.docs.map((DocumentSnapshot document) {
+                      Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+                      EmployeeModel model=new EmployeeModel(
+                        document.reference.id,
+                        data['name'],
+                        data['email'],
+                        data['fromDate'],
+                        data['expDate'],
+                        data['vehicle'],
+                        data['photo'],
+                        data['hoursAllowed'],
+                        data['daysAllowed'],
+                      );
+                      return new Padding(
+                          padding: const EdgeInsets.only(top: 15.0),
+                          child: InkWell(
+                            onTap: (){
+
+                              _showInfoDailog(model);
+                            },
+                            child: Slidable(
+                              actionPane: SlidableDrawerActionPane(),
+                              actionExtentRatio: 0.25,
+                              child: Container(
+                                color: Colors.white,
+                                child: ListTile(
+                                  leading: CircleAvatar(
+                                    radius: 25,
+                                    child: Text(model.name[0].toUpperCase()),
+                                    backgroundColor: Colors.indigoAccent,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  title: Text("${model.name}"),
+                                  subtitle: Text(model.email),
+                                ),
+                              ),
+                              secondaryActions: <Widget>[
+                                IconSlideAction(
+                                  caption: 'Edit',
+                                  color: Colors.indigo,
+                                  icon: Icons.edit_outlined,
+                                  onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => EditEmployee(model))),
+                                ),
+                                IconSlideAction(
+                                  caption: 'Delete',
+                                  color: Colors.indigo,
+                                  icon: Icons.delete_forever_outlined,
+                                  onTap: () async{
+                                    User user=FirebaseAuth.instance.currentUser;
+                                    await FirebaseFirestore.instance.collection("home").doc("employees").collection(user.uid).doc(model.id).delete().then((value) {
+                                      Navigator.pop(context);
+                                      Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => MyEmployees()));
+                                    });
+                                  },
+                                ),
+                              ],
+
+                            ),
+                          )
+                      );
+                    }).toList(),
+                  );
                 },
               ),
-              SizedBox(
-                height: 20.0,
-              )
+
+
+
             ],
           ),
         ),

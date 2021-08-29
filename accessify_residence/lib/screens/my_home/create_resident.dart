@@ -1,10 +1,11 @@
 import 'package:accessify/constants.dart';
 import 'package:accessify/screens/home.dart';
+import 'package:accessify/screens/my_home/residence.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_mailer/flutter_mailer.dart';
 import 'package:lottie/lottie.dart';
 class CreateResident extends StatefulWidget {
   @override
@@ -20,37 +21,6 @@ class _CreateResidentState extends State<CreateResident> {
   var emailController=TextEditingController();
   String dropdownValue = 'Family';
 
-  sendMail(String relation,code) async{
-    final MailOptions mailOptions = MailOptions(
-      body: 'You have been add to accesfy resident as a $relation.\nYour passcode is $code',
-      subject: 'Accesfy Resident',
-      recipients: ['example@example.com'],
-      isHTML: true,
-      bccRecipients: ['other@example.com'],
-      ccRecipients: ['third@example.com'],
-      attachments: [ 'path/to/image.png', ],
-    );
-
-    final MailerResponse response = await FlutterMailer.send(mailOptions);
-    print(response);
-    /*switch (response) {
-      case MailerResponse.saved: /// ios only
-        platformResponse = 'mail was saved to draft';
-        break;
-      case MailerResponse.sent: /// ios only
-        platformResponse = 'mail was sent';
-        break;
-      case MailerResponse.cancelled: /// ios only
-        platformResponse = 'mail was cancelled';
-        break;
-      case MailerResponse.android:
-        platformResponse = 'intent was successful';
-        break;
-      default:
-        platformResponse = 'unknown';
-        break;
-    }*/
-  }
 
   Future<void> _showSuccessDailog() async {
     return showDialog<void>(
@@ -98,8 +68,8 @@ class _CreateResidentState extends State<CreateResident> {
                 ),
                 GestureDetector(
                   onTap: (){
-                    Navigator.push(
-                        context, MaterialPageRoute(builder: (BuildContext context) => Home()));
+                    Navigator.pushReplacement(
+                        context, MaterialPageRoute(builder: (BuildContext context) => MyResidence()));
                   },
                   child: Container(
                     alignment: Alignment.center,
@@ -198,8 +168,7 @@ class _CreateResidentState extends State<CreateResident> {
   saveInfo(){
     String pass=new DateTime.now().millisecondsSinceEpoch.toString();
     User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    databaseReference.child("home").child("residents").child(user.uid).push().set({
+    FirebaseFirestore.instance.collection('home').doc('resident').collection(user.uid).add({
       'age': ageController.text,
       'passcode': pass.substring(0,6),
       'email': emailController.text,

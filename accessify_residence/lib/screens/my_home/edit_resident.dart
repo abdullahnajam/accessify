@@ -1,11 +1,13 @@
 import 'package:accessify/constants.dart';
 import 'package:accessify/model/resident_model.dart';
 import 'package:accessify/screens/home.dart';
+import 'package:accessify/screens/my_home/residence.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_mailer/flutter_mailer.dart';
+
 import 'package:lottie/lottie.dart';
 class EditResident extends StatefulWidget {
   ResidentsModel resident;
@@ -71,8 +73,8 @@ class _EditResidentState extends State<EditResident> {
                 ),
                 GestureDetector(
                   onTap: (){
-                    Navigator.push(
-                        context, MaterialPageRoute(builder: (BuildContext context) => Home()));
+                    Navigator.pushReplacement(
+                        context, MaterialPageRoute(builder: (BuildContext context) => MyResidence()));
                   },
                   child: Container(
                     alignment: Alignment.center,
@@ -171,8 +173,7 @@ class _EditResidentState extends State<EditResident> {
   saveInfo(){
     String pass=new DateTime.now().millisecondsSinceEpoch.toString();
     User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    databaseReference.child("home").child("residents").child(user.uid).child(widget.resident.id).set({
+    FirebaseFirestore.instance.collection("home").doc("residents").collection(user.uid).doc(widget.resident.id).update({
       'age': ageController.text,
       'passcode': widget.resident.passcode,
       'email': emailController.text,

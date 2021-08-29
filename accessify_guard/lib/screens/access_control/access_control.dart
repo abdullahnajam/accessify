@@ -1,5 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+
 import 'package:guard/model/access/employee_frequent_model.dart';
 import 'package:guard/model/access/event.dart';
 import 'package:guard/model/access/guest.dart';
@@ -158,69 +159,88 @@ class _AccessControlState extends State<AccessControl> {
         });
   }
 
-  Future<EventModel> getEventList(String id) async {
+  getEventList(String id) async {
     EventModel eventModel;
-    User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("access_control").child("event").child(id).once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.key;
+    FirebaseFirestore.instance.collection('event_access').doc(id).get().then((DocumentSnapshot documentSnapshot) {
 
-         eventModel = new EventModel(
-          KEYS,
-          dataSnapshot.value['name'],
-          dataSnapshot.value['location'],
-          dataSnapshot.value['date'],
-          dataSnapshot.value['startTime'],
-          dataSnapshot.value['guests'],
-          dataSnapshot.value['qr'],
-           dataSnapshot.value['userId'],
+      if (documentSnapshot.exists) {
+        Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
+        eventModel = new EventModel(
+          documentSnapshot.reference.id,
+          data['name'],
+          data['location'],
+          data['date'],
+          data['startTime'],
+          data['guests'],
+          data['qr'],
+          data['userId'],
+          data['status'],
         );
+        Navigator.push(context, new MaterialPageRoute(builder: (context) => AddAccess(id,"event",eventModel.userId,eventModel.name)));
+      }
+      else{
+        print("not found");
+        Toast.show("This barcode is not for event access", context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM);
+        return null;
       }
     });
+
     return eventModel;
   }
-  Future<EmployeeAccessModel> getEmployeeFrequentList(String id) async {
+  getEmployeeFrequentList(String id) async {
     EmployeeAccessModel empfrequentModel;
-    User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("access_control").child("employee").child(id).once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.key;
-         empfrequentModel = new EmployeeAccessModel(
-           KEYS,
-          dataSnapshot.value['emp'],
-           dataSnapshot.value['qr'],
-           dataSnapshot.value['fromDate'],
-           dataSnapshot.value['expDate'],
-           dataSnapshot.value['userId'],
-           dataSnapshot.value['type'],
+    FirebaseFirestore.instance.collection('employee_access').doc(id).get().then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+        Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
+        empfrequentModel = new EmployeeAccessModel(
+          documentSnapshot.reference.id,
+          data['emp'],
+          data['qr'],
+          data['fromDate'],
+          data['expDate'],
+          data['userId'],
+          data['type'],
+          data['status'],
         );
+        Navigator.push(context, new MaterialPageRoute(builder: (context) => AddAccess(id,"employee",empfrequentModel.userId,empfrequentModel.emp)));
+      }
+      else{
+        print("not found");
+        Toast.show("This barcode is not for employees access", context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM);
+        return null;
       }
     });
-    return empfrequentModel;
-  }
-  Future<GuestModel> getGuestList(String id) async {
-    GuestModel guestModel;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("access_control").child("guest").child(id).once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.key;
 
-         guestModel = new GuestModel(
-          KEYS,
-          dataSnapshot.value['name'],
-          dataSnapshot.value['email'],
-          dataSnapshot.value['date'],
-          dataSnapshot.value['hour'],
-          dataSnapshot.value['status'],
-          dataSnapshot.value['userId'],
-          dataSnapshot.value['vehicle'],
-          dataSnapshot.value['qr'],
+  }
+  getGuestList(String id) async {
+    GuestModel guestModel;
+    FirebaseFirestore.instance.collection('guest_access').doc(id).get().then((DocumentSnapshot documentSnapshot) {
+      documentSnapshot.data();
+      if (documentSnapshot.exists) {
+        Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
+        guestModel = new GuestModel(
+          documentSnapshot.reference.id,
+          data['name'],
+          data['email'],
+          data['date'],
+          data['hour'],
+          data['status'],
+          data['userId'],
+          data['vehicle'],
+          data['qr'],
         );
+        Navigator.push(context, new MaterialPageRoute(builder: (context) => AddAccess(id,"guest",guestModel.userId,guestModel.name)));
+      }
+      else{
+        print("not found");
+        Toast.show("This barcode is not for guest access", context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM);
+        return null;
       }
     });
-    return guestModel;
+  }
+
+  addDeliveryAndTaxiAccess(){
+
   }
 
   scanQRCode(String type)async{
@@ -232,41 +252,20 @@ class _AccessControlState extends State<AccessControl> {
     } else {
       print('qr code $barcode');
       if(type=="event"){
-        getEventList(barcode).then((value){
-          if(value!=null){
-            Navigator.push(context, new MaterialPageRoute(
-                builder: (context) => AddAccess(barcode,type,value.userId,value.name)));
-          }
-          else
-            Toast.show("This barcode is not for event access", context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM);
-        });
+        getEventList(barcode);
       }
       if(type=="employee"){
-        getEmployeeFrequentList(barcode).then((value){
-          if(value!=null){
-            Navigator.push(context, new MaterialPageRoute(
-                builder: (context) => AddAccess(barcode,type,value.userId,value.emp)));
-          }
-          else
-            Toast.show("This barcode is not for employee access", context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM);
-        });
+        getEmployeeFrequentList(barcode);
       }
       if(type=="guest"){
-        getGuestList(barcode).then((value){
-          if(value!=null){
-            Navigator.push(context, new MaterialPageRoute(
-                builder: (context) => AddAccess(barcode,type,value.userId,value.name)));
-          }
-          else
-            Toast.show("This barcode is not for guest access", context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM);
-        });
+        getGuestList(barcode);
       }
       
 
     }
 
   }
-  showUnRegisteredDailog(){
+  showUnRegisteredDialog(){
     showGeneralDialog(
         barrierColor: Colors.black.withOpacity(0.5),
         transitionBuilder: (context, a1, a2, widget) {
@@ -578,7 +577,8 @@ class _AccessControlState extends State<AccessControl> {
               ),
 
 
-
+              _card(Icons.delivery_dining, "Delivery", () =>scanQRCode("guest")),
+              _card(Icons.local_taxi, "Taxi", () =>scanQRCode("guest")),
               _card(Icons.people, "Guest", () =>scanQRCode("guest")),
               _card(Icons.card_travel, "Frecuent / Employee", () =>scanQRCode("employee")),
               _card(Icons.event, "Event", () =>scanQRCode("event")),

@@ -1,8 +1,9 @@
 import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:date_format/date_format.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:guard/model/alert_model.dart';
@@ -19,10 +20,10 @@ class _NotifyResidentsState extends State<NotifyResidents> {
   String startDate = formatDate(DateTime.now(), [dd, '-', mm, '-', yyyy]);
   String url;
   sendNotification() async{
-
-
+    String url='https://fcm.googleapis.com/fcm/send';
+    Uri myUri = Uri.parse(url);
     await http.post(
-      'https://fcm.googleapis.com/fcm/send',
+      myUri,
       headers: <String, String>{
         'Content-Type': 'application/json',
         'Authorization': 'key=$serverToken',
@@ -43,9 +44,7 @@ class _NotifyResidentsState extends State<NotifyResidents> {
         },
       ),
     ).whenComplete(()  {
-      final databaseReference = FirebaseDatabase.instance.reference();
-
-      databaseReference.child("notifications").child("user").push().set({
+      FirebaseFirestore.instance.collection("notifications").add({
 
         'isOpened': false,
         'type':"service",
@@ -59,28 +58,7 @@ class _NotifyResidentsState extends State<NotifyResidents> {
 
     }).then((value) => Toast.show("Notification Sent", context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM));
   }
-  Future<List<AlertModel>> getFacilityList() async {
-    List<AlertModel> list=new List();
-    final databaseReference = FirebaseDatabase.instance.reference();
-    await databaseReference.child("alerts").once().then((DataSnapshot dataSnapshot){
-      if(dataSnapshot.value!=null){
-        var KEYS= dataSnapshot.value.keys;
-        var DATA=dataSnapshot.value;
 
-        for(var individualKey in KEYS) {
-          AlertModel alertModel = new AlertModel(
-            individualKey,
-            DATA[individualKey]['name'],
-            DATA[individualKey]['image'],
-          );
-          list.add(alertModel);
-
-        }
-      }
-    });
-
-    return list;
-  }
   String alertSelected="Select Service List",selectedAlertId;
   Future<void> _showAlertsDailog() async {
     return showDialog<void>(
@@ -108,50 +86,58 @@ class _NotifyResidentsState extends State<NotifyResidents> {
                   margin: EdgeInsets.all(10),
                   child: Text("Services List",textAlign: TextAlign.center,style: TextStyle(fontSize: 20,color:Colors.black,fontWeight: FontWeight.w600),),
                 ),
-                FutureBuilder<List<AlertModel>>(
-                  future: getFacilityList(),
-                  builder: (context,snapshot){
-                    if (snapshot.hasData) {
-                      if (snapshot.data != null && snapshot.data.length>0) {
-                        return Container(
-                          margin: EdgeInsets.all(10),
-                          child: ListView.builder(
-                            shrinkWrap: true,
-                            itemCount: snapshot.data.length,
-                            itemBuilder: (BuildContext context,int index){
-                              return ListTile(
-                                onTap: (){
-                                  setState(() {
-                                    alertSelected=snapshot.data[index].name;
-                                    selectedAlertId=snapshot.data[index].id;
-                                    url=snapshot.data[index].image;
-                                  });
-                                  Navigator.pop(context);
-                                },
-                                leading: Image.network(snapshot.data[index].image),
-                                title: Text(snapshot.data[index].name,textAlign: TextAlign.center,style: TextStyle(fontSize: 16,color:Colors.black),
-                                ),
-                              );
-                            },
-                          ),
-                        );
-                      }
-                      else {
-                        return new Center(
-                          child: Container(
-                              margin: EdgeInsets.only(top: 100),
-                              child: Text("You currently don't have any services")
-                          ),
-                        );
-                      }
+                StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance.collection('guard_notifications').snapshots(),
+                  builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Column(
+                          children: [
+                            Image.asset("assets/images/wrong.png",width: 150,height: 150,),
+                            Text("Something Went Wrong")
+
+                          ],
+                        ),
+                      );
                     }
-                    else if (snapshot.hasError) {
-                      return Text('Error : ${snapshot.error}');
-                    } else {
-                      return new Center(
+
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Center(
                         child: CircularProgressIndicator(),
                       );
                     }
+                    if (snapshot.data.size==0){
+                      return Center(
+                        child: Column(
+                          children: [
+                            Image.asset("assets/images/empty.png",width: 150,height: 150,),
+                            Text("No Services")
+
+                          ],
+                        ),
+                      );
+
+                    }
+
+                    return new ListView(
+                      shrinkWrap: true,
+                      children: snapshot.data.docs.map((DocumentSnapshot document) {
+                        Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+                        return ListTile(
+                          onTap: (){
+                            setState(() {
+                              alertSelected=data['name'];
+                              selectedAlertId=document.reference.id;
+                              url=data['image'];
+                            });
+                            Navigator.pop(context);
+                          },
+                          leading: Image.network(data['image']),
+                          title: Text(data['name'],textAlign: TextAlign.center,style: TextStyle(fontSize: 16,color:Colors.black),
+                          ),
+                        );
+                      }).toList(),
+                    );
                   },
                 ),
                 SizedBox(

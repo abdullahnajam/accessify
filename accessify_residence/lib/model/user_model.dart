@@ -1,7 +1,5 @@
 class UserModel{
-  String id,username,email,type;
-  bool isActive;
+  String id,firstName,lastName,email,phone;
 
-  UserModel(this.id, this.username, this.email, this.type, this.isActive);
-
+  UserModel(this.id, this.firstName, this.lastName, this.email, this.phone);
 }

@@ -1,6 +1,6 @@
 class PaymentModel{
-  String id,title,prefix,status;
+  String id,title,prefix,status,userId;
   int amount;
 
-  PaymentModel(this.id, this.title, this.prefix, this.status, this.amount);
+  PaymentModel(this.id, this.title, this.prefix, this.status, this.amount,this.userId);
 }

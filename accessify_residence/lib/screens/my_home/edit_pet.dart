@@ -3,12 +3,14 @@ import 'dart:io';
 import 'package:accessify/constants.dart';
 import 'package:accessify/model/pet_model.dart';
 import 'package:accessify/screens/home.dart';
+import 'package:accessify/screens/my_home/pets.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_mailer/flutter_mailer.dart';
+
 import 'package:image_picker/image_picker.dart';
 import 'package:lottie/lottie.dart';
 class EditPet extends StatefulWidget {
@@ -187,8 +189,8 @@ class _EditPetState extends State<EditPet> {
                 ),
                 GestureDetector(
                   onTap: (){
-                    Navigator.push(
-                        context, MaterialPageRoute(builder: (BuildContext context) => Home()));
+                    Navigator.pushReplacement(
+                        context, MaterialPageRoute(builder: (BuildContext context) => MyPets()));
                   },
                   child: Container(
                     alignment: Alignment.center,
@@ -286,8 +288,7 @@ class _EditPetState extends State<EditPet> {
 
   saveInfo(){
     User user=FirebaseAuth.instance.currentUser;
-    final databaseReference = FirebaseDatabase.instance.reference();
-    databaseReference.child("home").child("pets").child(user.uid).child(widget.pet.id).set({
+    FirebaseFirestore.instance.collection("home").doc("pets").collection(user.uid).doc(widget.pet.id).update({
       'name': nameController.text,
       'type': typeController.text,
       'breed': breedController.text,

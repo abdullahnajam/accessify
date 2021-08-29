@@ -36,11 +36,11 @@ class _SplashScreenState extends State<SplashScreen> {
     FirebaseAuth.instance.authStateChanges().listen((User user) {
       if (user == null) {
         print('User is currently signed out!');
-        Navigator.pushNamed(context, SignInScreen.routeName);
+        Navigator.pushReplacementNamed(context, SignInScreen.routeName);
       }
       else {
         print('User is signed in!');
-        Navigator.pushNamed(context, Home.routeName);
+        Navigator.pushReplacementNamed(context, Home.routeName);
       }
     });
 
