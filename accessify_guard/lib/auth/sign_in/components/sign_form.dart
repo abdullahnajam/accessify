@@ -1,10 +1,13 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:guard/screens/home.dart';
 import 'package:flutter/material.dart';
 import 'package:guard/components/custom_surfix_icon.dart';
 import 'package:guard/components/form_error.dart';
 import 'package:guard/helper/keyboard.dart';
 import 'package:guard/auth/forgot_password/forgot_password_screen.dart';
+import 'package:toast/toast.dart';
 
 import '../../../components/default_button.dart';
 import '../../../constants.dart';
@@ -90,7 +93,21 @@ class _SignFormState extends State<SignForm> {
                         print('User is currently signed out!');
                       } else {
                         print('User is signed in!');
-                        Navigator.pushNamed(context, Home.routeName);
+                        final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+                        _firebaseMessaging.subscribeToTopic('guard');
+                        _firebaseMessaging.getToken().then((token){
+                          FirebaseFirestore.instance.collection("guard").doc(user.uid).update({
+                            "token":token,
+                          }).then((value){
+                            Navigator.pushNamed(context, Home.routeName);
+                          }).onError((error, stackTrace) {
+                            Toast.show("DB Error : ${errors.toString()}", context, duration: Toast.LENGTH_LONG, gravity:  Toast.TOP);
+                          });
+
+                        }).onError((error, stackTrace) {
+                          Toast.show("Token Error : ${errors.toString()}", context, duration: Toast.LENGTH_LONG, gravity:  Toast.TOP);
+                        });
+
                       }
                     });
                   });

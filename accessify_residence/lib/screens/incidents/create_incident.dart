@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:accessify/constants.dart';
+import 'package:accessify/model/user_model.dart';
 import 'package:accessify/screens/home.dart';
 import 'package:accessify/screens/incidents/view_incidents.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -112,25 +113,33 @@ class _CreateIncidentState extends State<CreateIncident> {
     );
   }
 
-  /*@override
-  void initState() {
+  UserModel userModel;
+  bool isLoading=false;
+
+  getUserData()async{
+    User user=FirebaseAuth.instance.currentUser;
     FirebaseFirestore.instance
-        .collection('classification_incident')
+        .collection('homeowner')
+        .doc(user.uid)
         .get()
-        .then((QuerySnapshot querySnapshot) {
-      querySnapshot.docs.forEach((doc) {
+        .then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+
+        Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
+        userModel=UserModel.fromMap(data, documentSnapshot.reference.id);
         setState(() {
-          classification=doc['name'];
-        });
-      });
-      if(classification==null){
-        setState(() {
-          classification="No classification found";
+          isLoading=true;
         });
       }
-
     });
-  }*/
+
+  }
+
+
+  @override
+  void initState() {
+    getUserData();
+  }
 
   Future uploadImageToFirebase(BuildContext context) async {
     String fileName = _imageFile.path;
@@ -338,7 +347,7 @@ class _CreateIncidentState extends State<CreateIncident> {
       'type': dropdownValue,
       'photo': photoUrl,
       'status':"pending",
-
+      'neighbourId': userModel.neighbourId,
       'user':user.uid,
     }).then((value) {
       _showSuccessDailog();
@@ -353,7 +362,7 @@ class _CreateIncidentState extends State<CreateIncident> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child:  Container(
+        child:  isLoading?Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.all(Radius.circular(40)),
           ),
@@ -673,7 +682,7 @@ class _CreateIncidentState extends State<CreateIncident> {
               ],
             ),
           ),
-        ),
+        ):Center(child: CircularProgressIndicator(),),
       ),
     );
   }

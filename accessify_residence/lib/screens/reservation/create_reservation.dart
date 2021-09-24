@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:accessify/model/facilities.dart';
 import 'package:accessify/model/meeting.dart';
 import 'package:accessify/model/reservation_model.dart';
+import 'package:accessify/model/user_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:date_format/date_format.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -38,7 +39,33 @@ class _CreateReservationState extends State<CreateReservation> {
   String dateFullFormat;
   String selectedFacilityId;
 
+  UserModel userModel;
+  bool isLoading=false;
 
+  getUserData()async{
+    User user=FirebaseAuth.instance.currentUser;
+    FirebaseFirestore.instance
+        .collection('homeowner')
+        .doc(user.uid)
+        .get()
+        .then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+
+        Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
+        userModel=UserModel.fromMap(data, documentSnapshot.reference.id);
+        setState(() {
+          isLoading=true;
+        });
+      }
+    });
+
+  }
+
+
+  @override
+  void initState() {
+    getUserData();
+  }
 
   Future<List<DateTime>> getReservedDates() async {
     List<ReservationModel> list=new List();
@@ -327,6 +354,7 @@ class _CreateReservationState extends State<CreateReservation> {
         'hourEnd':timeLimit,
         'user':user.uid,
         'qr':photoUrl,
+        'neighbourId': userModel.neighbourId,
         'status':"pending"
       }).then((value) {
         pr.hide();
@@ -511,7 +539,7 @@ class _CreateReservationState extends State<CreateReservation> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child:  Container(
+        child:  isLoading?Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.all(Radius.circular(40)),
           ),
@@ -829,7 +857,7 @@ class _CreateReservationState extends State<CreateReservation> {
               ],
             ),
           ),
-        ),
+        ):Center(child: CircularProgressIndicator(),),
       ),
     );
   }

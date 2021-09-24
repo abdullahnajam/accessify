@@ -252,13 +252,34 @@ class _AccessControlState extends State<AccessControl> {
     } else {
       print('qr code $barcode');
       if(type=="event"){
-        getEventList(barcode);
+        getEventList(barcode).then((value){
+          if(value!=null){
+            Navigator.push(context, new MaterialPageRoute(
+                builder: (context) => AddAccess(barcode,type,value.userId,value.name)));
+          }
+          else
+            Toast.show("This barcode is not for event access", context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM);
+        });
       }
       if(type=="employee"){
-        getEmployeeFrequentList(barcode);
+        getEmployeeFrequentList(barcode).then((value){
+          if(value!=null){
+            Navigator.push(context, new MaterialPageRoute(
+                builder: (context) => AddAccess(barcode,type,value.userId,value.emp)));
+          }
+          else
+            Toast.show("This barcode is not for employee access", context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM);
+        });
       }
       if(type=="guest"){
-        getGuestList(barcode);
+        getGuestList(barcode).then((value){
+          if(value!=null){
+            Navigator.push(context, new MaterialPageRoute(
+                builder: (context) => AddAccess(barcode,type,value.userId,value.name)));
+          }
+          else
+            Toast.show("This barcode is not for guest access", context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM);
+        });
       }
       
 

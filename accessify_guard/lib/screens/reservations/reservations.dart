@@ -1,10 +1,12 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:guard/components/default_button.dart';
 import 'package:guard/constants.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:guard/model/reservation_model.dart';
+import 'package:guard/model/user_model.dart';
 import 'package:guard/navigator/menu_drawer.dart';
 class Reservations extends StatefulWidget {
   @override
@@ -19,7 +21,33 @@ class _ReservationsState extends State<Reservations> with SingleTickerProviderSt
   void _openDrawer () {
     _drawerKey.currentState.openDrawer();
   }
+  UserModel userModel;
+  bool isLoading=false;
 
+  getUserData()async{
+    User user=FirebaseAuth.instance.currentUser;
+    FirebaseFirestore.instance
+        .collection('guard')
+        .doc(user.uid)
+        .get()
+        .then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+
+        Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
+        userModel=UserModel.fromMap(data, documentSnapshot.reference.id);
+        setState(() {
+          isLoading=true;
+        });
+      }
+    });
+
+  }
+
+
+  @override
+  void initState() {
+    getUserData();
+  }
   showApproveDailogBox(){
     showGeneralDialog(
         barrierColor: Colors.black.withOpacity(0.5),
@@ -266,7 +294,7 @@ class _ReservationsState extends State<Reservations> with SingleTickerProviderSt
     return Scaffold(
       key: _drawerKey,
       drawer: MenuDrawer(),
-      body: Container(
+      body: isLoading?Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.all(Radius.circular(40)),
         ),
@@ -357,7 +385,8 @@ class _ReservationsState extends State<Reservations> with SingleTickerProviderSt
                 ],
               ),
               StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance.collection('reservations').snapshots(),
+                stream: FirebaseFirestore.instance.collection('reservations')
+                    .where("neighbourId",isEqualTo:userModel.neighbourId).snapshots(),
                 builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
                   if (snapshot.hasError) {
                     return Center(
@@ -453,7 +482,7 @@ class _ReservationsState extends State<Reservations> with SingleTickerProviderSt
             ],
           ),
         ),
-      ),
+      ):Center(child: CircularProgressIndicator(),),
     );
   }
   Widget _card(String title, GestureTapCallback onTap) {

@@ -1,4 +1,5 @@
 import 'package:accessify/model/reservation_model.dart';
+import 'package:accessify/model/user_model.dart';
 import 'package:accessify/screens/reservation/create_reservation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -13,6 +14,33 @@ class ViewReservations extends StatefulWidget {
 }
 
 class _ViewReservationsState extends State<ViewReservations> {
+  UserModel userModel;
+  bool isLoading=false;
+
+  getUserData()async{
+    User user=FirebaseAuth.instance.currentUser;
+    FirebaseFirestore.instance
+        .collection('homeowner')
+        .doc(user.uid)
+        .get()
+        .then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+
+        Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
+        userModel=UserModel.fromMap(data, documentSnapshot.reference.id);
+        setState(() {
+          isLoading=true;
+        });
+      }
+    });
+
+  }
+
+
+  @override
+  void initState() {
+    getUserData();
+  }
   Future<void> _showInfoDailog(ReservationModel model) async {
     return showDialog<void>(
       context: context,
@@ -124,7 +152,7 @@ class _ViewReservationsState extends State<ViewReservations> {
   @override
   Widget build(BuildContext context) {
     return  Scaffold(
-      body: Container(
+      body: isLoading?Container(
         height: double.maxFinite,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.all(Radius.circular(40)),
@@ -216,7 +244,9 @@ class _ViewReservationsState extends State<ViewReservations> {
                 )
               ),
               StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance.collection('reservation').where('user', isEqualTo: FirebaseAuth.instance.currentUser.uid).snapshots(),
+                stream: FirebaseFirestore.instance.collection('reservation')
+                    .where('user', isEqualTo: FirebaseAuth.instance.currentUser.uid)
+                    .snapshots(),
                 builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
                   if (snapshot.hasError) {
                     return Center(
@@ -281,7 +311,7 @@ class _ViewReservationsState extends State<ViewReservations> {
             ],
           ),
         ),
-      ),
+      ):Center(child: CircularProgressIndicator(),),
     );
   }
   Widget _card(ReservationModel reservation) {

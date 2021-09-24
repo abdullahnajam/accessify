@@ -747,6 +747,16 @@ class _CreateFrequentsState extends State<CreateFrequents> {
                                           _daysList[8].ischecked=false;
                                         });
                                       }
+                                      if(_daysList[index].Name!="Every Day"){
+                                        for(int i = 0;i<_daysList.length-1;i++){
+                                          if(_daysList[i].Name=="Every Day"){
+                                            setState(() {
+                                              _daysList[8].ischecked=false;
+                                            });
+                                          }
+
+                                        }
+                                      }
                                       setState(() {
                                         print("index $index");
                                         _daysList[index].ischecked=value;

@@ -91,7 +91,8 @@ class _CreateGuestState extends State<CreateGuest> {
         'body':'Guest Service Access from ${userModel.firstName}',
         'title':"Guest Service Access",
         'icon':'https://img.flaticon.com/icons/png/512/185/185527.png?size=1200x630f&pad=10,10,10,10&ext=png&bg=FFFFFFFF',
-        'userId':user.uid
+        'userId':user.uid,
+        'neighbourId': userModel.neighbourId
       });
 
     });

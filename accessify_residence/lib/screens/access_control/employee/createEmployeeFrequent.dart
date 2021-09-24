@@ -625,9 +625,11 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
         'userId':user.uid,
         'qr':photoUrl,
         'type':employee?"Employee":"Frequent",
+        'neighbourId': userModel.neighbourId
       }).then((value) {
         pr.hide();
         _showSuccessDailog();
+        sendNotification();
       })
           .catchError((error, stackTrace) {
         pr.hide();

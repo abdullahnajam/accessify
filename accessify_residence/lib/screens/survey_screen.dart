@@ -1,6 +1,7 @@
 import 'package:accessify/model/announcement_model.dart';
 import 'package:accessify/model/notification_model.dart';
 import 'package:accessify/model/survey_model.dart';
+import 'package:accessify/model/user_model.dart';
 import 'package:accessify/navigator/menu_drawer.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -16,6 +17,22 @@ class Survey extends StatefulWidget {
 
 class _SurveyState extends State<Survey> {
   final GlobalKey<ScaffoldState> _drawerKey = GlobalKey();
+  Future<List<SurveyModel>> getQuestions(){
+    List<SurveyModel> surveys=[];
+    FirebaseFirestore.instance
+        .collection('survey')
+        .where("neighbourId",isEqualTo: userModel.neighbourId)
+        .get().then((QuerySnapshot querySnapshot) {
+          querySnapshot.docs.forEach((doc) {
+            Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+
+            //surveys.add( SurveyModel.fromMap(data, doc.reference.id));
+            desController.add(TextEditingController());
+            isChecked.add(false);
+        });
+          return surveys;
+      });
+  }
 
   static String timeAgoSinceDate(String dateString, {bool numericDates = true}) {
     DateTime date = DateTime.parse(dateString);
@@ -56,6 +73,33 @@ class _SurveyState extends State<Survey> {
   int editingIndex=0;
   List<bool> isChecked=[];
 
+  UserModel userModel;
+  bool isLoading=false;
+
+  getUserData()async{
+    User user=FirebaseAuth.instance.currentUser;
+    FirebaseFirestore.instance
+        .collection('homeowner')
+        .doc(user.uid)
+        .get()
+        .then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+
+        Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
+        userModel=UserModel.fromMap(data, documentSnapshot.reference.id);
+        setState(() {
+          isLoading=true;
+        });
+      }
+    });
+
+  }
+
+
+  @override
+  void initState() {
+    getUserData();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +108,7 @@ class _SurveyState extends State<Survey> {
         key: _drawerKey,
         drawer: MenuDrawer(),
         body: SafeArea(
-          child: ListView(
+          child: isLoading?ListView(
             children: [
               Container(
                 height: 60,
@@ -103,9 +147,155 @@ class _SurveyState extends State<Survey> {
               Container(
                   margin: EdgeInsets.all(5)
               ),
-              Container(
+              FutureBuilder<List<SurveyModel>>(
+                future: getQuestions(),
+                builder: (context,snapshot){
+                  if (snapshot.hasData) {
+                    if (snapshot.data != null && snapshot.data.length>0) {
+                      return ListView.builder(
+                        itemCount: snapshot.data.length,
+                        shrinkWrap: true,
+                        itemBuilder: (BuildContext context,int index){
+                          return Padding(
+                              padding: const EdgeInsets.only(top: 5.0),
+                              child: Container(
+                                margin: EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(10)
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      width: MediaQuery.of(context).size.width,
+                                      padding: EdgeInsets.all(5),
+
+                                      decoration: BoxDecoration(
+                                          color: kPrimaryLightColor,
+                                          borderRadius: BorderRadius.only(
+                                              topLeft: Radius.circular(10),
+                                              topRight: Radius.circular(10)
+                                          )
+                                      ),
+                                      child: Text(snapshot.data[index].question,style: TextStyle(color:Colors.white,fontSize:20,fontWeight: FontWeight.w600),),
+                                    ),
+                                    if(snapshot.data[index].isMCQ)
+                                      Container(
+                                          margin: EdgeInsets.all(10),
+                                          child: ListView.builder(
+                                            shrinkWrap: true,
+                                            itemCount: snapshot.data[index].choices.length,
+                                            itemBuilder: (BuildContext context,int index){
+                                              return InkWell(
+                                                onTap: (){
+                                                  setState(() {
+                                                    isChecked[index]=true;
+                                                  });
+                                                },
+                                                child: Container(
+                                                  margin: EdgeInsets.only(top:10),
+                                                  child:Text(snapshot.data[index].choices[index],style: TextStyle(color:Colors.black,fontSize:17),),
+                                                ),
+                                              );
+                                            },
+                                          )
+                                      )
+                                    else
+                                      Container(
+                                        child: TextFormField(
+                                          maxLines: 3,
+                                          validator: (value) {
+                                            if (value == null || value.isEmpty) {
+                                              return 'Please enter some text';
+                                            }
+                                            return null;
+                                          },
+                                          controller: desController[index],
+                                          decoration: InputDecoration(
+                                            contentPadding: EdgeInsets.all(15),
+                                            focusedBorder: OutlineInputBorder(
+                                              borderRadius: BorderRadius.circular(7.0),
+                                              borderSide: BorderSide(
+                                                color: Colors.transparent,
+                                              ),
+                                            ),
+                                            enabledBorder: OutlineInputBorder(
+                                              borderRadius: BorderRadius.circular(7.0),
+                                              borderSide: BorderSide(
+                                                  color: Colors.transparent,
+                                                  width: 0.5
+                                              ),
+                                            ),
+                                            border: OutlineInputBorder(
+                                              borderRadius: BorderRadius.circular(7.0),
+                                              borderSide: BorderSide(
+                                                color: Colors.transparent,
+                                                width: 0.5,
+                                              ),
+                                            ),
+                                            filled: true,
+                                            fillColor: Colors.grey[200],
+                                            hintText: "Enter Answer",
+                                            // If  you are using latest version of flutter then lable text and hint text shown like this
+                                            // if you r using flutter less then 1.20.* then maybe this is not working properly
+                                            floatingLabelBehavior: FloatingLabelBehavior.always,
+                                          ),
+                                        ),
+                                      ),
+                                    InkWell(
+                                      onTap:(){
+
+                                      },
+                                      child: Container(
+                                        height: 40,
+                                        margin: EdgeInsets.only(top:10,bottom:20,left: 20,right: 20),
+                                        alignment: Alignment.center,
+                                        color: kPrimaryColor,
+                                        child: Text("Submit",style: TextStyle(color:Colors.white,fontSize:15)),
+                                      ),
+                                    ),
+                                    Container(
+                                      width: MediaQuery.of(context).size.width,
+                                      padding: EdgeInsets.all(5),
+
+                                      decoration: BoxDecoration(
+                                          color: kPrimaryLightColor,
+                                          borderRadius: BorderRadius.only(
+                                              bottomLeft: Radius.circular(10),
+                                              bottomRight: Radius.circular(10)
+                                          )
+                                      ),
+                                      child: Text(snapshot.data[index].status,style: TextStyle(color:Colors.white,fontSize:15),),
+                                    ),
+                                  ],
+                                ),
+                              )
+                          );
+                        },
+                      );
+                    }
+                    else {
+                      return new Center(
+                        child: Container(
+                            child: Text("no data")
+                        ),
+                      );
+                    }
+                  }
+                  else if (snapshot.hasError) {
+                    return Text('Error : ${snapshot.error}');
+                  } else {
+                    return new Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+                },
+              ),
+              /*Container(
                 child: StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance.collection('survey').snapshots(),
+                  stream: FirebaseFirestore.instance.collection('survey')
+                      .where("neighbourId",isEqualTo: userModel.neighbourId).snapshots(),
                   builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
                     if (snapshot.hasError) {
                       return Center(
@@ -142,38 +332,33 @@ class _SurveyState extends State<Survey> {
                       children: snapshot.data.docs.map((DocumentSnapshot document) {
                         Map<String, dynamic> data = document.data() as Map<String, dynamic>;
                         SurveyModel model=SurveyModel.fromMap(data,document.reference.id,);
-                        desController.add(TextEditingController());
-                        isChecked.add(false);
+
                         return Padding(
                           padding: const EdgeInsets.only(top: 5.0),
-                          child: InkWell(
-                              onTap: (){
+                          child: Container(
+                            margin: EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(10)
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: MediaQuery.of(context).size.width,
+                                  padding: EdgeInsets.all(5),
 
-                              },
-                              child: Container(
-                                margin: EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(10)
+                                  decoration: BoxDecoration(
+                                      color: kPrimaryLightColor,
+                                      borderRadius: BorderRadius.only(
+                                          topLeft: Radius.circular(10),
+                                          topRight: Radius.circular(10)
+                                      )
+                                  ),
+                                  child: Text(model.question,style: TextStyle(color:Colors.white,fontSize:20,fontWeight: FontWeight.w600),),
                                 ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      width: MediaQuery.of(context).size.width,
-                                      padding: EdgeInsets.all(5),
-
-                                      decoration: BoxDecoration(
-                                          color: kPrimaryLightColor,
-                                          borderRadius: BorderRadius.only(
-                                              topLeft: Radius.circular(10),
-                                              topRight: Radius.circular(10)
-                                          )
-                                      ),
-                                      child: Text(model.question,style: TextStyle(color:Colors.white,fontSize:20,fontWeight: FontWeight.w600),),
-                                    ),
-                                    if(model.isMCQ)
-                                    Container(
+                                if(model.isMCQ)
+                                  Container(
                                       margin: EdgeInsets.all(10),
                                       child: ListView.builder(
                                         shrinkWrap: true,
@@ -192,81 +377,86 @@ class _SurveyState extends State<Survey> {
                                           );
                                         },
                                       )
-                                    )
-                                    else
-                                      Container(
-                                        child: TextFormField(
-                                          maxLines: 3,
-                                          validator: (value) {
-                                            if (value == null || value.isEmpty) {
-                                              return 'Please enter some text';
-                                            }
-                                            return null;
-                                          },
-                                          decoration: InputDecoration(
-                                            contentPadding: EdgeInsets.all(15),
-                                            focusedBorder: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(7.0),
-                                              borderSide: BorderSide(
-                                                color: Colors.transparent,
-                                              ),
-                                            ),
-                                            enabledBorder: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(7.0),
-                                              borderSide: BorderSide(
-                                                  color: Colors.transparent,
-                                                  width: 0.5
-                                              ),
-                                            ),
-                                            border: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(7.0),
-                                              borderSide: BorderSide(
-                                                color: Colors.transparent,
-                                                width: 0.5,
-                                              ),
-                                            ),
-                                            filled: true,
-                                            fillColor: Colors.grey[200],
-                                            hintText: "Enter Answer",
-                                            // If  you are using latest version of flutter then lable text and hint text shown like this
-                                            // if you r using flutter less then 1.20.* then maybe this is not working properly
-                                            floatingLabelBehavior: FloatingLabelBehavior.always,
+                                  )
+                                else
+                                  Container(
+                                    child: TextFormField(
+                                      maxLines: 3,
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return 'Please enter some text';
+                                        }
+                                        return null;
+                                      },
+                                      controller: desController[index],
+                                      decoration: InputDecoration(
+                                        contentPadding: EdgeInsets.all(15),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(7.0),
+                                          borderSide: BorderSide(
+                                            color: Colors.transparent,
                                           ),
                                         ),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(7.0),
+                                          borderSide: BorderSide(
+                                              color: Colors.transparent,
+                                              width: 0.5
+                                          ),
+                                        ),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(7.0),
+                                          borderSide: BorderSide(
+                                            color: Colors.transparent,
+                                            width: 0.5,
+                                          ),
+                                        ),
+                                        filled: true,
+                                        fillColor: Colors.grey[200],
+                                        hintText: "Enter Answer",
+                                        // If  you are using latest version of flutter then lable text and hint text shown like this
+                                        // if you r using flutter less then 1.20.* then maybe this is not working properly
+                                        floatingLabelBehavior: FloatingLabelBehavior.always,
                                       ),
-                                    Container(
-                                      height: 40,
-                                      margin: EdgeInsets.only(top:10,bottom:20,left: 20,right: 20),
-                                      alignment: Alignment.center,
-                                      color: kPrimaryColor,
-                                      child: Text("Submit",style: TextStyle(color:Colors.white,fontSize:15)),
                                     ),
-                                    Container(
-                                      width: MediaQuery.of(context).size.width,
-                                      padding: EdgeInsets.all(5),
+                                  ),
+                                InkWell(
+                                  onTap:(){
 
-                                      decoration: BoxDecoration(
-                                          color: kPrimaryLightColor,
-                                          borderRadius: BorderRadius.only(
-                                              bottomLeft: Radius.circular(10),
-                                              bottomRight: Radius.circular(10)
-                                          )
-                                      ),
-                                      child: Text(model.status,style: TextStyle(color:Colors.white,fontSize:15),),
-                                    ),
-                                  ],
+                                  },
+                                  child: Container(
+                                    height: 40,
+                                    margin: EdgeInsets.only(top:10,bottom:20,left: 20,right: 20),
+                                    alignment: Alignment.center,
+                                    color: kPrimaryColor,
+                                    child: Text("Submit",style: TextStyle(color:Colors.white,fontSize:15)),
+                                  ),
                                 ),
-                              )
-                          ),
+                                Container(
+                                  width: MediaQuery.of(context).size.width,
+                                  padding: EdgeInsets.all(5),
+
+                                  decoration: BoxDecoration(
+                                      color: kPrimaryLightColor,
+                                      borderRadius: BorderRadius.only(
+                                          bottomLeft: Radius.circular(10),
+                                          bottomRight: Radius.circular(10)
+                                      )
+                                  ),
+                                  child: Text(model.status,style: TextStyle(color:Colors.white,fontSize:15),),
+                                ),
+                              ],
+                            ),
+                          )
                         );
                       }).toList(),
                     );
                   },
                 ),
-              ),
+              ),*/
 
             ],
-          ),
+          ):Center(child: CircularProgressIndicator(),),
         )
     );
   }

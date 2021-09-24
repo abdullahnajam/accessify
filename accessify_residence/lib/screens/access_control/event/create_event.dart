@@ -545,7 +545,8 @@ class _CreateEventState extends State<CreateEvent> {
         'body':'Event Service Access from ${userModel.firstName}',
         'title':"Event Service Access",
         'icon':'https://img.flaticon.com/icons/png/512/185/185527.png?size=1200x630f&pad=10,10,10,10&ext=png&bg=FFFFFFFF',
-        'userId':user.uid
+        'userId':user.uid,
+        'neighbourId': userModel.neighbourId
       });
 
     });

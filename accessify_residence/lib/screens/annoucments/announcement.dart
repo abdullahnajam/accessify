@@ -1,5 +1,6 @@
 import 'package:accessify/model/announcement_model.dart';
 import 'package:accessify/model/notification_model.dart';
+import 'package:accessify/model/user_model.dart';
 import 'package:accessify/navigator/menu_drawer.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -52,6 +53,33 @@ class _AnnouncementsState extends State<Announcements> {
     }
   }
 
+  UserModel userModel;
+  bool isLoading=false;
+
+  getUserData()async{
+    User user=FirebaseAuth.instance.currentUser;
+    FirebaseFirestore.instance
+        .collection('homeowner')
+        .doc(user.uid)
+        .get()
+        .then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+
+        Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
+        userModel=UserModel.fromMap(data, documentSnapshot.reference.id);
+        setState(() {
+          isLoading=true;
+        });
+      }
+    });
+
+  }
+
+
+  @override
+  void initState() {
+    getUserData();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,7 +88,7 @@ class _AnnouncementsState extends State<Announcements> {
         key: _drawerKey,
         drawer: MenuDrawer(),
         body: SafeArea(
-          child: ListView(
+          child: isLoading?ListView(
             children: [
               Container(
                 height: 60,
@@ -101,7 +129,9 @@ class _AnnouncementsState extends State<Announcements> {
               ),
               Container(
                 child: StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance.collection('announcement').where('audience', isEqualTo: "Residents").snapshots(),
+                  stream: FirebaseFirestore.instance.collection('announcement')
+                      .where('audience', isEqualTo: "Residents")
+                      .where('neighbourId', isEqualTo: userModel.neighbourId).snapshots(),
                   builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
                     if (snapshot.hasError) {
                       return Center(
@@ -200,7 +230,7 @@ class _AnnouncementsState extends State<Announcements> {
               ),
 
             ],
-          ),
+          ):Center(child: CircularProgressIndicator(),),
         )
     );
   }

@@ -84,7 +84,8 @@ class _CreateDeliveryState extends State<CreateDelivery> {
         'body':'Delivery Service Access from ${userModel.firstName} ${userModel.lastName}',
         'title':"Delivery Service Access",
         'icon':'https://cdn1.iconfinder.com/data/icons/logistics-transportation-vehicles/202/logistic-shipping-vehicles-002-512.png',
-        'userId':user.uid
+        'userId':user.uid,
+        'neighbourId': userModel.neighbourId
       });
 
     });

@@ -1,4 +1,5 @@
 import 'package:accessify/model/incident_model.dart';
+import 'package:accessify/model/user_model.dart';
 import 'package:accessify/screens/incidents/create_incident.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -49,11 +50,38 @@ class _ViewIncidentsState extends State<ViewIncidents> {
     }
   }
 
+  UserModel userModel;
+  bool isLoading=false;
+
+  getUserData()async{
+    User user=FirebaseAuth.instance.currentUser;
+    FirebaseFirestore.instance
+        .collection('homeowner')
+        .doc(user.uid)
+        .get()
+        .then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+
+        Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
+        userModel=UserModel.fromMap(data, documentSnapshot.reference.id);
+        setState(() {
+          isLoading=true;
+        });
+      }
+    });
+
+  }
+
+
+  @override
+  void initState() {
+    getUserData();
+  }
 
   @override
   Widget build(BuildContext context) {
     return  Scaffold(
-      body: Container(
+      body: isLoading?Container(
         height: double.maxFinite,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.all(Radius.circular(40)),
@@ -146,7 +174,8 @@ class _ViewIncidentsState extends State<ViewIncidents> {
               ),
 
               StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance.collection('reports').snapshots(),
+                stream: FirebaseFirestore.instance.collection('reports').
+                where("neighbourId",isEqualTo: userModel.neighbourId).snapshots(),
                 builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
                   if (snapshot.hasError) {
                     return Center(
@@ -180,6 +209,7 @@ class _ViewIncidentsState extends State<ViewIncidents> {
 
                   return new ListView(
                     shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
                     children: snapshot.data.docs.map((DocumentSnapshot document) {
                       Map<String, dynamic> data = document.data() as Map<String, dynamic>;
                       IncidentModel model=new IncidentModel(
@@ -231,23 +261,18 @@ class _ViewIncidentsState extends State<ViewIncidents> {
                                         Text(model.title,style: TextStyle(fontSize:18,fontWeight: FontWeight.w700,color: Colors.black),),
 
                                         Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                           children: [
-                                            Expanded(
-                                              flex: 4,
-                                              child: Text(model.description,style: TextStyle(fontSize:14,fontWeight: FontWeight.w300),),
-                                            ),
-                                            Expanded(
-                                              flex: 1,
-                                              child: Container(
-                                                padding: EdgeInsets.all(3),
-                                                alignment: Alignment.center,
-                                                decoration: BoxDecoration(
-                                                    border: Border.all(color: kPrimaryColor),
-                                                    borderRadius: BorderRadius.circular(20)
-                                                ),
-                                                child: Text(model.type,textAlign: TextAlign.center,style: TextStyle(fontSize:13,fontWeight: FontWeight.w300,color: kPrimaryLightColor),),
+                                            Text(model.description,style: TextStyle(fontSize:14,fontWeight: FontWeight.w300),),
+                                            Container(
+                                              padding: EdgeInsets.all(3),
+                                              alignment: Alignment.center,
+                                              decoration: BoxDecoration(
+                                                  border: Border.all(color: kPrimaryColor),
+                                                  borderRadius: BorderRadius.circular(20)
                                               ),
-                                            )
+                                              child: Text(model.type,textAlign: TextAlign.center,style: TextStyle(fontSize:13,fontWeight: FontWeight.w300,color: kPrimaryLightColor),),
+                                            ),
 
                                           ],
                                         ),
@@ -288,7 +313,7 @@ class _ViewIncidentsState extends State<ViewIncidents> {
             ],
           ),
         ),
-      ),
+      ):Center(child: CircularProgressIndicator(),),
     );
   }
 }

@@ -18,6 +18,7 @@ class _MembersState extends State<Members> with SingleTickerProviderStateMixin{
   void initState() {
     _tabController = TabController(length: 2, vsync: this);
     super.initState();
+    getUserData();
 
   }
   final GlobalKey<ScaffoldState> _drawerKey = GlobalKey();
@@ -31,13 +32,37 @@ class _MembersState extends State<Members> with SingleTickerProviderStateMixin{
     super.dispose();
     _tabController.dispose();
   }
+  UserModel userModel;
+  bool isLoading=false;
+
+  getUserData()async{
+    User user=FirebaseAuth.instance.currentUser;
+    FirebaseFirestore.instance
+        .collection('guard')
+        .doc(user.uid)
+        .get()
+        .then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+
+        Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
+        userModel=UserModel.fromMap(data, documentSnapshot.reference.id);
+        setState(() {
+          isLoading=true;
+        });
+      }
+    });
+
+  }
+
+
+ 
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       key: _drawerKey,
       drawer: MenuDrawer(),
-      body: Container(
+      body: isLoading?Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.all(Radius.circular(40)),
         ),
@@ -156,7 +181,8 @@ class _MembersState extends State<Members> with SingleTickerProviderStateMixin{
                             child: TabBarView(children: <Widget>[
                               Container(
                                 child:  StreamBuilder<QuerySnapshot>(
-                                  stream: FirebaseFirestore.instance.collection('homeowner').snapshots(),
+                                  stream: FirebaseFirestore.instance.collection('homeowner')
+                                      .where("neighbourId",isEqualTo:userModel.neighbourId).snapshots(),
                                   builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
                                     if (snapshot.hasError) {
                                       return Center(
@@ -260,7 +286,7 @@ class _MembersState extends State<Members> with SingleTickerProviderStateMixin{
             ],
           ),
         ),
-      ),
+      ):Center(child: CircularProgressIndicator(),),
     );
   }
   Widget _card(String title, GestureTapCallback onTap) {
