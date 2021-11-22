@@ -10,8 +10,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lottie/lottie.dart';
+import 'package:progress_dialog/progress_dialog.dart';
 import 'package:toast/toast.dart';
 class CreateIncident extends StatefulWidget {
   @override
@@ -143,7 +145,11 @@ class _CreateIncidentState extends State<CreateIncident> {
 
   Future uploadImageToFirebase(BuildContext context) async {
     String fileName = _imageFile.path;
-
+    final ProgressDialog pr = ProgressDialog(context);
+    pr.style(
+      message: 'Uploading Image',
+    );
+    pr.show();
     var storage = FirebaseStorage.instance;
 
     TaskSnapshot snapshot = await storage.ref()
@@ -156,6 +162,7 @@ class _CreateIncidentState extends State<CreateIncident> {
         print("photo url $photoUrl");
       });
     }
+    pr.hide();
   }
 
 
@@ -193,7 +200,7 @@ class _CreateIncidentState extends State<CreateIncident> {
                 Container(
                     child: Column(
                       children: [
-                        Text("Successful",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
+                        Text('successful'.tr(),style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
                         Text("Your incident has been added",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
                       ],
                     )
@@ -205,15 +212,14 @@ class _CreateIncidentState extends State<CreateIncident> {
                 ),
                 GestureDetector(
                   onTap: (){
-                    Navigator.pushReplacement(
-                        context, MaterialPageRoute(builder: (BuildContext context) => ViewIncidents()));
+                    Navigator.pop(context);Navigator.pop(context);
                   },
                   child: Container(
                     alignment: Alignment.center,
                     width: double.maxFinite,
                     height: 40,
                     margin: EdgeInsets.only(left: 40,right: 40),
-                    child:Text("OKAY",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
+                    child:Text('okay'.tr(),style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
                     decoration: BoxDecoration(
                         color: Colors.green,
                         borderRadius: BorderRadius.circular(30)
@@ -284,7 +290,7 @@ class _CreateIncidentState extends State<CreateIncident> {
                     width: double.maxFinite,
                     height: 40,
                     margin: EdgeInsets.only(left: 40,right: 40),
-                    child:Text("OKAY",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
+                    child:Text('okay'.tr(),style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
                     decoration: BoxDecoration(
                         color: Colors.red,
                         borderRadius: BorderRadius.circular(30)
@@ -436,7 +442,7 @@ class _CreateIncidentState extends State<CreateIncident> {
                   padding:
                   const EdgeInsets.only(left: 25.0, top: 40.0, bottom: 10.0),
                   child: Text(
-                    "Fill the Information",
+                    'fillTheInformation'.tr(),
                     style: TextStyle(
                         fontFamily: "Sofia",
                         fontWeight: FontWeight.w700,
@@ -454,7 +460,7 @@ class _CreateIncidentState extends State<CreateIncident> {
                           controller: nameController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
+                              return 'pleaseEnterSomeText'.tr();
                             }
                             return null;
                           },
@@ -496,7 +502,7 @@ class _CreateIncidentState extends State<CreateIncident> {
                           maxLines: 3,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
+                              return 'pleaseEnterSomeText'.tr();
                             }
                             return null;
                           },
@@ -524,7 +530,7 @@ class _CreateIncidentState extends State<CreateIncident> {
                             ),
                             filled: true,
                             fillColor: Colors.grey[200],
-                            hintText: "Enter Description",
+                            hintText: 'enterDescription'.tr(),
                             // If  you are using latest version of flutter then lable text and hint text shown like this
                             // if you r using flutter less then 1.20.* then maybe this is not working properly
                             floatingLabelBehavior: FloatingLabelBehavior.always,
@@ -610,8 +616,7 @@ class _CreateIncidentState extends State<CreateIncident> {
                         GestureDetector(
                           onTap: () =>_showchoiceDailog(),
                           child: Container(
-                              height: 50,
-                              padding: EdgeInsets.only(left:10,right: 10),
+                              padding: EdgeInsets.all(10),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(7),
                                 color: Colors.grey[200],
@@ -626,7 +631,6 @@ class _CreateIncidentState extends State<CreateIncident> {
                                   Expanded(
                                       flex: 9,
                                       child: Container(
-                                        padding: EdgeInsets.only(left:12),
                                         child:Text("Add Photo",style: TextStyle(
                                             fontSize: 17,
                                             color: Colors.grey[700]

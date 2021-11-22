@@ -4,6 +4,7 @@ import 'package:accesfy_admin/screens/neighbours/neighbours_table.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:sn_progress_dialog/sn_progress_dialog.dart';
 import '../../constants.dart';
 import '../../header.dart';
@@ -31,6 +32,8 @@ class _NeighbourhoodState extends State<Neighbourhood> {
   var vendorInfoController=TextEditingController();
   var expirationController=TextEditingController();
   var subscriptionController=TextEditingController();
+  final f = new DateFormat('dd-MM-yyyy');
+
 
 
   register(String photo,logo) async{
@@ -48,7 +51,7 @@ class _NeighbourhoodState extends State<Neighbourhood> {
       'annualFee':annualFeeController.text,
       'billingData':billingDataController.text,
       'expiration':expirationController.text,
-      'subscriptionRenewal':subscriptionController,
+      'subscriptionRenewal':subscriptionController.text,
       'discount':discountController.text,
       'vendorInfo':vendorInfoController.text
 
@@ -67,7 +70,10 @@ class _NeighbourhoodState extends State<Neighbourhood> {
     fb.UploadTask? _uploadTask;
     Uri imageUri;
     bool imageUploading=false;
-
+    expirationController.text=f.format(DateTime.now()).toString();
+    subscriptionController.text=f.format(DateTime.now()).toString();
+    DateTime? expire;
+    DateTime? subscription;
     String logoUrl="";
     fb.UploadTask? _logoUploadTask;
     Uri logoUri;
@@ -150,6 +156,37 @@ class _NeighbourhoodState extends State<Neighbourhood> {
                   );
                 },
               );
+            }
+
+            _expDate(BuildContext context) async {
+
+              expire = await showDatePicker(
+                context: context,
+                initialDate: DateTime.now(), // Refer step 1
+                firstDate: DateTime.now(),
+
+                lastDate: DateTime(2025),
+              );
+              if (expire != null && expire != DateTime.now())
+                setState(() {
+                  final f = new DateFormat('dd-MM-yyyy');
+                  expirationController.text=f.format(expire!).toString();
+
+                });
+            }
+            _subDate(BuildContext context) async {
+              subscription = await showDatePicker(
+                context: context,
+                initialDate: DateTime.now(), // Refer step 1
+                firstDate: DateTime.now(),
+                lastDate: DateTime(2025),
+              );
+              if (subscription != null && subscription != DateTime.now())
+                setState(() {
+                  final f = new DateFormat('dd-MM-yyyy');
+                  subscriptionController.text=f.format(subscription!).toString();
+
+                });
             }
             return Dialog(
               shape: RoundedRectangleBorder(
@@ -257,7 +294,10 @@ class _NeighbourhoodState extends State<Neighbourhood> {
                                   controller: codeController,
                                   style: TextStyle(color: Colors.black),
                                   validator: (value) {
-                                    if (value == null || value.isEmpty) {
+                                    if (double.tryParse(value!)== null) {
+                                      return "please enter a number";
+                                    }
+                                    else if (value == null || value.isEmpty) {
                                       return 'Please enter some text';
                                     }
                                     return null;
@@ -350,7 +390,10 @@ class _NeighbourhoodState extends State<Neighbourhood> {
                                   controller: quantityOfHouseController,
                                   style: TextStyle(color: Colors.black),
                                   validator: (value) {
-                                    if (value == null || value.isEmpty) {
+                                    if (double.tryParse(value!)== null) {
+                                      return "please enter a number";
+                                    }
+                                    else if (value == null || value.isEmpty) {
                                       return 'Please enter some text';
                                     }
                                     return null;
@@ -396,7 +439,10 @@ class _NeighbourhoodState extends State<Neighbourhood> {
                                   controller: pricePerHouseController,
                                   style: TextStyle(color: Colors.black),
                                   validator: (value) {
-                                    if (value == null || value.isEmpty) {
+                                    if (double.tryParse(value!)== null) {
+                                      return "please enter a number";
+                                    }
+                                    else if (value == null || value.isEmpty) {
                                       return 'Please enter some text';
                                     }
                                     return null;
@@ -442,7 +488,10 @@ class _NeighbourhoodState extends State<Neighbourhood> {
                                   controller: annualFeeController,
                                   style: TextStyle(color: Colors.black),
                                   validator: (value) {
-                                    if (value == null || value.isEmpty) {
+                                    if (double.tryParse(value!)== null) {
+                                      return "please enter a number";
+                                    }
+                                    else if (value == null || value.isEmpty) {
                                       return 'Please enter some text';
                                     }
                                     return null;
@@ -531,6 +580,10 @@ class _NeighbourhoodState extends State<Neighbourhood> {
                                   style: Theme.of(context).textTheme.bodyText1!.apply(color: secondaryColor),
                                 ),
                                 TextFormField(
+                                  readOnly: true,
+                                  onTap: (){
+                                    _expDate(context);
+                                  },
                                   controller: expirationController,
                                   style: TextStyle(color: Colors.black),
                                   validator: (value) {
@@ -577,6 +630,10 @@ class _NeighbourhoodState extends State<Neighbourhood> {
                                   style: Theme.of(context).textTheme.bodyText1!.apply(color: secondaryColor),
                                 ),
                                 TextFormField(
+                                  readOnly: true,
+                                  onTap: (){
+                                    _subDate(context);
+                                  },
                                   controller: subscriptionController,
                                   style: TextStyle(color: Colors.black),
                                   validator: (value) {
@@ -728,7 +785,7 @@ class _NeighbourhoodState extends State<Neighbourhood> {
 
                                 InkWell(
                                   onTap: (){
-                                    uploadImage();
+                                    uploadLogo();
                                   },
                                   child: Container(
                                     height: 50,

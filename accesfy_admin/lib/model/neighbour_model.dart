@@ -3,20 +3,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class NeighbourModel{
   String id,name,address,codeId,photo,logo,quantity,pricePerHouse,annualFee,billingData,expiration,subscriptionRenewal,
       discount,vendorInfo;
+  //String street,state,phone,country,zip;
 
   NeighbourModel(this.id, this.name, this.address, this.codeId,this.photo,this.logo,this.quantity,this.expiration,this.discount,this.annualFee,
-      this.billingData,this.pricePerHouse,this.subscriptionRenewal,this.vendorInfo);
+      this.billingData,this.pricePerHouse,this.subscriptionRenewal,this.vendorInfo,
+     );
+// this.street,this.state,this.country,this.zip,this.phone
 
-  /*'photo':  photo,
-  'logo':  logo,
-  'quantity':quantityOfHouseController.text,
-  'pricePerHouse':pricePerHouseController.text,
-  'annualFee':annualFeeController.text,
-  'billingData':billingDataController.text,
-  'expiration':expirationController.text,
-  'subscriptionRenewal':subscriptionController,
-  'discount':discountController.text,
-  'vendorInfo':vendorInfoController.text*/
 
   NeighbourModel.fromMap(Map<String,dynamic> map,String key)
       : id=key,
@@ -34,7 +27,12 @@ class NeighbourModel{
         vendorInfo = map['vendorInfo'],
         codeId = map['codeId'];
 
-
+/*state = map['state'],
+        country = map['country'],
+        zip = map['zip'],
+        phone = map['phone'],
+        street = map['street'],
+        */
 
   NeighbourModel.fromSnapshot(DocumentSnapshot snapshot )
       : this.fromMap(snapshot.data() as Map<String, dynamic>,snapshot.reference.id);

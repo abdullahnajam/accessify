@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../constants.dart';
 class Survey extends StatefulWidget {
@@ -147,152 +148,7 @@ class _SurveyState extends State<Survey> {
               Container(
                   margin: EdgeInsets.all(5)
               ),
-              FutureBuilder<List<SurveyModel>>(
-                future: getQuestions(),
-                builder: (context,snapshot){
-                  if (snapshot.hasData) {
-                    if (snapshot.data != null && snapshot.data.length>0) {
-                      return ListView.builder(
-                        itemCount: snapshot.data.length,
-                        shrinkWrap: true,
-                        itemBuilder: (BuildContext context,int index){
-                          return Padding(
-                              padding: const EdgeInsets.only(top: 5.0),
-                              child: Container(
-                                margin: EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(10)
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      width: MediaQuery.of(context).size.width,
-                                      padding: EdgeInsets.all(5),
-
-                                      decoration: BoxDecoration(
-                                          color: kPrimaryLightColor,
-                                          borderRadius: BorderRadius.only(
-                                              topLeft: Radius.circular(10),
-                                              topRight: Radius.circular(10)
-                                          )
-                                      ),
-                                      child: Text(snapshot.data[index].question,style: TextStyle(color:Colors.white,fontSize:20,fontWeight: FontWeight.w600),),
-                                    ),
-                                    if(snapshot.data[index].isMCQ)
-                                      Container(
-                                          margin: EdgeInsets.all(10),
-                                          child: ListView.builder(
-                                            shrinkWrap: true,
-                                            itemCount: snapshot.data[index].choices.length,
-                                            itemBuilder: (BuildContext context,int index){
-                                              return InkWell(
-                                                onTap: (){
-                                                  setState(() {
-                                                    isChecked[index]=true;
-                                                  });
-                                                },
-                                                child: Container(
-                                                  margin: EdgeInsets.only(top:10),
-                                                  child:Text(snapshot.data[index].choices[index],style: TextStyle(color:Colors.black,fontSize:17),),
-                                                ),
-                                              );
-                                            },
-                                          )
-                                      )
-                                    else
-                                      Container(
-                                        child: TextFormField(
-                                          maxLines: 3,
-                                          validator: (value) {
-                                            if (value == null || value.isEmpty) {
-                                              return 'Please enter some text';
-                                            }
-                                            return null;
-                                          },
-                                          controller: desController[index],
-                                          decoration: InputDecoration(
-                                            contentPadding: EdgeInsets.all(15),
-                                            focusedBorder: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(7.0),
-                                              borderSide: BorderSide(
-                                                color: Colors.transparent,
-                                              ),
-                                            ),
-                                            enabledBorder: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(7.0),
-                                              borderSide: BorderSide(
-                                                  color: Colors.transparent,
-                                                  width: 0.5
-                                              ),
-                                            ),
-                                            border: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(7.0),
-                                              borderSide: BorderSide(
-                                                color: Colors.transparent,
-                                                width: 0.5,
-                                              ),
-                                            ),
-                                            filled: true,
-                                            fillColor: Colors.grey[200],
-                                            hintText: "Enter Answer",
-                                            // If  you are using latest version of flutter then lable text and hint text shown like this
-                                            // if you r using flutter less then 1.20.* then maybe this is not working properly
-                                            floatingLabelBehavior: FloatingLabelBehavior.always,
-                                          ),
-                                        ),
-                                      ),
-                                    InkWell(
-                                      onTap:(){
-
-                                      },
-                                      child: Container(
-                                        height: 40,
-                                        margin: EdgeInsets.only(top:10,bottom:20,left: 20,right: 20),
-                                        alignment: Alignment.center,
-                                        color: kPrimaryColor,
-                                        child: Text("Submit",style: TextStyle(color:Colors.white,fontSize:15)),
-                                      ),
-                                    ),
-                                    Container(
-                                      width: MediaQuery.of(context).size.width,
-                                      padding: EdgeInsets.all(5),
-
-                                      decoration: BoxDecoration(
-                                          color: kPrimaryLightColor,
-                                          borderRadius: BorderRadius.only(
-                                              bottomLeft: Radius.circular(10),
-                                              bottomRight: Radius.circular(10)
-                                          )
-                                      ),
-                                      child: Text(snapshot.data[index].status,style: TextStyle(color:Colors.white,fontSize:15),),
-                                    ),
-                                  ],
-                                ),
-                              )
-                          );
-                        },
-                      );
-                    }
-                    else {
-                      return new Center(
-                        child: Container(
-                            child: Text("no data")
-                        ),
-                      );
-                    }
-                  }
-                  else if (snapshot.hasError) {
-                    return Text('Error : ${snapshot.error}');
-                  } else {
-                    return new Center(
-                      child: CircularProgressIndicator(),
-                    );
-                  }
-                },
-              ),
-              /*Container(
+              Container(
                 child: StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance.collection('survey')
                       .where("neighbourId",isEqualTo: userModel.neighbourId).snapshots(),
@@ -319,7 +175,7 @@ class _SurveyState extends State<Survey> {
                         child: Column(
                           children: [
                             Image.asset("assets/images/empty.png",width: 150,height: 150,),
-                            Text("No Questions")
+                           Text('noDataFound'.tr(),)
 
                           ],
                         ),
@@ -384,11 +240,10 @@ class _SurveyState extends State<Survey> {
                                       maxLines: 3,
                                       validator: (value) {
                                         if (value == null || value.isEmpty) {
-                                          return 'Please enter some text';
+                                          return 'pleaseEnterSomeText'.tr();
                                         }
                                         return null;
                                       },
-                                      controller: desController[index],
                                       decoration: InputDecoration(
                                         contentPadding: EdgeInsets.all(15),
                                         focusedBorder: OutlineInputBorder(
@@ -453,7 +308,7 @@ class _SurveyState extends State<Survey> {
                     );
                   },
                 ),
-              ),*/
+              ),
 
             ],
           ):Center(child: CircularProgressIndicator(),),

@@ -13,6 +13,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
@@ -24,6 +25,7 @@ import 'package:progress_dialog/progress_dialog.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share/share.dart';
 import 'package:http/http.dart' as http;
+import 'package:toast/toast.dart';
 class EditEmployeeFrequent extends StatefulWidget {
   EmployeeAccessModel model;
   EditEmployeeFrequent(this.model);
@@ -48,7 +50,6 @@ class _EditEmployeeFrequentState extends State<EditEmployeeFrequent> {
   void initState() {
 
     setState(() {
-      nameText=widget.model.emp;
       widget.model.type=="Employee"?employee=true:employee=false;
       startDate=widget.model.fromDate;
       endDate=widget.model.expDate;
@@ -101,7 +102,7 @@ class _EditEmployeeFrequentState extends State<EditEmployeeFrequent> {
                 Container(
                     child: Column(
                       children: [
-                        Text("Successful",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
+                        Text('successful'.tr(),style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
                         Text("Your employee/frequent has been updated",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
 
                       ],
@@ -114,15 +115,14 @@ class _EditEmployeeFrequentState extends State<EditEmployeeFrequent> {
                 ),
                 GestureDetector(
                   onTap: (){
-                    Navigator.push(
-                        context, MaterialPageRoute(builder: (BuildContext context) => Home()));
+                    Navigator.pop(context);Navigator.pop(context);
                   },
                   child: Container(
                     alignment: Alignment.center,
                     width: double.maxFinite,
                     height: 40,
                     margin: EdgeInsets.only(left: 40,right: 40),
-                    child:Text("OKAY",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
+                    child:Text('okay'.tr(),style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
                     decoration: BoxDecoration(
                         color: Colors.green,
                         borderRadius: BorderRadius.circular(30)
@@ -191,7 +191,7 @@ class _EditEmployeeFrequentState extends State<EditEmployeeFrequent> {
                         child: Column(
                           children: [
                             Image.asset("assets/images/empty.png",width: 150,height: 150,),
-                            Text("No Employees")
+                            Text('noDataFound'.tr(),)
 
                           ],
                         ),
@@ -291,7 +291,7 @@ class _EditEmployeeFrequentState extends State<EditEmployeeFrequent> {
                         child: Column(
                           children: [
                             Image.asset("assets/images/empty.png",width: 150,height: 150,),
-                            Text("No Frequents")
+                            Text('noDataFound'.tr(),)
 
                           ],
                         ),
@@ -396,7 +396,7 @@ class _EditEmployeeFrequentState extends State<EditEmployeeFrequent> {
                     width: double.maxFinite,
                     height: 40,
                     margin: EdgeInsets.only(left: 40,right: 40),
-                    child:Text("OKAY",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
+                    child:Text('okay'.tr(),style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
                     decoration: BoxDecoration(
                         color: Colors.red,
                         borderRadius: BorderRadius.circular(30)
@@ -514,7 +514,7 @@ class _EditEmployeeFrequentState extends State<EditEmployeeFrequent> {
                   padding:
                   const EdgeInsets.only(left: 25.0, top: 40.0, bottom: 10.0),
                   child: Text(
-                    "Fill the Information",
+                    'fillTheInformation'.tr(),
                     style: TextStyle(
                         fontFamily: "Sofia",
                         fontWeight: FontWeight.w700,
@@ -688,15 +688,21 @@ class _EditEmployeeFrequentState extends State<EditEmployeeFrequent> {
                             if (_formKey.currentState.validate()) {
                               //_captureAndSharePng();
                               //saveInfo();
-                              if(emp!=null)
+                              if(emp!=null){
                                 saveInfo();
+                              }
+
+                              else{
+                                Toast.show("Please Select A Person", context, duration: Toast.LENGTH_LONG, gravity:  Toast.TOP);
+
+                              }
                             }
                           },
                           child: Container(
                             height: 50,
                             width: double.maxFinite,
                             alignment: Alignment.center,
-                            child: Text("Update Employee/Frequent",textAlign: TextAlign.center,style: TextStyle(color: Colors.white,fontSize: 20),),
+                            child: Text("Update Employee/Frequent",textAlign: TextAlign.center,style: TextStyle(color: Colors.white,fontSize: 17),),
                             decoration: BoxDecoration(
                                 color: kPrimaryColor,
                                 borderRadius: BorderRadius.circular(30)

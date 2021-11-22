@@ -14,6 +14,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:lottie/lottie.dart';
@@ -87,7 +88,7 @@ class _CreateEventState extends State<CreateEvent> {
                   child: Text("Amenities",textAlign: TextAlign.center,style: TextStyle(fontSize: 20,color:Colors.black,fontWeight: FontWeight.w600),),
                 ),
                 StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance.collection('home').doc('employees').collection(FirebaseAuth.instance.currentUser.uid).snapshots(),
+                  stream: FirebaseFirestore.instance.collection('amenities').snapshots(),
                   builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
                     if (snapshot.hasError) {
                       return Center(
@@ -111,8 +112,7 @@ class _CreateEventState extends State<CreateEvent> {
                         child: Column(
                           children: [
                             Image.asset("assets/images/empty.png",width: 150,height: 150,),
-                            Text("No Amenities")
-
+                            Text('noDataFound'.tr(),)
                           ],
                         ),
                       );
@@ -234,7 +234,7 @@ class _CreateEventState extends State<CreateEvent> {
                 Container(
                     child: Column(
                       children: [
-                        Text("Successful",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
+                        Text('successful'.tr(),style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
                         Text("Your event has been added",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
 
                       ],
@@ -247,15 +247,14 @@ class _CreateEventState extends State<CreateEvent> {
                 ),
                 GestureDetector(
                   onTap: (){
-                    Navigator.pushReplacement(
-                        context, MaterialPageRoute(builder: (BuildContext context) => ViewEvents()));
-                  },
+                    Navigator.pop(context);Navigator.pop(context);
+                    Navigator.pop(context);                  },
                   child: Container(
                     alignment: Alignment.center,
                     width: double.maxFinite,
                     height: 40,
                     margin: EdgeInsets.only(left: 40,right: 40),
-                    child:Text("OKAY",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
+                    child:Text('okay'.tr(),style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
                     decoration: BoxDecoration(
                         color: Colors.green,
                         borderRadius: BorderRadius.circular(30)
@@ -309,7 +308,7 @@ class _CreateEventState extends State<CreateEvent> {
                           child: QrImage(
                             data: key,
                             size: 200,
-                            embeddedImage: AssetImage('assets/images/qr_logo.png'),
+                            embeddedImage: AssetImage('assets/images/logo.png'),
                             embeddedImageStyle: QrEmbeddedImageStyle(
                               size: Size(50, 50),
                             ),
@@ -425,7 +424,7 @@ class _CreateEventState extends State<CreateEvent> {
                     width: double.maxFinite,
                     height: 40,
                     margin: EdgeInsets.only(left: 40,right: 40),
-                    child:Text("OKAY",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
+                    child:Text('okay'.tr(),style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
                     decoration: BoxDecoration(
                         color: Colors.red,
                         borderRadius: BorderRadius.circular(30)
@@ -442,9 +441,10 @@ class _CreateEventState extends State<CreateEvent> {
       },
     );
   }
-
+  int dateInMilli=DateTime.now().millisecondsSinceEpoch;
   saveInfo(File QRfile) async{
-    final ProgressDialog pr = ProgressDialog(context);
+    final ProgressDialog pr = ProgressDialog(context);    pr.style(message: "Please wait");
+
     await pr.show();
     User user=FirebaseAuth.instance.currentUser;
     var storage = FirebaseStorage.instance;
@@ -472,6 +472,19 @@ class _CreateEventState extends State<CreateEvent> {
             "email":visitors[i].email,
           });
         }
+        FirebaseFirestore.instance.collection("access_control").add({
+          'type': "Event",
+          'qr_code':"none",
+          'requestedFor':nameController.text,
+          'requestedBy':"${userModel.firstName} ${userModel.lastName}",
+          'date':"$startDate",
+          'dateInMilli':dateInMilli,
+          'datePostedInMilli':DateTime.now().millisecondsSinceEpoch,
+          'status':"scheduled",
+          'requesterId':user.uid,
+          'qr':"",
+          'neighbourId': userModel.neighbourId
+        });
         sendNotification();
         _showSuccessDailog();
       })
@@ -629,7 +642,7 @@ class _CreateEventState extends State<CreateEvent> {
                   padding:
                   const EdgeInsets.only(left: 25.0, top: 40.0, bottom: 10.0),
                   child: Text(
-                    "Fill the Information",
+                    'fillTheInformation'.tr(),
                     style: TextStyle(
                         fontFamily: "Sofia",
                         fontWeight: FontWeight.w700,
@@ -647,7 +660,7 @@ class _CreateEventState extends State<CreateEvent> {
                           controller: nameController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
+                              return 'pleaseEnterSomeText'.tr();
                             }
                             return null;
                           },
@@ -676,7 +689,7 @@ class _CreateEventState extends State<CreateEvent> {
                             filled: true,
                             prefixIcon: Icon(Icons.person_outline,color: Colors.black,size: 22,),
                             fillColor: Colors.grey[200],
-                            hintText: "Enter Description",
+                            hintText: 'enterDescription'.tr(),
                             // If  you are using latest version of flutter then lable text and hint text shown like this
                             // if you r using flutter less then 1.20.* then maybe this is not working properly
                             floatingLabelBehavior: FloatingLabelBehavior.always,
@@ -731,6 +744,7 @@ class _CreateEventState extends State<CreateEvent> {
                                 onConfirm: (date) {
                                   print('confirm $date');
                                   setState(() {
+                                    dateInMilli=date.millisecondsSinceEpoch;
                                     startDate = formatDate(date, [dd, '-', mm, '-', yyyy]);
                                   });
                                 },
@@ -898,7 +912,7 @@ class _CreateEventState extends State<CreateEvent> {
                                   child: RaisedButton(
                                     onPressed: (){
                                       if(vnameController.text.trim()=="" || vemailController.text.trim()==""){
-                                        Toast.show("Please enter some text", context, duration: Toast.LENGTH_LONG, gravity:  Toast.TOP);
+                                        Toast.show('pleaseEnterSomeText'.tr(), context, duration: Toast.LENGTH_LONG, gravity:  Toast.TOP);
                                       }
                                       else{
                                         setState(() {
@@ -985,7 +999,7 @@ class _CreateEventState extends State<CreateEvent> {
                             height: 50,
                             width: double.maxFinite,
                             alignment: Alignment.center,
-                            child: Text("Generate QR",textAlign: TextAlign.center,style: TextStyle(color: Colors.white,fontSize: 20),),
+                            child: Text('generateQR'.tr(),textAlign: TextAlign.center,style: TextStyle(color: Colors.white,fontSize: 20),),
                             decoration: BoxDecoration(
                                 color: kPrimaryColor,
                                 borderRadius: BorderRadius.circular(30)

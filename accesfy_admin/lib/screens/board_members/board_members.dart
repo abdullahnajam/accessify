@@ -22,66 +22,77 @@ class _BoardPanelMembersState extends State<BoardPanelMembers> {
   var lastNameController=TextEditingController();
   var neighbourController=TextEditingController();
   var phoneController=TextEditingController();
+  var _commentController=TextEditingController();
+  var _statusController=TextEditingController();
+  var _positionController=TextEditingController();
   var passwordController=TextEditingController();
   String? neighbourId;
+  String logo="";
+  String status='Active';
 
 
   register() async{
     print("rr");
     final ProgressDialog pr = ProgressDialog(context: context);
     pr.show(max: 100, msg: "Please wait");
-    try {
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: emailController.text.trim(),
-          password: passwordController.text.trim()
-      ).then((value) {
-        FirebaseAuth.instance
-            .authStateChanges()
-            .listen((User? user) {
-          if (user == null) {
-            print('User is currently signed out!');
-          } else {
+    await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim()
+    ).then((value) {
+      print('User is signed in!');
+      User? user=FirebaseAuth.instance.currentUser;
+      FirebaseFirestore.instance.collection('boardmember').doc(user!.uid).set({
+        'firstName': firstNameController.text,
+        'lastName': lastNameController.text,
+        'phone': phoneController.text,
+        'neighbourhoodName': neighbourController.text,
+        'neighbourId': neighbourId,
+        'email': emailController.text,
+        'password': passwordController.text,
+        'position': _positionController.text,
+        'status': _statusController.text,
+        'comment': _commentController.text,
+        'neighbourLogo':logo
 
-            print('User is signed in!');
-            User? user=FirebaseAuth.instance.currentUser;
-            FirebaseFirestore.instance.collection('boardmember').doc(user!.uid).set({
-              'firstName': firstNameController.text,
-              'lastName': lastNameController.text,
-              'phone': phoneController.text,
-              'neighbourhoodName': neighbourController.text,
-              'neighbourId': neighbourId,
-              'email': emailController.text,
-              'password': passwordController.text,
-
-
-            }).then((value) {
-              pr.close();
-              print("added");
-              Navigator.pop(context);
-            });
-          }
-        });
-      }).catchError((onError){
+      }).then((value) {
         pr.close();
-        print(onError.toString());
+        print("added");
+        Navigator.pop(context);
       });
-    } on FirebaseAuthException catch (e) {
+    }).catchError((onError){
       pr.close();
-      if (e.code == 'weak-password') {
-        print('The password provided is too weak.');
-
-      } else if (e.code == 'email-already-in-use') {
-
-      }
-    } catch (e) {
-      pr.close();
-      print(e.toString());
-    }
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false, // user must tap button!
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title:  Text('Error',style: TextStyle(color: Colors.black),),
+            content: SingleChildScrollView(
+              child: ListBody(
+                children:  <Widget>[
+                  Text(onError.toString(),style: TextStyle(color: Colors.black),),
+                ],
+              ),
+            ),
+            actions: <Widget>[
+              TextButton(
+                child: const Text('OK',style: TextStyle(color: Colors.blue),),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        },
+      );
+      print(onError.toString());
+    });
   }
 
 
   Future<void> _showAddBoardMemberDialog() async {
     final _formKey = GlobalKey<FormState>();
+
     return showDialog<void>(
       context: context,
       barrierDismissible: true, // user must tap button!
@@ -100,7 +111,7 @@ class _BoardPanelMembersState extends State<BoardPanelMembers> {
 
               child: Container(
                 padding: EdgeInsets.all(20),
-                height: MediaQuery.of(context).size.height*0.8,
+                height: MediaQuery.of(context).size.height*0.9,
                 width: MediaQuery.of(context).size.width*0.5,
                 decoration: BoxDecoration(
                     color: Colors.white,
@@ -451,6 +462,7 @@ class _BoardPanelMembersState extends State<BoardPanelMembers> {
                                                                 setState(() {
                                                                   neighbourController.text="${data['name']}";
                                                                   neighbourId=document.reference.id;
+                                                                  logo=data['logo'];
                                                                 });
                                                                 Navigator.pop(context);
                                                               },
@@ -504,6 +516,138 @@ class _BoardPanelMembersState extends State<BoardPanelMembers> {
                                 ),
                               ],
                             ),
+                            SizedBox(height: 10,),
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Position",
+                                  style: Theme.of(context).textTheme.bodyText1!.apply(color: secondaryColor),
+                                ),
+                                TextFormField(
+                                  controller: _positionController,
+                                  style: TextStyle(color: Colors.black),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Please enter some text';
+                                    }
+                                    return null;
+                                  },
+                                  decoration: InputDecoration(
+                                    contentPadding: EdgeInsets.all(15),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(7.0),
+                                      borderSide: BorderSide(
+                                        color: primaryColor,
+                                      ),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(7.0),
+                                      borderSide: BorderSide(
+                                          color: primaryColor,
+                                          width: 0.5
+                                      ),
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(7.0),
+                                      borderSide: BorderSide(
+                                        color: primaryColor,
+                                        width: 0.5,
+                                      ),
+                                    ),
+                                    hintText: "",
+                                    floatingLabelBehavior: FloatingLabelBehavior.always,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 10,),
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Status",
+                                  style: Theme.of(context).textTheme.bodyText1!.apply(color: secondaryColor),
+                                ),
+                                Container(
+                                  padding: EdgeInsets.only(left: 10),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(7.0),
+                                    border: Border.all(
+                                        color: primaryColor,
+                                        width: 0.5
+                                    ),
+                                  ),
+                                  child: DropdownButton<String>(
+                                    value: status,
+                                    elevation: 16,
+                                    isExpanded:true,
+                                    style: const TextStyle(color: Colors.black),
+                                    underline: Container(),
+                                    onChanged: (String? newValue) {
+                                      setState(() {
+                                        status = newValue!;
+                                      });
+                                    },
+                                    items: <String>['Active', 'Inactive']
+                                        .map<DropdownMenuItem<String>>((String value) {
+                                      return DropdownMenuItem<String>(
+                                        value: value,
+                                        child: Text(value),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 10,),
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Comment",
+                                  style: Theme.of(context).textTheme.bodyText1!.apply(color: secondaryColor),
+                                ),
+                                TextFormField(
+                                  controller: _commentController,
+                                  style: TextStyle(color: Colors.black),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Please enter some text';
+                                    }
+                                    return null;
+                                  },
+                                  decoration: InputDecoration(
+                                    contentPadding: EdgeInsets.all(15),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(7.0),
+                                      borderSide: BorderSide(
+                                        color: primaryColor,
+                                      ),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(7.0),
+                                      borderSide: BorderSide(
+                                          color: primaryColor,
+                                          width: 0.5
+                                      ),
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(7.0),
+                                      borderSide: BorderSide(
+                                        color: primaryColor,
+                                        width: 0.5,
+                                      ),
+                                    ),
+                                    hintText: "",
+                                    floatingLabelBehavior: FloatingLabelBehavior.always,
+                                  ),
+                                ),
+                              ],
+                            ),
                             SizedBox(height: 15,),
                             InkWell(
                               onTap: (){
@@ -515,7 +659,7 @@ class _BoardPanelMembersState extends State<BoardPanelMembers> {
                                 height: 50,
                                 color: secondaryColor,
                                 alignment: Alignment.center,
-                                child: Text("Add",style: Theme.of(context).textTheme.button!.apply(color: Colors.white),),
+                                child: Text("Add Board Member",style: Theme.of(context).textTheme.button!.apply(color: Colors.white),),
                               ),
                             )
                           ],

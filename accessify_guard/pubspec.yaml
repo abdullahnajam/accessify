@@ -47,6 +47,8 @@ dependencies:
   overlay_support: ^1.2.1
   toast: ^0.1.5
   http: any
+  curved_navigation_bar: ^1.0.1
+  cached_network_image: ^3.1.0
 
 dev_dependencies:
   flutter_test:
@@ -66,6 +68,7 @@ flutter:
   assets:
     - assets/images/
     - assets/json/
+    - assets/icons/
     - assets/images/add.png
     - assets/images/add.png
   fonts:

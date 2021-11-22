@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:accessify/constants.dart';
+import 'package:accessify/model/user_model.dart';
 import 'package:accessify/screens/coupon/view_coupons.dart';
 import 'package:accessify/screens/home.dart';
 import 'package:accessify/screens/incidents/view_incidents.dart';
@@ -11,6 +12,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lottie/lottie.dart';
@@ -116,25 +118,33 @@ class _CreateCouponState extends State<CreateCoupon> {
     );
   }
 
-  /*@override
-  void initState() {
+  UserModel userModel;
+  bool isLoading=false;
+
+  getUserData()async{
+    User user=FirebaseAuth.instance.currentUser;
     FirebaseFirestore.instance
-        .collection('classification_incident')
+        .collection('homeowner')
+        .doc(user.uid)
         .get()
-        .then((QuerySnapshot querySnapshot) {
-      querySnapshot.docs.forEach((doc) {
+        .then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+
+        Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
+        userModel=UserModel.fromMap(data, documentSnapshot.reference.id);
         setState(() {
-          classification=doc['name'];
-        });
-      });
-      if(classification==null){
-        setState(() {
-          classification="No classification found";
+          isLoading=true;
         });
       }
-
     });
-  }*/
+
+  }
+
+
+  @override
+  void initState() {
+    getUserData();
+  }
 
   Future uploadImageToFirebase(BuildContext context) async {
     String fileName = _imageFile.path;
@@ -188,7 +198,7 @@ class _CreateCouponState extends State<CreateCoupon> {
                 Container(
                     child: Column(
                       children: [
-                        Text("Successful",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
+                        Text('successful'.tr(),style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
                         Text("Your coupon has been added",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
                       ],
                     )
@@ -208,7 +218,7 @@ class _CreateCouponState extends State<CreateCoupon> {
                     width: double.maxFinite,
                     height: 40,
                     margin: EdgeInsets.only(left: 40,right: 40),
-                    child:Text("OKAY",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
+                    child:Text('okay'.tr(),style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
                     decoration: BoxDecoration(
                         color: Colors.green,
                         borderRadius: BorderRadius.circular(30)
@@ -279,7 +289,7 @@ class _CreateCouponState extends State<CreateCoupon> {
                     width: double.maxFinite,
                     height: 40,
                     margin: EdgeInsets.only(left: 40,right: 40),
-                    child:Text("OKAY",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
+                    child:Text('okay'.tr(),style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
                     decoration: BoxDecoration(
                         color: Colors.red,
                         borderRadius: BorderRadius.circular(30)
@@ -354,6 +364,7 @@ class _CreateCouponState extends State<CreateCoupon> {
           'phone':phoneController.text,
           'price':priceController.text,
           'expiration':startDate,
+          'neighbourId': userModel.neighbourId,
         }).then((value) {
           _showSuccessDailog();
         })
@@ -444,7 +455,7 @@ class _CreateCouponState extends State<CreateCoupon> {
                   padding:
                   const EdgeInsets.only(left: 25.0, top: 40.0, bottom: 10.0),
                   child: Text(
-                    "Fill the Information",
+                    'fillTheInformation'.tr(),
                     style: TextStyle(
                         fontFamily: "Sofia",
                         fontWeight: FontWeight.w700,
@@ -462,7 +473,7 @@ class _CreateCouponState extends State<CreateCoupon> {
                           controller: nameController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
+                              return 'pleaseEnterSomeText'.tr();
                             }
                             return null;
                           },
@@ -504,7 +515,7 @@ class _CreateCouponState extends State<CreateCoupon> {
                           maxLines: 3,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
+                              return 'pleaseEnterSomeText'.tr();
                             }
                             return null;
                           },
@@ -532,7 +543,7 @@ class _CreateCouponState extends State<CreateCoupon> {
                             ),
                             filled: true,
                             fillColor: Colors.grey[200],
-                            hintText: "Enter Description",
+                            hintText: 'enterDescription'.tr(),
                             // If  you are using latest version of flutter then lable text and hint text shown like this
                             // if you r using flutter less then 1.20.* then maybe this is not working properly
                             floatingLabelBehavior: FloatingLabelBehavior.always,
@@ -544,7 +555,7 @@ class _CreateCouponState extends State<CreateCoupon> {
                           controller: priceController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
+                              return 'pleaseEnterSomeText'.tr();
                             }
                             return null;
                           },
@@ -586,7 +597,7 @@ class _CreateCouponState extends State<CreateCoupon> {
                           controller: phoneController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
+                              return 'pleaseEnterSomeText'.tr();
                             }
                             return null;
                           },

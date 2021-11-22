@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:path_provider/path_provider.dart';
@@ -70,8 +71,7 @@ class _ViewEventsState extends State<ViewEvents> {
                         child: Column(
                           children: [
                             Image.asset("assets/images/empty.png",width: 150,height: 150,),
-                            Text("No Delivery Added")
-
+                            Text('noDataFound'.tr(),)
                           ],
                         ),
                       );
@@ -342,7 +342,7 @@ class _ViewEventsState extends State<ViewEvents> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        "Click To Explore",
+                        'clickToExplore'.tr(),
                         style: TextStyle(
                             fontFamily: "Sofia",
                             fontWeight: FontWeight.w700,
@@ -384,8 +384,7 @@ class _ViewEventsState extends State<ViewEvents> {
                       child: Column(
                         children: [
                           Image.asset("assets/images/empty.png",width: 150,height: 150,),
-                          Text("No Events Added")
-
+                          Text('noDataFound'.tr(),)
                         ],
                       ),
                     );
@@ -431,7 +430,7 @@ class _ViewEventsState extends State<ViewEvents> {
                               ),
                               secondaryActions: <Widget>[
                                 IconSlideAction(
-                                    caption: 'Share',
+                                    caption: 'share'.tr(),
                                     color: Colors.indigo,
                                     icon: Icons.share_outlined,
                                     onTap: () => Share.share(model.qr, subject: 'QR Code for accesfy')
@@ -443,7 +442,7 @@ class _ViewEventsState extends State<ViewEvents> {
                                     onTap: ()=>_showGuestDailog(model.id)
                                 ),
                                 IconSlideAction(
-                                  caption: 'Delete',
+                                  caption: 'delete'.tr(),
                                   color: Colors.indigo,
                                   icon: Icons.delete_forever_outlined,
                                   onTap: () async{

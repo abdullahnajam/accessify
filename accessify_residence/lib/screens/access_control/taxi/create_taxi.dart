@@ -10,6 +10,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lottie/lottie.dart';
@@ -27,6 +28,7 @@ class _CreateTaxiState extends State<CreateTaxi> {
   bool pickup=false,omw=false;
 
   String time=formatDate(DateTime.now(), [H, ':', nn]);
+  int dateInMilli=0;
   String startDate = formatDate(DateTime.now(), [dd, '-', mm, '-', yyyy]);
 
 
@@ -80,7 +82,6 @@ class _CreateTaxiState extends State<CreateTaxi> {
     ).whenComplete(()  {
       User user=FirebaseAuth.instance.currentUser;
       FirebaseFirestore.instance.collection("guard_notifications").add({
-
         'isOpened': false,
         'type':"taxi",
         'name':nameController.text,
@@ -128,7 +129,7 @@ class _CreateTaxiState extends State<CreateTaxi> {
                 Container(
                     child: Column(
                       children: [
-                        Text("Successful",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
+                        Text('successful'.tr(),style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
                         Text("Your taxi has been added",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
                       ],
                     )
@@ -140,15 +141,14 @@ class _CreateTaxiState extends State<CreateTaxi> {
                 ),
                 GestureDetector(
                   onTap: (){
-                    Navigator.push(
-                        context, MaterialPageRoute(builder: (BuildContext context) => Home()));
+                    Navigator.pop(context);Navigator.pop(context);
                   },
                   child: Container(
                     alignment: Alignment.center,
                     width: double.maxFinite,
                     height: 40,
                     margin: EdgeInsets.only(left: 40,right: 40),
-                    child:Text("OKAY",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
+                    child:Text('okay'.tr(),style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
                     decoration: BoxDecoration(
                         color: Colors.green,
                         borderRadius: BorderRadius.circular(30)
@@ -219,7 +219,7 @@ class _CreateTaxiState extends State<CreateTaxi> {
                     width: double.maxFinite,
                     height: 40,
                     margin: EdgeInsets.only(left: 40,right: 40),
-                    child:Text("OKAY",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
+                    child:Text('okay'.tr(),style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
                     decoration: BoxDecoration(
                         color: Colors.red,
                         borderRadius: BorderRadius.circular(30)
@@ -249,6 +249,19 @@ class _CreateTaxiState extends State<CreateTaxi> {
       'pickup':pickup,
       'omw':omw
     }).then((value) {
+      FirebaseFirestore.instance.collection("access_control").doc(value.id).set({
+        'type': "Taxi",
+        'qr_code':"none",
+        'requestedFor':nameController.text,
+        'requestedBy':"${userModel.firstName} ${userModel.lastName}",
+        'date':"$startDate, $time",
+        'dateInMilli':dateInMilli,
+        'datePostedInMilli':DateTime.now().millisecondsSinceEpoch,
+        'status':"scheduled",
+        'requesterId':user.uid,
+        'qr':"",
+        'neighbourId': userModel.neighbourId
+      });
       sendNotification();
       _showSuccessDailog();
     })
@@ -336,7 +349,7 @@ class _CreateTaxiState extends State<CreateTaxi> {
                   padding:
                   const EdgeInsets.only(left: 25.0, top: 40.0, bottom: 10.0),
                   child: Text(
-                    "Fill the Information",
+                    'fillTheInformation'.tr(),
                     style: TextStyle(
                         fontFamily: "Sofia",
                         fontWeight: FontWeight.w700,
@@ -354,7 +367,7 @@ class _CreateTaxiState extends State<CreateTaxi> {
                           controller: nameController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
+                              return 'pleaseEnterSomeText'.tr();
                             }
                             return null;
                           },
@@ -383,7 +396,7 @@ class _CreateTaxiState extends State<CreateTaxi> {
                             filled: true,
                             prefixIcon: Icon(Icons.person_outline,color: Colors.black,size: 22,),
                             fillColor: Colors.grey[200],
-                            hintText: "Enter Name",
+                            hintText: 'enterName'.tr(),
                             // If  you are using latest version of flutter then lable text and hint text shown like this
                             // if you r using flutter less then 1.20.* then maybe this is not working properly
                             floatingLabelBehavior: FloatingLabelBehavior.always,
@@ -396,7 +409,7 @@ class _CreateTaxiState extends State<CreateTaxi> {
                           controller: desController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
+                              return 'pleaseEnterSomeText'.tr();
                             }
                             return null;
                           },
@@ -425,7 +438,7 @@ class _CreateTaxiState extends State<CreateTaxi> {
                             filled: true,
                             prefixIcon: Icon(Icons.note_outlined,color: Colors.black,size: 22,),
                             fillColor: Colors.grey[200],
-                            hintText: "Enter Description",
+                            hintText: 'enterDescription'.tr(),
                             // If  you are using latest version of flutter then lable text and hint text shown like this
                             // if you r using flutter less then 1.20.* then maybe this is not working properly
                             floatingLabelBehavior: FloatingLabelBehavior.always,
@@ -447,6 +460,7 @@ class _CreateTaxiState extends State<CreateTaxi> {
                                 onConfirm: (date) {
                                   print('confirm $date');
                                   setState(() {
+                                    dateInMilli=date.millisecondsSinceEpoch;
                                     startDate = formatDate(date, [dd, '-', mm, '-', yyyy]);
                                   });
                                 },

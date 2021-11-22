@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:accessify/auth/sign_up/sign_up_screen.dart';
 
 import '../constants.dart';

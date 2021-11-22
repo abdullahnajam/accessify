@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../constants.dart';
 class ViewSurvey extends StatefulWidget {
@@ -201,7 +202,7 @@ class _ViewSurveyState extends State<ViewSurvey> {
                       child: Column(
                         children: [
                           Image.asset("assets/images/empty.png",width: 150,height: 150,),
-                          Text("No Survey Questions Added")
+                          Text('noDataFound'.tr(),)
 
                         ],
                       ),

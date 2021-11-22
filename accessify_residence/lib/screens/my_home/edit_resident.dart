@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import 'package:lottie/lottie.dart';
 class EditResident extends StatefulWidget {
@@ -61,7 +62,7 @@ class _EditResidentState extends State<EditResident> {
                 Container(
                     child: Column(
                       children: [
-                        Text("Successful",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
+                        Text('successful'.tr(),style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
                         Text("Your resident has been updated",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
                       ],
                     )
@@ -73,15 +74,15 @@ class _EditResidentState extends State<EditResident> {
                 ),
                 GestureDetector(
                   onTap: (){
-                    Navigator.pushReplacement(
-                        context, MaterialPageRoute(builder: (BuildContext context) => MyResidence()));
+                    Navigator.pop(context);Navigator.pop(context);
+                    //Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => MyResidence()));
                   },
                   child: Container(
                     alignment: Alignment.center,
                     width: double.maxFinite,
                     height: 40,
                     margin: EdgeInsets.only(left: 40,right: 40),
-                    child:Text("OKAY",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
+                    child:Text('okay'.tr(),style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
                     decoration: BoxDecoration(
                         color: Colors.green,
                         borderRadius: BorderRadius.circular(30)
@@ -152,7 +153,7 @@ class _EditResidentState extends State<EditResident> {
                     width: double.maxFinite,
                     height: 40,
                     margin: EdgeInsets.only(left: 40,right: 40),
-                    child:Text("OKAY",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
+                    child:Text('okay'.tr(),style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
                     decoration: BoxDecoration(
                         color: Colors.red,
                         borderRadius: BorderRadius.circular(30)
@@ -173,7 +174,7 @@ class _EditResidentState extends State<EditResident> {
   saveInfo(){
     String pass=new DateTime.now().millisecondsSinceEpoch.toString();
     User user=FirebaseAuth.instance.currentUser;
-    FirebaseFirestore.instance.collection("home").doc("residents").collection(user.uid).doc(widget.resident.id).update({
+    FirebaseFirestore.instance.collection("home").doc("resident").collection(user.uid).doc(widget.resident.id).update({
       'age': ageController.text,
       'passcode': widget.resident.passcode,
       'email': emailController.text,
@@ -282,7 +283,7 @@ class _EditResidentState extends State<EditResident> {
                   padding:
                   const EdgeInsets.only(left: 25.0, top: 40.0, bottom: 10.0),
                   child: Text(
-                    "Fill the Information",
+                    'fillTheInformation'.tr(),
                     style: TextStyle(
                         fontFamily: "Sofia",
                         fontWeight: FontWeight.w700,
@@ -300,7 +301,7 @@ class _EditResidentState extends State<EditResident> {
                           controller: fnController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
+                              return 'pleaseEnterSomeText'.tr();
                             }
                             return null;
                           },
@@ -342,7 +343,7 @@ class _EditResidentState extends State<EditResident> {
                           controller: lnController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
+                              return 'pleaseEnterSomeText'.tr();
                             }
                             return null;
                           },
@@ -383,7 +384,7 @@ class _EditResidentState extends State<EditResident> {
                           controller: emailController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
+                              return 'pleaseEnterSomeText'.tr();
                             }
                             return null;
                           },
@@ -426,7 +427,7 @@ class _EditResidentState extends State<EditResident> {
                           keyboardType: TextInputType.phone,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
+                              return 'pleaseEnterSomeText'.tr();
                             }
                             return null;
                           },
@@ -520,7 +521,7 @@ class _EditResidentState extends State<EditResident> {
                           keyboardType: TextInputType.number,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
+                              return 'pleaseEnterSomeText'.tr();
                             }
                             return null;
                           },

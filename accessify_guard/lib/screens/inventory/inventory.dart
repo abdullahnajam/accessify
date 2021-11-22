@@ -7,8 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:guard/model/inventory/asset_model.dart';
 import 'package:guard/model/inventory/supply_model.dart';
 import 'package:guard/navigator/menu_drawer.dart';
+import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:qrscan/qrscan.dart' as scanner;
+import 'package:toast/toast.dart';
 class Inventory extends StatefulWidget {
   @override
   _InventoryState createState() => _InventoryState();
@@ -33,6 +35,252 @@ class _InventoryState extends State<Inventory> with SingleTickerProviderStateMix
     super.dispose();
     _tabController.dispose();
   }
+  Future<void> _showEdit(BuildContext context,String id) async {
+    String condition='New';
+
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: true, // user must tap button!
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final _formKey = GlobalKey<FormState>();
+
+
+
+
+
+
+
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: const BorderRadius.all(
+                  Radius.circular(10.0),
+                ),
+              ),
+              insetAnimationDuration: const Duration(seconds: 1),
+              insetAnimationCurve: Curves.fastOutSlowIn,
+              elevation: 2,
+
+              child: Container(
+                padding: EdgeInsets.all(20),
+                height: MediaQuery.of(context).size.height*0.9,
+                width: MediaQuery.of(context).size.width*0.5,
+                decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10)
+                ),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Stack(
+                        children: [
+                          Align(
+                            alignment: Alignment.center,
+                            child: Container(
+                              margin: EdgeInsets.all(10),
+                              child: Text("Inventory Item",textAlign: TextAlign.center,style: Theme.of(context).textTheme.headline6.apply(color: Colors.black),),
+                            ),
+                          ),
+
+                        ],
+                      ),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Condition",
+                            style: Theme.of(context).textTheme.bodyText1.apply(color: Colors.black),
+                          ),
+                          Container(
+                            padding: EdgeInsets.only(left: 10),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(7.0),
+                              border: Border.all(
+                                  color: kPrimaryColor,
+                                  width: 0.5
+                              ),
+                            ),
+                            child: DropdownButton<String>(
+                              value: condition,
+                              elevation: 16,
+                              isExpanded:true,
+                              style: const TextStyle(color: Colors.black),
+                              underline: Container(),
+                              onChanged: (String newValue) {
+                                setState(() {
+                                  condition = newValue;
+                                });
+                              },
+                              items: <String>['New', 'Plenty', 'Few', 'Empty','Damaged']
+                                  .map<DropdownMenuItem<String>>((String value) {
+                                return DropdownMenuItem<String>(
+                                  value: value,
+                                  child: Text(value),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 15,),
+                      InkWell(
+                        onTap: (){
+                          final f = new DateFormat('dd-MM-yyyy');
+                          FirebaseFirestore.instance.collection('inventory_assets').doc(id).update({
+                            'condition': condition,
+                            'lastScanDate': f.format(DateTime.now()).toString()
+                          }).then((value) {
+                            print("added");
+                            Navigator.pop(context);
+                          }).onError((error, stackTrace) {
+                            Toast.show("No record found", context, duration: Toast.LENGTH_LONG, gravity:  Toast.TOP);
+                            Navigator.pop(context);
+                          });
+                        },
+                        child: Container(
+                          height: 50,
+                          color: Colors.black,
+                          alignment: Alignment.center,
+                          child: Text("Update",style: Theme.of(context).textTheme.button.apply(color: Colors.white),),
+                        ),
+                      )
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+  Future<void> _showSupplyEdit(BuildContext context,String id) async {
+    String condition='New';
+
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: true, // user must tap button!
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final _formKey = GlobalKey<FormState>();
+
+
+
+
+
+
+
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: const BorderRadius.all(
+                  Radius.circular(10.0),
+                ),
+              ),
+              insetAnimationDuration: const Duration(seconds: 1),
+              insetAnimationCurve: Curves.fastOutSlowIn,
+              elevation: 2,
+
+              child: Container(
+                padding: EdgeInsets.all(20),
+                height: MediaQuery.of(context).size.height*0.9,
+                width: MediaQuery.of(context).size.width*0.5,
+                decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10)
+                ),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Stack(
+                        children: [
+                          Align(
+                            alignment: Alignment.center,
+                            child: Container(
+                              margin: EdgeInsets.all(10),
+                              child: Text("Supply Item",textAlign: TextAlign.center,style: Theme.of(context).textTheme.headline6.apply(color: Colors.black),),
+                            ),
+                          ),
+
+                        ],
+                      ),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Condition",
+                            style: Theme.of(context).textTheme.bodyText1.apply(color: Colors.black),
+                          ),
+                          Container(
+                            padding: EdgeInsets.only(left: 10),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(7.0),
+                              border: Border.all(
+                                  color: kPrimaryColor,
+                                  width: 0.5
+                              ),
+                            ),
+                            child: DropdownButton<String>(
+                              value: condition,
+                              elevation: 16,
+                              isExpanded:true,
+                              style: const TextStyle(color: Colors.black),
+                              underline: Container(),
+                              onChanged: (String newValue) {
+                                setState(() {
+                                  condition = newValue;
+                                });
+                              },
+                              items: <String>['New', 'Plenty', 'Few', 'Empty','Damaged']
+                                  .map<DropdownMenuItem<String>>((String value) {
+                                return DropdownMenuItem<String>(
+                                  value: value,
+                                  child: Text(value),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 15,),
+                      InkWell(
+                        onTap: (){
+                          final f = new DateFormat('dd-MM-yyyy');
+                          FirebaseFirestore.instance.collection('inventory_supply').doc(id).update({
+                            'condition': condition,
+                            'lastScanDate': f.format(DateTime.now()).toString()
+                          }).then((value) {
+                            print("added");
+                            Navigator.pop(context);
+                          }).onError((error, stackTrace) {
+                            Toast.show("No record found", context, duration: Toast.LENGTH_LONG, gravity:  Toast.TOP);
+                            Navigator.pop(context);
+                          });
+                        },
+                        child: Container(
+                          height: 50,
+                          color: Colors.black,
+                          alignment: Alignment.center,
+                          child: Text("Update",style: Theme.of(context).textTheme.button.apply(color: Colors.white),),
+                        ),
+                      )
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
   scanAsset()async{
 
     await Permission.camera.request();
@@ -41,6 +289,7 @@ class _InventoryState extends State<Inventory> with SingleTickerProviderStateMix
       print('nothing return.');
     } else {
       print('qr code $barcode');
+      _showEdit(context, barcode);
     }
 
   }
@@ -52,6 +301,7 @@ class _InventoryState extends State<Inventory> with SingleTickerProviderStateMix
       print('nothing return.');
     } else {
       print('qr code $barcode');
+      _showSupplyEdit(context, barcode);
     }
 
   }

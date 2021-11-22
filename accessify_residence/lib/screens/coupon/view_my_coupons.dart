@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../constants.dart';
 class ViewMyCoupons extends StatefulWidget {
@@ -132,7 +133,7 @@ class _ViewMyCouponsState extends State<ViewMyCoupons> {
                       child: Column(
                         children: [
                           Image.asset("assets/images/empty.png",width: 150,height: 150,),
-                          Text("No Coupons Added")
+                          Text('noDataFound'.tr(),)
 
                         ],
                       ),

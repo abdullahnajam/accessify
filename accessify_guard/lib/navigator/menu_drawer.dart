@@ -63,7 +63,7 @@ class MenuDrawerState extends State<MenuDrawer> {
             Container(height: 8),
 
             InkWell(onTap: (){
-              Navigator.pushReplacement(context, new MaterialPageRoute(
+              Navigator.push(context, new MaterialPageRoute(
                   builder: (context) => Members()));
             },
               child: Container(height: 40, padding: EdgeInsets.symmetric(horizontal: 20),
@@ -79,7 +79,7 @@ class MenuDrawerState extends State<MenuDrawer> {
 
             Container(height: 10),
             InkWell(onTap: (){
-              Navigator.pushReplacement(context, new MaterialPageRoute(
+              Navigator.push(context, new MaterialPageRoute(
                   builder: (context) => AccessControl()));
             },
               child: Container(height: 40, padding: EdgeInsets.symmetric(horizontal: 20),
@@ -109,7 +109,7 @@ class MenuDrawerState extends State<MenuDrawer> {
             ),
             Container(height: 10),
             InkWell(onTap: (){
-              Navigator.pushReplacement(context, new MaterialPageRoute(
+              Navigator.push(context, new MaterialPageRoute(
                   builder: (context) => Reservations()));
             },
               child: Container(height: 40, padding: EdgeInsets.symmetric(horizontal: 20),
@@ -124,7 +124,7 @@ class MenuDrawerState extends State<MenuDrawer> {
             ),
             /*Container(height: 10),
             InkWell(onTap: (){
-              Navigator.pushReplacement(context, new MaterialPageRoute(
+              Navigator.push(context, new MaterialPageRoute(
                   builder: (context) => Chat()));
             },
               child: Container(height: 40, padding: EdgeInsets.symmetric(horizontal: 20),
@@ -139,7 +139,7 @@ class MenuDrawerState extends State<MenuDrawer> {
             ),*/
             Container(height: 10),
             InkWell(onTap: (){
-              Navigator.pushReplacement(context, new MaterialPageRoute(
+              Navigator.push(context, new MaterialPageRoute(
                   builder: (context) => Inventory()));
             },
               child: Container(height: 40, padding: EdgeInsets.symmetric(horizontal: 20),
@@ -154,7 +154,7 @@ class MenuDrawerState extends State<MenuDrawer> {
             ),
             Container(height: 10),
             InkWell(onTap: (){
-              Navigator.pushReplacement(context, new MaterialPageRoute(
+              Navigator.push(context, new MaterialPageRoute(
                   builder: (context) => Notifications()));
             },
               child: Container(height: 40, padding: EdgeInsets.symmetric(horizontal: 20),

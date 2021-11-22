@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:accessify/components/custom_surfix_icon.dart';
 import 'package:accessify/components/form_error.dart';
 import 'package:accessify/helper/keyboard.dart';
@@ -61,6 +62,7 @@ class _SignFormState extends State<SignForm> {
                 // if all are valid then go to success screen
                 KeyboardUtil.hideKeyboard(context);
                 final ProgressDialog pr = ProgressDialog(context);
+                pr.style(message: "Please wait");
                 pr.show();
                 try {
                   UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(

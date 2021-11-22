@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:accessify/data/my_colors.dart';
 
 class CommonAppBar {

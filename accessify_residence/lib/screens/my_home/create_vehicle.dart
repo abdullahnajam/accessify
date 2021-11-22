@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import 'package:lottie/lottie.dart';
 class CreateVehicle extends StatefulWidget {
@@ -58,7 +59,7 @@ class _CreateVehicleState extends State<CreateVehicle> {
                 Container(
                     child: Column(
                       children: [
-                        Text("Successful",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
+                        Text('successful'.tr(),style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
                         Text("Your vehicle has been added",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
                       ],
                     )
@@ -70,15 +71,14 @@ class _CreateVehicleState extends State<CreateVehicle> {
                 ),
                 GestureDetector(
                   onTap: (){
-                    Navigator.pushReplacement(
-                        context, MaterialPageRoute(builder: (BuildContext context) => MyVehicle()));
+                    Navigator.pop(context);Navigator.pop(context);
                   },
                   child: Container(
                     alignment: Alignment.center,
                     width: double.maxFinite,
                     height: 40,
                     margin: EdgeInsets.only(left: 40,right: 40),
-                    child:Text("OKAY",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
+                    child:Text('okay'.tr(),style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
                     decoration: BoxDecoration(
                         color: Colors.green,
                         borderRadius: BorderRadius.circular(30)
@@ -149,7 +149,7 @@ class _CreateVehicleState extends State<CreateVehicle> {
                     width: double.maxFinite,
                     height: 40,
                     margin: EdgeInsets.only(left: 40,right: 40),
-                    child:Text("OKAY",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
+                    child:Text('okay'.tr(),style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
                     decoration: BoxDecoration(
                         color: Colors.red,
                         borderRadius: BorderRadius.circular(30)
@@ -178,13 +178,16 @@ class _CreateVehicleState extends State<CreateVehicle> {
       'newTag': newTag,
       'feeAcceptance': agreement,
     }).then((value) {
-      FirebaseFirestore.instance.collection('payment').add({
-        'userId': user.uid,
-        'title': "Vehicle Tag Payment",
-        'prefix': "\$",
-        'amount': "not assigned",
-        'status': "Requested",
-      });
+      if(newTag){
+        FirebaseFirestore.instance.collection('payment').add({
+          'userId': user.uid,
+          'title': "Vehicle Tag Payment",
+          'prefix': "\$",
+          'amount': "not assigned",
+          'status': "Requested",
+        });
+      }
+
       _showSuccessDailog();
     })
         .catchError((error, stackTrace) {
@@ -271,7 +274,7 @@ class _CreateVehicleState extends State<CreateVehicle> {
                   padding:
                   const EdgeInsets.only(left: 25.0, top: 40.0, bottom: 10.0),
                   child: Text(
-                    "Fill the Information",
+                    'fillTheInformation'.tr(),
                     style: TextStyle(
                         fontFamily: "Sofia",
                         fontWeight: FontWeight.w700,
@@ -289,7 +292,7 @@ class _CreateVehicleState extends State<CreateVehicle> {
                           controller: makeController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
+                              return 'pleaseEnterSomeText'.tr();
                             }
                             return null;
                           },
@@ -331,7 +334,7 @@ class _CreateVehicleState extends State<CreateVehicle> {
                           controller: modelController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
+                              return 'pleaseEnterSomeText'.tr();
                             }
                             return null;
                           },
@@ -373,7 +376,7 @@ class _CreateVehicleState extends State<CreateVehicle> {
                           controller: yearController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
+                              return 'pleaseEnterSomeText'.tr();
                             }
                             return null;
                           },
@@ -415,7 +418,7 @@ class _CreateVehicleState extends State<CreateVehicle> {
                           controller: plateController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
+                              return 'pleaseEnterSomeText'.tr();
                             }
                             return null;
                           },
@@ -458,7 +461,7 @@ class _CreateVehicleState extends State<CreateVehicle> {
                           controller: colorController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
+                              return 'pleaseEnterSomeText'.tr();
                             }
                             return null;
                           },
@@ -494,48 +497,6 @@ class _CreateVehicleState extends State<CreateVehicle> {
                           ),
                         ),
 
-                        SizedBox(height: 20),
-
-                        TextFormField(
-                          readOnly: true,
-                          controller: colorController,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
-                            }
-                            return null;
-                          },
-                          decoration: InputDecoration(
-                            contentPadding: EdgeInsets.all(15),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(7.0),
-                              borderSide: BorderSide(
-                                color: Colors.transparent,
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(7.0),
-                              borderSide: BorderSide(
-                                  color: Colors.transparent,
-                                  width: 0.5
-                              ),
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(7.0),
-                              borderSide: BorderSide(
-                                color: Colors.transparent,
-                                width: 0.5,
-                              ),
-                            ),
-                            filled: true,
-                            prefixIcon: Icon(Icons.confirmation_number_outlined,color: Colors.black,size: 22,),
-                            fillColor: Colors.grey[200],
-                            hintText: "Tag Number",
-                            // If  you are using latest version of flutter then lable text and hint text shown like this
-                            // if you r using flutter less then 1.20.* then maybe this is not working properly
-                            floatingLabelBehavior: FloatingLabelBehavior.always,
-                          ),
-                        ),
 
                         SizedBox(height: 20),
 

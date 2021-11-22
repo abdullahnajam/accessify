@@ -9,9 +9,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import 'package:image_picker/image_picker.dart';
 import 'package:lottie/lottie.dart';
+import 'package:progress_dialog/progress_dialog.dart';
 class CreatePet extends StatefulWidget {
   @override
   _CreatePetState createState() => _CreatePetState();
@@ -24,11 +26,7 @@ class _CreatePetState extends State<CreatePet> {
   var breedController=TextEditingController();
   var colorController=TextEditingController();
   String photoUrl;
-
   File _imageFile;
-
-  ///NOTE: Only supported on Android & iOS
-  ///Needs image_picker plugin {https://pub.dev/packages/image_picker}
   final picker = ImagePicker();
 
   Future<void> _showchoiceDailog() async {
@@ -114,6 +112,11 @@ class _CreatePetState extends State<CreatePet> {
   }
 
   Future uploadImageToFirebase(BuildContext context) async {
+    final ProgressDialog pr = ProgressDialog(context);
+    pr.style(
+      message: 'Uploading Image',
+    );
+    pr.show();
     var storage = FirebaseStorage.instance;
     TaskSnapshot snapshot = await storage.ref().child('bookingPics/${DateTime.now().millisecondsSinceEpoch}').putFile(_imageFile);
     if (snapshot.state == TaskState.success) {
@@ -122,6 +125,7 @@ class _CreatePetState extends State<CreatePet> {
         photoUrl = downloadUrl;
       });
     }
+    pr.hide();
   }
 
 
@@ -159,7 +163,7 @@ class _CreatePetState extends State<CreatePet> {
                 Container(
                     child: Column(
                       children: [
-                        Text("Successful",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
+                        Text('successful'.tr(),style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
                         Text("Your pet has been added",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
                       ],
                     )
@@ -171,15 +175,14 @@ class _CreatePetState extends State<CreatePet> {
                 ),
                 GestureDetector(
                   onTap: (){
-                    Navigator.pushReplacement(
-                        context, MaterialPageRoute(builder: (BuildContext context) => MyPets()));
+                    Navigator.pop(context);Navigator.pop(context);
                   },
                   child: Container(
                     alignment: Alignment.center,
                     width: double.maxFinite,
                     height: 40,
                     margin: EdgeInsets.only(left: 40,right: 40),
-                    child:Text("OKAY",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
+                    child:Text('okay'.tr(),style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
                     decoration: BoxDecoration(
                         color: Colors.green,
                         borderRadius: BorderRadius.circular(30)
@@ -250,7 +253,7 @@ class _CreatePetState extends State<CreatePet> {
                     width: double.maxFinite,
                     height: 40,
                     margin: EdgeInsets.only(left: 40,right: 40),
-                    child:Text("OKAY",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
+                    child:Text('okay'.tr(),style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
                     decoration: BoxDecoration(
                         color: Colors.red,
                         borderRadius: BorderRadius.circular(30)
@@ -363,7 +366,7 @@ class _CreatePetState extends State<CreatePet> {
                   padding:
                   const EdgeInsets.only(left: 25.0, top: 40.0, bottom: 10.0),
                   child: Text(
-                    "Fill the Information",
+                    'fillTheInformation'.tr(),
                     style: TextStyle(
                         fontFamily: "Sofia",
                         fontWeight: FontWeight.w700,
@@ -381,7 +384,7 @@ class _CreatePetState extends State<CreatePet> {
                           controller: nameController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
+                              return 'pleaseEnterSomeText'.tr();
                             }
                             return null;
                           },
@@ -409,7 +412,7 @@ class _CreatePetState extends State<CreatePet> {
                             ),
                             filled: true,
                             fillColor: Colors.grey[200],
-                            hintText: "Enter Name",
+                            hintText: 'enterName'.tr(),
                             // If  you are using latest version of flutter then lable text and hint text shown like this
                             // if you r using flutter less then 1.20.* then maybe this is not working properly
                             floatingLabelBehavior: FloatingLabelBehavior.always,
@@ -422,7 +425,7 @@ class _CreatePetState extends State<CreatePet> {
                           controller: typeController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
+                              return 'pleaseEnterSomeText'.tr();
                             }
                             return null;
                           },
@@ -462,7 +465,7 @@ class _CreatePetState extends State<CreatePet> {
                           controller: breedController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
+                              return 'pleaseEnterSomeText'.tr();
                             }
                             return null;
                           },
@@ -503,7 +506,7 @@ class _CreatePetState extends State<CreatePet> {
                           controller: colorController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
+                              return 'pleaseEnterSomeText'.tr();
                             }
                             return null;
                           },
@@ -543,7 +546,6 @@ class _CreatePetState extends State<CreatePet> {
                         GestureDetector(
                           onTap: () =>_showchoiceDailog(),
                           child: Container(
-                              height: 50,
                               padding: EdgeInsets.only(left:10,right: 10),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(7),
@@ -559,7 +561,7 @@ class _CreatePetState extends State<CreatePet> {
                                   Expanded(
                                       flex: 9,
                                       child: Container(
-                                        padding: EdgeInsets.only(left:12),
+                                        padding: EdgeInsets.only(left:12,top: 12,bottom: 12),
                                         child:Text("Add Photo",style: TextStyle(
                                             fontSize: 17,
                                             color: Colors.grey[700]
@@ -574,7 +576,6 @@ class _CreatePetState extends State<CreatePet> {
                                     borderRadius: BorderRadius.circular(10),
                                     child: Image.file(_imageFile,width: double.maxFinite,height: 150,fit: BoxFit.cover,),
                                   ),
-                                  margin: EdgeInsets.only(left: 20,right: 20),
                                 ),
                               )
                           ),

@@ -10,6 +10,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 
 import '../../constants.dart';
@@ -278,7 +279,7 @@ class _MyEmployeesState extends State<MyEmployees> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        "Click To Explore",
+                        'clickToExplore'.tr(),
                         style: TextStyle(
                             fontFamily: "Sofia",
                             fontWeight: FontWeight.w700,
@@ -319,7 +320,7 @@ class _MyEmployeesState extends State<MyEmployees> {
                       child: Column(
                         children: [
                           Image.asset("assets/images/empty.png",width: 150,height: 150,),
-                          Text("No Employees Added")
+                          Text('noDataFound'.tr(),)
 
                         ],
                       ),
@@ -367,13 +368,13 @@ class _MyEmployeesState extends State<MyEmployees> {
                               ),
                               secondaryActions: <Widget>[
                                 IconSlideAction(
-                                  caption: 'Edit',
+                                  caption: 'edit'.tr(),
                                   color: Colors.indigo,
                                   icon: Icons.edit_outlined,
                                   onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => EditEmployee(model))),
                                 ),
                                 IconSlideAction(
-                                  caption: 'Delete',
+                                  caption: 'delete'.tr(),
                                   color: Colors.indigo,
                                   icon: Icons.delete_forever_outlined,
                                   onTap: () async{

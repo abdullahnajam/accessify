@@ -1,10 +1,13 @@
 import 'package:accessify/model/coupon_model.dart';
+import 'package:accessify/model/user_model.dart';
 import 'package:accessify/screens/coupon/create_coupons.dart';
 import 'package:accessify/screens/coupon/view_my_coupons.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../constants.dart';
 class ViewCoupons extends StatefulWidget {
@@ -13,6 +16,33 @@ class ViewCoupons extends StatefulWidget {
 }
 
 class _ViewCouponsState extends State<ViewCoupons> {
+  UserModel userModel;
+  bool isLoading=false;
+
+  getUserData()async{
+    User user=FirebaseAuth.instance.currentUser;
+    FirebaseFirestore.instance
+        .collection('homeowner')
+        .doc(user.uid)
+        .get()
+        .then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+
+        Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
+        userModel=UserModel.fromMap(data, documentSnapshot.reference.id);
+        setState(() {
+          isLoading=true;
+        });
+      }
+    });
+
+  }
+
+
+  @override
+  void initState() {
+    getUserData();
+  }
   
   @override
   Widget build(BuildContext context) {
@@ -23,7 +53,8 @@ class _ViewCouponsState extends State<ViewCoupons> {
           borderRadius: BorderRadius.all(Radius.circular(40)),
         ),
         child: SingleChildScrollView(
-          child: Column(
+          child: isLoading?
+          Column(
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
@@ -123,7 +154,8 @@ class _ViewCouponsState extends State<ViewCoupons> {
               ),
               StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance.collection('coupons').
-                  where("status",isEqualTo: "Approved").snapshots(),
+                  where("status",isEqualTo: "Approved").
+                  where("neighbourId",isEqualTo: userModel.neighbourId).snapshots(),
                 builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
                   if (snapshot.hasError) {
                     return Center(
@@ -147,8 +179,7 @@ class _ViewCouponsState extends State<ViewCoupons> {
                       child: Column(
                         children: [
                           Image.asset("assets/images/empty.png",width: 150,height: 150,),
-                          Text("No Coupons Added")
-
+                          Text('noDataFound'.tr(),)
                         ],
                       ),
                     );
@@ -249,6 +280,10 @@ class _ViewCouponsState extends State<ViewCoupons> {
               )
 
             ],
+          )
+          :
+          Center(
+            child: CircularProgressIndicator(),
           ),
         ),
       ),

@@ -12,6 +12,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
@@ -83,14 +84,14 @@ class _CreateGuestState extends State<CreateGuest> {
     ).whenComplete(()  {
       User user=FirebaseAuth.instance.currentUser;
       FirebaseFirestore.instance.collection("guard_notifications").add({
-
         'isOpened': false,
+        'icon':'https://cdn1.iconfinder.com/data/icons/logistics-transportation-vehicles/202/logistic-shipping-vehicles-002-512.png',
         'type':"guest",
         'name':nameController.text,
         'date':DateTime.now().toString(),
-        'body':'Guest Service Access from ${userModel.firstName}',
-        'title':"Guest Service Access",
-        'icon':'https://img.flaticon.com/icons/png/512/185/185527.png?size=1200x630f&pad=10,10,10,10&ext=png&bg=FFFFFFFF',
+        'dateInMilli':DateTime.now().millisecondsSinceEpoch,
+        'body':'Access request from ${userModel.firstName} for guest',
+        'title':"Guest Access",
         'userId':user.uid,
         'neighbourId': userModel.neighbourId
       });
@@ -99,6 +100,7 @@ class _CreateGuestState extends State<CreateGuest> {
   }
 
   String time=formatDate(DateTime.now(), [H, ':', nn]);
+  int dateInMilli=0;
   String startDate = formatDate(DateTime.now(), [dd, '-', mm, '-', yyyy]);
 
   GlobalKey globalKey = new GlobalKey();
@@ -191,7 +193,7 @@ class _CreateGuestState extends State<CreateGuest> {
                 Container(
                     child: Column(
                       children: [
-                        Text("Successful",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
+                        Text('successful'.tr(),style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
                         Text("Your guest has been added",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
 
                       ],
@@ -204,15 +206,14 @@ class _CreateGuestState extends State<CreateGuest> {
                 ),
                 GestureDetector(
                   onTap: (){
-                    Navigator.push(
-                        context, MaterialPageRoute(builder: (BuildContext context) => Home()));
+                    Navigator.pop(context);Navigator.pop(context);Navigator.pop(context);
                   },
                   child: Container(
                     alignment: Alignment.center,
                     width: double.maxFinite,
                     height: 40,
                     margin: EdgeInsets.only(left: 40,right: 40),
-                    child:Text("OKAY",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
+                    child:Text('okay'.tr(),style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
                     decoration: BoxDecoration(
                         color: Colors.green,
                         borderRadius: BorderRadius.circular(30)
@@ -382,7 +383,7 @@ class _CreateGuestState extends State<CreateGuest> {
                     width: double.maxFinite,
                     height: 40,
                     margin: EdgeInsets.only(left: 40,right: 40),
-                    child:Text("OKAY",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
+                    child:Text('okay'.tr(),style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
                     decoration: BoxDecoration(
                         color: Colors.red,
                         borderRadius: BorderRadius.circular(30)
@@ -402,6 +403,8 @@ class _CreateGuestState extends State<CreateGuest> {
 
   saveInfo(File QRfile) async{
     final ProgressDialog pr = ProgressDialog(context);
+
+    pr.style(message: "Please wait");
     await pr.show();
     User user=FirebaseAuth.instance.currentUser;
 
@@ -425,7 +428,21 @@ class _CreateGuestState extends State<CreateGuest> {
         'email':emailController.text,
         'qr':photoUrl
       }).then((value) {
+        FirebaseFirestore.instance.collection("access_control").doc(key).set({
+          'type': "Guest",
+          'qr_code':key,
+          'requestedFor':nameController.text,
+          'requestedBy':"${userModel.firstName} ${userModel.lastName}",
+          'date':"$startDate, $time",
+          'dateInMilli':dateInMilli,
+          'datePostedInMilli':DateTime.now().millisecondsSinceEpoch,
+          'status':"scheduled",
+          'requesterId':user.uid,
+          'qr':photoUrl,
+          'neighbourId': userModel.neighbourId
+        });
         pr.hide();
+
         sendNotification();
         _showSuccessDailog();
       })
@@ -519,7 +536,7 @@ class _CreateGuestState extends State<CreateGuest> {
                   padding:
                   const EdgeInsets.only(left: 25.0, top: 40.0, bottom: 10.0),
                   child: Text(
-                    "Fill the Information",
+                    'fillTheInformation'.tr(),
                     style: TextStyle(
                         fontFamily: "Sofia",
                         fontWeight: FontWeight.w700,
@@ -537,7 +554,7 @@ class _CreateGuestState extends State<CreateGuest> {
                           controller: nameController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
+                              return 'pleaseEnterSomeText'.tr();
                             }
                             return null;
                           },
@@ -566,7 +583,7 @@ class _CreateGuestState extends State<CreateGuest> {
                             filled: true,
                             prefixIcon: Icon(Icons.person_outline,color: Colors.black,size: 22,),
                             fillColor: Colors.grey[200],
-                            hintText: "Enter Name",
+                            hintText: 'enterName'.tr(),
                             // If  you are using latest version of flutter then lable text and hint text shown like this
                             // if you r using flutter less then 1.20.* then maybe this is not working properly
                             floatingLabelBehavior: FloatingLabelBehavior.always,
@@ -579,7 +596,7 @@ class _CreateGuestState extends State<CreateGuest> {
                           controller: vehicleController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
+                              return 'pleaseEnterSomeText'.tr();
                             }
                             return null;
                           },
@@ -620,7 +637,7 @@ class _CreateGuestState extends State<CreateGuest> {
                           controller: emailController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
+                              return 'pleaseEnterSomeText'.tr();
                             }
                             return null;
                           },
@@ -671,6 +688,7 @@ class _CreateGuestState extends State<CreateGuest> {
                                 onConfirm: (date) {
                                   print('confirm $date');
                                   setState(() {
+                                    dateInMilli=date.millisecondsSinceEpoch;
                                     startDate = formatDate(date, [dd, '-', mm, '-', yyyy]);
                                   });
                                 },
@@ -776,7 +794,7 @@ class _CreateGuestState extends State<CreateGuest> {
                             height: 50,
                             width: double.maxFinite,
                             alignment: Alignment.center,
-                            child: Text("Generate QR",textAlign: TextAlign.center,style: TextStyle(color: Colors.white,fontSize: 20),),
+                            child: Text('generateQR'.tr(),textAlign: TextAlign.center,style: TextStyle(color: Colors.white,fontSize: 20),),
                             decoration: BoxDecoration(
                                 color: kPrimaryColor,
                                 borderRadius: BorderRadius.circular(30)

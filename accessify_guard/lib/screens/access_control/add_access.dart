@@ -18,6 +18,7 @@ import 'package:guard/model/user_model.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:lottie/lottie.dart';
+import 'package:progress_dialog/progress_dialog.dart';
 import 'package:toast/toast.dart';
 import '../../constants.dart';
 class AddAccess extends StatefulWidget {
@@ -50,6 +51,25 @@ class _AddAccessState extends State<AddAccess> {
             data['hour'],
             data['status'],
             data['userId']
+        );
+      }
+    });
+  }
+  getTaxiList() async {
+    print("added");
+    FirebaseFirestore.instance.collection('taxi_access').doc(widget.barcode).get().then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+        Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
+        taxi = new TaxiModel(
+            documentSnapshot.reference.id,
+            data['name'],
+            data['date'],
+            data['hour'],
+            data['status'],
+            data['userId'],
+          data['description'],
+          data['omw'],
+          data['pickup'],
         );
       }
     });
@@ -110,8 +130,6 @@ class _AddAccessState extends State<AddAccess> {
     });
 
   }
-
-
   getUserData()async{
 
     print("my user id ${widget.userId}");
@@ -140,6 +158,7 @@ class _AddAccessState extends State<AddAccess> {
     getEmployeeFrequentList();
     getEventList();
     getUserData();
+    getTaxiList();
   }
 
 
@@ -168,11 +187,9 @@ class _AddAccessState extends State<AddAccess> {
         },
       ),
     ).whenComplete(()  {
-      User user=FirebaseAuth.instance.currentUser;
       FirebaseFirestore.instance.collection("guard_notifications").doc(widget.barcode).update({
         'isOpened': true,
       });
-      //final databaseReference = FirebaseDatabase.instance.reference();
       FirebaseFirestore.instance.collection("notifications").add({
         'isOpened': false,
         'type':widget.type,
@@ -212,6 +229,9 @@ class _AddAccessState extends State<AddAccess> {
      FirebaseFirestore.instance.collection(path).doc(widget.barcode).update({
        "status":"Accessed"
      });
+     FirebaseFirestore.instance.collection("access_control").doc(widget.barcode).update({
+       "status":"Accessed"
+     });
    }).catchError((onError){
       Toast.show(onError.toString(), context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM);
 
@@ -219,7 +239,8 @@ class _AddAccessState extends State<AddAccess> {
   }
   Future uploadImageToFirebase(BuildContext context,File file) async {
     String fileName = file.path;
-
+    final ProgressDialog pr = ProgressDialog(context);
+    pr.show();
 
     var storage = FirebaseStorage.instance;
 
@@ -227,11 +248,15 @@ class _AddAccessState extends State<AddAccess> {
         .child('bookingPics/${DateTime.now().millisecondsSinceEpoch}')
         .putFile(file);
     if (snapshot.state == TaskState.success) {
-      final String downloadUrl = await snapshot.ref.getDownloadURL();
-      setState(() {
-        urls.add(downloadUrl);
+      await snapshot.ref.getDownloadURL().then((value) {
+        setState(() {
+          print(value);
+          urls.add(value.toString());
+        });
       });
+
     }
+    pr.hide();
   }
   final _formKey = GlobalKey<FormState>();
   final picker = ImagePicker();
@@ -430,6 +455,36 @@ class _AddAccessState extends State<AddAccess> {
                         SizedBox(height: 10,),
                         Text("Start Hour",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
                         Text("${delivery.hour}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+
+
+
+
+
+
+                      ],
+                    )
+
+                ):Container(),
+                taxi!=null?Container(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Taxi Information",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
+                        SizedBox(height: 10,),
+                        Text("Name",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Text("${taxi.name}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+
+                        SizedBox(height: 10,),
+                        Text("Description",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Text("${taxi.description}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+
+                        SizedBox(height: 10,),
+                        Text("Start Date",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Text("${taxi.date}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+
+                        SizedBox(height: 10,),
+                        Text("Start Hour",style: TextStyle(fontSize: 15,fontWeight: FontWeight.w500,color: Colors.black),),
+                        Text("${taxi.hour}",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
 
 
 

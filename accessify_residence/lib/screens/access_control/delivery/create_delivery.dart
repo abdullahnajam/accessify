@@ -9,6 +9,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 
 import 'package:image_picker/image_picker.dart';
@@ -25,6 +26,7 @@ class _CreateDeliveryState extends State<CreateDelivery> {
   var nameController=TextEditingController();
 
   String time=formatDate(DateTime.now(), [H, ':', nn]);
+  int dateInMilli=0;
   String startDate = formatDate(DateTime.now(), [dd, '-', mm, '-', yyyy]);
   UserModel userModel;
 
@@ -79,6 +81,7 @@ class _CreateDeliveryState extends State<CreateDelivery> {
       FirebaseFirestore.instance.collection("guard_notifications").add({
         'isOpened': false,
         'type':"delivery",
+        'dateInMilli':DateTime.now().millisecondsSinceEpoch,
         'name':nameController.text,
         'date':DateTime.now().toString(),
         'body':'Delivery Service Access from ${userModel.firstName} ${userModel.lastName}',
@@ -125,8 +128,8 @@ class _CreateDeliveryState extends State<CreateDelivery> {
                 Container(
                     child: Column(
                       children: [
-                        Text("Successful",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
-                        Text("Your deliveries has been added",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
+                        Text('successful'.tr(),style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
+                        Text('deliverySuccessMessage'.tr(),style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
                       ],
                     )
 
@@ -137,15 +140,14 @@ class _CreateDeliveryState extends State<CreateDelivery> {
                 ),
                 GestureDetector(
                   onTap: (){
-                    Navigator.push(
-                        context, MaterialPageRoute(builder: (BuildContext context) => Home()));
+                   Navigator.pop(context);Navigator.pop(context);
                   },
                   child: Container(
                     alignment: Alignment.center,
                     width: double.maxFinite,
                     height: 40,
                     margin: EdgeInsets.only(left: 40,right: 40),
-                    child:Text("OKAY",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
+                    child:Text('okay'.tr(),style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
                     decoration: BoxDecoration(
                         color: Colors.green,
                         borderRadius: BorderRadius.circular(30)
@@ -216,7 +218,7 @@ class _CreateDeliveryState extends State<CreateDelivery> {
                     width: double.maxFinite,
                     height: 40,
                     margin: EdgeInsets.only(left: 40,right: 40),
-                    child:Text("OKAY",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
+                    child:Text('okay'.tr(),style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
                     decoration: BoxDecoration(
                         color: Colors.red,
                         borderRadius: BorderRadius.circular(30)
@@ -243,6 +245,20 @@ class _CreateDeliveryState extends State<CreateDelivery> {
       'status':"scheduled",
       'userId':user.uid
     }).then((value) {
+      print("id ${value.id}");
+      FirebaseFirestore.instance.collection("access_control").doc(value.id).set({
+        'type': "Delivery",
+        'qr_code':"none",
+        'requestedFor':nameController.text,
+        'requestedBy':"${userModel.firstName} ${userModel.lastName}",
+        'date':"$startDate, $time",
+        'dateInMilli':dateInMilli,
+        'datePostedInMilli':DateTime.now().millisecondsSinceEpoch,
+        'status':"scheduled",
+        'requesterId':user.uid,
+        'qr':"",
+        'neighbourId': userModel.neighbourId
+      });
       sendNotification();
       _showSuccessDailog();
 
@@ -331,7 +347,7 @@ class _CreateDeliveryState extends State<CreateDelivery> {
                   padding:
                   const EdgeInsets.only(left: 25.0, top: 40.0, bottom: 10.0),
                   child: Text(
-                    "Fill the Information",
+                    'fillTheInformation'.tr(),
                     style: TextStyle(
                         fontFamily: "Sofia",
                         fontWeight: FontWeight.w700,
@@ -349,7 +365,7 @@ class _CreateDeliveryState extends State<CreateDelivery> {
                           controller: nameController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
+                              return 'pleaseEnterSomeText'.tr();
                             }
                             return null;
                           },
@@ -378,7 +394,7 @@ class _CreateDeliveryState extends State<CreateDelivery> {
                             filled: true,
                             prefixIcon: Icon(Icons.person_outline,color: Colors.black,size: 22,),
                             fillColor: Colors.grey[200],
-                            hintText: "Enter Name",
+                            hintText: 'enterName'.tr(),
                             // If  you are using latest version of flutter then lable text and hint text shown like this
                             // if you r using flutter less then 1.20.* then maybe this is not working properly
                             floatingLabelBehavior: FloatingLabelBehavior.always,
@@ -400,6 +416,7 @@ class _CreateDeliveryState extends State<CreateDelivery> {
                                 onConfirm: (date) {
                                   print('confirm $date');
                                   setState(() {
+                                    dateInMilli=date.millisecondsSinceEpoch;
                                     startDate = formatDate(date, [dd, '-', mm, '-', yyyy]);
                                   });
                                 },
@@ -502,7 +519,7 @@ class _CreateDeliveryState extends State<CreateDelivery> {
                             height: 50,
                             width: double.maxFinite,
                             alignment: Alignment.center,
-                            child: Text("Add Delivery",textAlign: TextAlign.center,style: TextStyle(color: Colors.white,fontSize: 20),),
+                            child: Text('addDelivery'.tr(),textAlign: TextAlign.center,style: TextStyle(color: Colors.white,fontSize: 20),),
                             decoration: BoxDecoration(
                                 color: kPrimaryColor,
                                 borderRadius: BorderRadius.circular(30)

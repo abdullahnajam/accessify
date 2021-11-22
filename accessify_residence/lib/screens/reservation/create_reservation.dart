@@ -13,6 +13,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:lottie/lottie.dart';
@@ -163,7 +164,7 @@ class _CreateReservationState extends State<CreateReservation> {
                           child: QrImage(
                             data: qrKey,
                             size: 200,
-                            embeddedImage: AssetImage('assets/images/qr_logo.png'),
+                            embeddedImage: AssetImage('assets/images/logo.png'),
                             embeddedImageStyle: QrEmbeddedImageStyle(
                               size: Size(50, 50),
                             ),
@@ -278,7 +279,7 @@ class _CreateReservationState extends State<CreateReservation> {
                         child: Column(
                           children: [
                             Image.asset("assets/images/empty.png",width: 150,height: 150,),
-                            Text("No facilities Added")
+                            Text('noDataFound'.tr(),)
 
                           ],
                         ),
@@ -331,6 +332,8 @@ class _CreateReservationState extends State<CreateReservation> {
   }
   saveInfo(File QRfile) async{
     final ProgressDialog pr = ProgressDialog(context);
+    pr.style(message: "Please wait");
+
     await pr.show();
     User user=FirebaseAuth.instance.currentUser;
 
@@ -427,7 +430,7 @@ class _CreateReservationState extends State<CreateReservation> {
                 Container(
                     child: Column(
                       children: [
-                        Text("Successful",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
+                        Text('successful'.tr(),style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
                         Text("Your reservation has been added",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
                       ],
                     )
@@ -439,15 +442,14 @@ class _CreateReservationState extends State<CreateReservation> {
                 ),
                 GestureDetector(
                   onTap: (){
-                    Navigator.push(
-                        context, MaterialPageRoute(builder: (BuildContext context) => Home()));
+                    Navigator.pop(context);Navigator.pop(context);Navigator.pop(context);
                   },
                   child: Container(
                     alignment: Alignment.center,
                     width: double.maxFinite,
                     height: 40,
                     margin: EdgeInsets.only(left: 40,right: 40),
-                    child:Text("OKAY",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
+                    child:Text('okay'.tr(),style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
                     decoration: BoxDecoration(
                         color: Colors.green,
                         borderRadius: BorderRadius.circular(30)
@@ -518,7 +520,7 @@ class _CreateReservationState extends State<CreateReservation> {
                     width: double.maxFinite,
                     height: 40,
                     margin: EdgeInsets.only(left: 40,right: 40),
-                    child:Text("OKAY",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
+                    child:Text('okay'.tr(),style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
                     decoration: BoxDecoration(
                         color: Colors.red,
                         borderRadius: BorderRadius.circular(30)
@@ -613,7 +615,7 @@ class _CreateReservationState extends State<CreateReservation> {
                   padding:
                   const EdgeInsets.only(left: 25.0, top: 40.0, bottom: 10.0),
                   child: Text(
-                    "Fill the Information",
+                    'fillTheInformation'.tr(),
                     style: TextStyle(
                         fontFamily: "Sofia",
                         fontWeight: FontWeight.w700,
@@ -745,7 +747,7 @@ class _CreateReservationState extends State<CreateReservation> {
                           controller: numberController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
+                              return 'pleaseEnterSomeText'.tr();
                             }
                             return null;
                           },

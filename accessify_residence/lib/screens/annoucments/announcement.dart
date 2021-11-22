@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../constants.dart';
 class Announcements extends StatefulWidget {
@@ -91,36 +92,19 @@ class _AnnouncementsState extends State<Announcements> {
           child: isLoading?ListView(
             children: [
               Container(
-                height: 60,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   border: Border(
-                    bottom: BorderSide(width: 0.2, color: Colors.grey[500]),
+                    bottom: BorderSide(width: 0.15, color: kPrimaryColor),
                   ),
-
                 ),
+                height:  AppBar().preferredSize.height,
                 child: Stack(
                   children: [
-                    Container(
-                        height: 40,
-                        width: 40,
-                        decoration: BoxDecoration(
-                            color: kPrimaryColor,
-                            borderRadius: BorderRadius.circular(50)),
-                        margin: EdgeInsets.only(left:20,top: 10, right: 10),
-                        child: GestureDetector(
-                          onTap: ()=>Navigator.pop(context),
-                          child: Icon(
-                            Icons.arrow_back_sharp,
-                            color: Colors.white,
-                            size: 30,
-                          ),
-                        )),
-                    Container(
+                    Align(
                       alignment: Alignment.center,
-                      child: Text("Announcements",style: TextStyle(color:kPrimaryColor,fontWeight: FontWeight.w700,fontSize: 13),),
+                      child: Text('Announcements',style: TextStyle(color: kPrimaryColor),),
                     )
-
                   ],
                 ),
               ),
@@ -155,8 +139,7 @@ class _AnnouncementsState extends State<Announcements> {
                         child: Column(
                           children: [
                             Image.asset("assets/images/empty.png",width: 150,height: 150,),
-                            Text("No Announcements")
-
+                            Text('noDataFound'.tr(),)
                           ],
                         ),
                       );

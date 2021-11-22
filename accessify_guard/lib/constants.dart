@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'size_config.dart';
 
 const serverToken="AAAAO-nylpM:APA91bEoAIIpHaWsJJL_wogtFDG4yZKe_ahcFfVWOVW_ODdBcqayZq4ixa0k4-A6KPghn9ICwC8o3gWv7R0QyM4mZT_18vXdMlMwlXgPoSiSSJEZhsp7JVfHZl0QpLlCUsaLZ3cDymPz";
-const kPrimaryColor = Color(0xFF0e3f9d);
+//const kPrimaryColor = Color(0xFF0e3f9d);
+const kPrimaryColor = Colors.blue;
 const kPrimaryLightColor = Color(0xFF648ee4);
 const kPrimaryGradientColor = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
   colors: [Color(0xFFd1e0ff), Color(0xFF9dbcfa)],
 );
+const bgColor=Color(0xffeeeeee);
+const whiteTextColor=Colors.white;
 const kSecondaryColor = Color(0xFF979797);
 const kTextColor = Color(0xFF757575);
 

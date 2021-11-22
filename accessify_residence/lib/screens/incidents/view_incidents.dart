@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../constants.dart';
 class ViewIncidents extends StatefulWidget {
@@ -199,7 +200,7 @@ class _ViewIncidentsState extends State<ViewIncidents> {
                       child: Column(
                         children: [
                           Image.asset("assets/images/empty.png",width: 150,height: 150,),
-                          Text("No Reports Added")
+                          Text('noDataFound'.tr(),)
 
                         ],
                       ),

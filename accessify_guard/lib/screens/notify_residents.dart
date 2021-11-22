@@ -87,7 +87,7 @@ class _NotifyResidentsState extends State<NotifyResidents> {
                   child: Text("Services List",textAlign: TextAlign.center,style: TextStyle(fontSize: 20,color:Colors.black,fontWeight: FontWeight.w600),),
                 ),
                 StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance.collection('guard_notifications').snapshots(),
+                  stream: FirebaseFirestore.instance.collection('services').snapshots(),
                   builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
                     if (snapshot.hasError) {
                       return Center(
@@ -154,155 +154,98 @@ class _NotifyResidentsState extends State<NotifyResidents> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child:  Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.all(Radius.circular(40)),
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Stack(
-                  children: <Widget>[
+        child:  Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  bottom: BorderSide(width: 0.15, color: kPrimaryColor),
+                ),
+              ),
+              height:  AppBar().preferredSize.height,
+              child: Stack(
+                children: [
+                  Align(
+                    alignment: Alignment.center,
+                    child: Text('Notify Residents',style: TextStyle(color: kPrimaryColor),),
+                  )
+                ],
+              ),
+            ),
+            Padding(
+              padding:
+              const EdgeInsets.only(left: 25.0, top: 40.0, bottom: 10.0),
+              child: Text(
+                "Fill the Information",
+                style: TextStyle(
+                    fontFamily: "Sofia",
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16.0),
+              ),
+            ),
 
+            Container(
+              margin: EdgeInsets.only(left: 25,right: 25,top: 20),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
                     Container(
-                      width: double.infinity,
-                      height: 120.0,
-                      decoration: BoxDecoration(
-                          color: kPrimaryColor,
-                          borderRadius: BorderRadius.only(
-                              bottomLeft: Radius.circular(30.0),
-                              bottomRight: Radius.circular(30.0))
-                      ),
+                        padding: EdgeInsets.only(top:15,bottom:15,left:10,right: 10),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(7),
+                          color: Colors.grey[200],
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              flex: 1,
+                              child: Icon(Icons.notifications_none,color: Colors.black,size: 22,),
+                            ),
+
+                            Expanded(
+                                flex: 9,
+                                child: Container(
+                                  padding: EdgeInsets.only(left:12),
+                                  child:InkWell(
+                                      onTap: (){
+                                        _showAlertsDailog();
+                                      },
+                                      child:Text(alertSelected)
+                                  ),
+                                )
+                            )
+                          ],
+                        )
                     ),
 
-                    Padding(
-                      padding: const EdgeInsets.only(top: 75.0),
-                      child: Center(
-                        child: Container(
-                          height: 120.0,
-                          width: 310.0,
-                          decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.all(Radius.circular(20.0)),
-                              boxShadow: [
-                                BoxShadow(color: Colors.black12.withOpacity(0.1)),
-                              ]),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: <Widget>[
+                    SizedBox(height: 20),
+                    GestureDetector(
+                      onTap: (){
 
-                              SizedBox(
-                                height: 5.0,
-                              ),
-                              Text(
-                                "Notify Residents",
-                                style: TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 25.0),
-                              ),
-                              SizedBox(height: 10,),
-                              Container(
-                                child: Text(
-                                  "Your can create alerts for the residents",
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                      color: Colors.black38,
-                                      fontWeight: FontWeight.w300,
-                                      fontSize: 16.0),
-                                ),
-                                padding: EdgeInsets.only(left: 20,right: 20),
-                              )
-
-                            ],
-                          ),
+                        if (_formKey.currentState.validate()) {
+                          sendNotification();
+                        }
+                      },
+                      child: Container(
+                        height: 50,
+                        width: double.maxFinite,
+                        alignment: Alignment.center,
+                        child: Text("Send Notification",textAlign: TextAlign.center,style: TextStyle(color: Colors.white,fontSize: 20),),
+                        decoration: BoxDecoration(
+                            color: kPrimaryColor,
+                            borderRadius: BorderRadius.circular(30)
                         ),
                       ),
                     )
+
                   ],
                 ),
-                Padding(
-                  padding:
-                  const EdgeInsets.only(left: 25.0, top: 40.0, bottom: 10.0),
-                  child: Text(
-                    "Fill the Information",
-                    style: TextStyle(
-                        fontFamily: "Sofia",
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16.0),
-                  ),
-                ),
-
-                Container(
-                  margin: EdgeInsets.only(left: 25,right: 25,top: 20),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      children: [
-                        Container(
-                            padding: EdgeInsets.only(top:15,bottom:15,left:10,right: 10),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(7),
-                              color: Colors.grey[200],
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  flex: 1,
-                                  child: Icon(Icons.notifications_none,color: Colors.black,size: 22,),
-                                ),
-
-                                Expanded(
-                                    flex: 9,
-                                    child: Container(
-                                      padding: EdgeInsets.only(left:12),
-                                      child:InkWell(
-                                          onTap: (){
-                                            _showAlertsDailog();
-                                          },
-                                          child:Text(alertSelected)
-                                      ),
-                                    )
-                                )
-                              ],
-                            )
-                        ),
-
-                        SizedBox(height: 20),
-                        GestureDetector(
-                          onTap: (){
-
-                            if (_formKey.currentState.validate()) {
-                              sendNotification();
-                            }
-                          },
-                          child: Container(
-                            height: 50,
-                            width: double.maxFinite,
-                            alignment: Alignment.center,
-                            child: Text("Send Notification",textAlign: TextAlign.center,style: TextStyle(color: Colors.white,fontSize: 20),),
-                            decoration: BoxDecoration(
-                                color: kPrimaryColor,
-                                borderRadius: BorderRadius.circular(30)
-                            ),
-                          ),
-                        )
-
-                      ],
-                    ),
-                  ),
-                ),
-
-
-                SizedBox(
-                  height: 20.0,
-                )
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );

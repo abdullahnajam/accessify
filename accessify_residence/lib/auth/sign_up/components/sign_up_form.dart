@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:accessify/components/custom_surfix_icon.dart';
 import 'package:accessify/components/default_button.dart';
 import 'package:accessify/components/form_error.dart';

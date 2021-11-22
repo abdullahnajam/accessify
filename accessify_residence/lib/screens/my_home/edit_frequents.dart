@@ -12,10 +12,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 
 import 'package:image_picker/image_picker.dart';
 import 'package:lottie/lottie.dart';
+import 'package:progress_dialog/progress_dialog.dart';
 import 'package:time_range_picker/time_range_picker.dart';
 class EditFrequents extends StatefulWidget {
   EmployeeModel employee;
@@ -118,7 +120,11 @@ class _EditFrequentsState extends State<EditFrequents> {
 
   Future uploadImageToFirebase(BuildContext context) async {
     String fileName = _imageFile.path;
-
+    final ProgressDialog pr = ProgressDialog(context);
+    pr.style(
+      message: 'Uploading Image',
+    );
+    pr.show();
 
     var storage = FirebaseStorage.instance;
 
@@ -131,6 +137,7 @@ class _EditFrequentsState extends State<EditFrequents> {
         photoUrl = downloadUrl;
       });
     }
+    pr.hide();
   }
 
 
@@ -169,7 +176,7 @@ class _EditFrequentsState extends State<EditFrequents> {
                 Container(
                     child: Column(
                       children: [
-                        Text("Successful",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
+                        Text('successful'.tr(),style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
                         Text("Your frequent has been updated",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
                       ],
                     )
@@ -181,15 +188,14 @@ class _EditFrequentsState extends State<EditFrequents> {
                 ),
                 GestureDetector(
                   onTap: (){
-                    Navigator.pushReplacement(
-                        context, MaterialPageRoute(builder: (BuildContext context) => MyFrequents()));
+                    Navigator.pop(context);Navigator.pop(context);
                   },
                   child: Container(
                     alignment: Alignment.center,
                     width: double.maxFinite,
                     height: 40,
                     margin: EdgeInsets.only(left: 40,right: 40),
-                    child:Text("OKAY",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
+                    child:Text('okay'.tr(),style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
                     decoration: BoxDecoration(
                         color: Colors.green,
                         borderRadius: BorderRadius.circular(30)
@@ -324,7 +330,7 @@ class _EditFrequentsState extends State<EditFrequents> {
                     width: double.maxFinite,
                     height: 40,
                     margin: EdgeInsets.only(left: 40,right: 40),
-                    child:Text("OKAY",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
+                    child:Text('okay'.tr(),style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
                     decoration: BoxDecoration(
                         color: Colors.red,
                         borderRadius: BorderRadius.circular(30)
@@ -447,7 +453,7 @@ class _EditFrequentsState extends State<EditFrequents> {
                   padding:
                   const EdgeInsets.only(left: 25.0, top: 40.0, bottom: 10.0),
                   child: Text(
-                    "Fill the Information",
+                    'fillTheInformation'.tr(),
                     style: TextStyle(
                         fontFamily: "Sofia",
                         fontWeight: FontWeight.w700,
@@ -465,7 +471,7 @@ class _EditFrequentsState extends State<EditFrequents> {
                           controller: nameController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
+                              return 'pleaseEnterSomeText'.tr();
                             }
                             return null;
                           },
@@ -494,7 +500,7 @@ class _EditFrequentsState extends State<EditFrequents> {
                             filled: true,
                             prefixIcon: Icon(Icons.person_outline,color: Colors.black,size: 22,),
                             fillColor: Colors.grey[200],
-                            hintText: "Enter Name",
+                            hintText: 'enterName'.tr(),
                             // If  you are using latest version of flutter then lable text and hint text shown like this
                             // if you r using flutter less then 1.20.* then maybe this is not working properly
                             floatingLabelBehavior: FloatingLabelBehavior.always,
@@ -507,7 +513,7 @@ class _EditFrequentsState extends State<EditFrequents> {
                           controller: emailController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
+                              return 'pleaseEnterSomeText'.tr();
                             }
                             return null;
                           },
@@ -549,7 +555,7 @@ class _EditFrequentsState extends State<EditFrequents> {
                           controller: vehicleController,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter some text';
+                              return 'pleaseEnterSomeText'.tr();
                             }
                             return null;
                           },
@@ -588,7 +594,6 @@ class _EditFrequentsState extends State<EditFrequents> {
                         GestureDetector(
                           onTap: () =>_showchoiceDailog(),
                           child: Container(
-                              height: 50,
                               padding: EdgeInsets.only(left:10,right: 10),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(7),
@@ -604,7 +609,7 @@ class _EditFrequentsState extends State<EditFrequents> {
                                   Expanded(
                                       flex: 9,
                                       child: Container(
-                                        padding: EdgeInsets.only(left:12),
+                                        padding: EdgeInsets.only(left:12,top: 12,bottom: 12),
                                         child:Text("Add Photo",style: TextStyle(
                                             fontSize: 17,
                                             color: Colors.grey[700]
@@ -619,7 +624,6 @@ class _EditFrequentsState extends State<EditFrequents> {
                                     borderRadius: BorderRadius.circular(10),
                                     child: Image.network(photoUrl,width: double.maxFinite,height: 150,fit: BoxFit.cover,),
                                   ),
-                                  margin: EdgeInsets.only(left: 20,right: 20),
                                 ),
                               )
                           ),
@@ -759,25 +763,21 @@ class _EditFrequentsState extends State<EditFrequents> {
                                     activeColor: kPrimaryColor,
                                     onChanged: (bool value){
                                       if(_daysList[index].Name=="Every Day"){
-                                        if(!_daysList[index].ischecked){
-                                          for(int i = 0;i<_daysList.length-1;i++){
-                                            setState(() {
-                                              _daysList[i].ischecked=false;
-                                            });
-                                          }
+                                        _daysList[7].ischecked=true;
+                                        for(int i = 0;i<_daysList.length-1;i++){
+                                          setState(() {
+                                            _daysList[i].ischecked=false;
+                                          });
                                         }
 
                                       }
+
                                       else{
                                         setState(() {
-                                          _daysList[8].ischecked=false;
+                                          _daysList[7].ischecked=false;
+                                          _daysList[index].ischecked=value;
                                         });
                                       }
-                                      setState(() {
-                                        print("index $index");
-                                        _daysList[index].ischecked=value;
-
-                                      });
                                     }
                                 );
                               },

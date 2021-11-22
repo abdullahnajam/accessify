@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../constants.dart';
 class Notifications extends StatefulWidget {
@@ -58,41 +59,25 @@ class _NotificationsState extends State<Notifications> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: _drawerKey,
+      backgroundColor: bgColor,
       drawer: MenuDrawer(),
       body: SafeArea(
         child: ListView(
           children: [
             Container(
-              height: 60,
               decoration: BoxDecoration(
                 color: Colors.white,
                 border: Border(
-                  bottom: BorderSide(width: 0.2, color: Colors.grey[500]),
+                  bottom: BorderSide(width: 0.15, color: kPrimaryColor),
                 ),
-
               ),
+              height:  AppBar().preferredSize.height,
               child: Stack(
                 children: [
-                  Container(
-                      height: 40,
-                      width: 40,
-                      decoration: BoxDecoration(
-                          color: kPrimaryColor,
-                          borderRadius: BorderRadius.circular(50)),
-                      margin: EdgeInsets.only(left:20,top: 10, right: 10),
-                      child: GestureDetector(
-                        onTap: _openDrawer,
-                        child: Icon(
-                          Icons.menu,
-                          color: Colors.white,
-                          size: 30,
-                        ),
-                      )),
-                  Container(
+                  Align(
                     alignment: Alignment.center,
-                    child: Text("Notifications",style: TextStyle(color:kPrimaryColor,fontWeight: FontWeight.w700,fontSize: 13),),
+                    child: Text('Notifications',style: TextStyle(color: kPrimaryColor),),
                   )
-
                 ],
               ),
             ),
@@ -126,7 +111,7 @@ class _NotificationsState extends State<Notifications> {
                       child: Column(
                         children: [
                           Image.asset("assets/images/empty.png",width: 150,height: 150,),
-                          Text("No Notifications")
+                          Text('noDataFound'.tr(),)
 
                         ],
                       ),
@@ -149,68 +134,63 @@ class _NotificationsState extends State<Notifications> {
                         data['userId'],
                       );
                       return Padding(
-                          padding: const EdgeInsets.only(top: 15.0),
-                          child: InkWell(
-
+                        padding: const EdgeInsets.only(top: 5.0),
+                        child: InkWell(
                             child: Container(
-                              height: 60,
+                              margin: EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: Colors.white,
-                                border: Border(
-                                  top: BorderSide(width: 0.2, color: Colors.grey[500]),
-                                  bottom: BorderSide(width: 0.1, color: Colors.grey[500]),
-                                ),
-
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(10)
                               ),
-                              child: Row(
+                              child: Column(
                                 children: [
-                                  Expanded(
-                                      flex: 2,
-                                      child:Container(
+                                  Container(
+                                    width: MediaQuery.of(context).size.width,
+                                    padding: EdgeInsets.all(10),
+
+                                    decoration: BoxDecoration(
+                                        color: kPrimaryColor,
+                                        borderRadius: BorderRadius.only(
+                                            topLeft: Radius.circular(10),
+                                            topRight: Radius.circular(10)
+                                        )
+                                    ),
+                                    child: Text(model.type.toUpperCase(),style: TextStyle(color:Colors.white,fontWeight: FontWeight.w600),),
+                                  ),
+                                  Container(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Container(
+                                              margin: EdgeInsets.all(10),
+                                              height: 30,width: 30,
+                                              decoration: BoxDecoration(
+                                                  borderRadius: BorderRadius.circular(100),
+                                                  image: DecorationImage(
+                                                      fit: BoxFit.cover,
+                                                      image: NetworkImage(model.icon)
+                                                  )
+                                              ),
+
+                                            ),
+                                            Expanded(
+                                              child: Text(model.title,style: TextStyle(fontWeight: FontWeight.w500),maxLines: 1,),
+                                            )
+                                          ],
+                                        ),
+                                        Container(
                                           margin: EdgeInsets.all(10),
-                                          decoration: new BoxDecoration(
-                                              image: new DecorationImage(
-                                                fit: BoxFit.cover,
-                                                image: new NetworkImage(model.icon),
-                                              )
-                                          )
-                                      )
-
-
-                                  ),
-                                  Expanded(
-                                      flex: 5,
-                                      child: Container(
-                                        margin: EdgeInsets.only(left: 5),
-                                        child: Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(model.title,style: TextStyle(fontWeight: FontWeight.w400,fontSize: 15),),
-                                            Text(model.body,style: TextStyle(fontWeight: FontWeight.w300,fontSize: 10,color: Colors.grey[500]),)
-                                          ],
-                                        ),
-                                      )
-                                  ),
-                                  Expanded(
-                                      flex: 3,
-                                      child: Container(
-                                        margin: EdgeInsets.only(right: 5),
-                                        child: Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          crossAxisAlignment: CrossAxisAlignment.end,
-                                          children: [
-                                            model.date==null?Text(""):Text(timeAgoSinceDate(model.date),style: TextStyle(fontWeight: FontWeight.w400,fontSize: 10),),
-                                            Text(model.type,style: TextStyle(fontWeight: FontWeight.w300,fontSize: 10,color: Colors.grey[500]),)
-                                          ],
-                                        ),
-                                      )
-                                  ),
-
+                                          child: Text(model.body),
+                                        )
+                                      ],
+                                    ),
+                                  )
                                 ],
                               ),
-                            ),
-                          )
+                            )
+                        ),
                       );
                     }).toList(),
                   );

@@ -1,5 +1,6 @@
 import 'package:accessify/constants.dart';
 import 'package:accessify/screens/access_control/main_screen.dart';
+import 'package:accessify/screens/annoucments/announcement.dart';
 import 'package:accessify/screens/bottom_nav_screens/create.dart';
 import 'package:accessify/screens/bottom_nav_screens/main_menu.dart';
 import 'package:accessify/screens/bottom_nav_screens/notifications.dart';
@@ -7,8 +8,10 @@ import 'package:accessify/screens/incidents/view_incidents.dart';
 import 'package:accessify/screens/my_home/my_home.dart';
 import 'package:accessify/screens/payments/my_payments.dart';
 import 'package:accessify/screens/reservation/view_reservation_list.dart';
+import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:flashy_tab_bar/flashy_tab_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class BottomBar extends StatefulWidget {
 
@@ -26,7 +29,7 @@ class _BottomNavigationState extends State<BottomBar>{
   void initState() {
     super.initState();
     _children = [
-      AccessControl(),
+      Announcements(),
       MainMenuScreen(),
       Notifications(),
 
@@ -46,30 +49,24 @@ class _BottomNavigationState extends State<BottomBar>{
   Widget build(BuildContext context) {
     return new Scaffold(
       backgroundColor: Colors.grey[100],
-      bottomNavigationBar: FlashyTabBar(
-        selectedIndex: _currentIndex,
-        animationDuration: Duration(milliseconds: 800),
-        animationCurve: Curves.linear,
-        showElevation: true,
-        onItemSelected: (index) => setState(() {
-          _currentIndex = index;
-        }),
-        items: [
+      bottomNavigationBar: CurvedNavigationBar(
+        height: 50,
+        backgroundColor: bgColor,
+        index: 1,
+        color: Colors.blue,
+        items: <Widget>[
 
-          FlashyTabBarItem(
-            icon: Icon(Icons.vpn_key_outlined),
-            title: Text('Access Control'),
-          ),
-          FlashyTabBarItem(
-            icon: Icon(Icons.home_outlined),
-            title: Text('Home'),
-          ),
-          FlashyTabBarItem(
-            icon: Icon(Icons.notifications_active_outlined),
-            title: Text('Notifications'),
-          ),
+          Icon(Icons.announcement,color: Colors.white, size: 30),
+          Icon(Icons.home,color: Colors.white, size: 30),
+          Icon(Icons.notifications,color: Colors.white, size: 30),
 
         ],
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+
+        },
       ),
       body: _children[_currentIndex],
     );

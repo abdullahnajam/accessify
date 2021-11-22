@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 class MyResidence extends StatefulWidget {
   @override
@@ -87,7 +88,7 @@ class _MyResidenceState extends State<MyResidence> {
                             children: [
                               InkWell(
                                 onTap: ()async{
-                                  FirebaseFirestore.instance.collection("home").doc("residents").collection(user.uid).doc(resident.id).delete().then((value) {
+                                  FirebaseFirestore.instance.collection("home").doc("resident").collection(user.uid).doc(resident.id).delete().then((value) {
                                     Navigator.pop(context);
                                     Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => MyResidence()));
                                   });
@@ -256,7 +257,7 @@ class _MyResidenceState extends State<MyResidence> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      "Click To Explore",
+                      'clickToExplore'.tr(),
                       style: TextStyle(
                           fontFamily: "Sofia",
                           fontWeight: FontWeight.w700,
@@ -299,7 +300,7 @@ class _MyResidenceState extends State<MyResidence> {
                       child: Column(
                         children: [
                           Image.asset("assets/images/empty.png",width: 150,height: 150,),
-                          Text("No Residents Added")
+                          Text('noDataFound'.tr(),)
 
                         ],
                       ),
@@ -347,18 +348,18 @@ class _MyResidenceState extends State<MyResidence> {
                               ),
                               secondaryActions: <Widget>[
                                 IconSlideAction(
-                                  caption: 'Edit',
+                                  caption: 'edit'.tr(),
                                   color: Colors.indigo,
                                   icon: Icons.edit_outlined,
                                   onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => EditResident(model))),
                                 ),
                                 IconSlideAction(
-                                  caption: 'Delete',
+                                  caption: 'delete'.tr(),
                                   color: Colors.indigo,
                                   icon: Icons.delete_forever_outlined,
                                   onTap: () async{
                                     User user=FirebaseAuth.instance.currentUser;
-                                    await FirebaseFirestore.instance.collection("home").doc("residents").collection(user.uid).doc(model.id).delete().then((value) {
+                                    await FirebaseFirestore.instance.collection("home").doc("resident").collection(user.uid).doc(model.id).delete().then((value) {
                                       Navigator.pop(context);
                                       Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => MyResidence()));
                                     });

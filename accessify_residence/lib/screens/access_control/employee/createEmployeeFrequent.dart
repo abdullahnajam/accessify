@@ -12,6 +12,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
@@ -23,6 +24,7 @@ import 'package:progress_dialog/progress_dialog.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share/share.dart';
 import 'package:http/http.dart' as http;
+import 'package:toast/toast.dart';
 class CreateEmployeeFrequent extends StatefulWidget {
   @override
   _CreateEmployeeFrequentState createState() => _CreateEmployeeFrequentState();
@@ -34,7 +36,7 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
   access _access = access.employee;
   bool employee=true;
   bool frequent=false;
-
+  int dateInMilli=0;
   String time=formatDate(DateTime.now(), [hh, ':', nn]);
   String startDate = formatDate(DateTime.now(), [dd, '-', mm, '-', yyyy]);
   String endDate = formatDate(DateTime.now(), [dd, '-', mm, '-', yyyy]);
@@ -192,7 +194,7 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
                 Container(
                     child: Column(
                       children: [
-                        Text("Successful",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
+                        Text('successful'.tr(),style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w400),),
                         Text("Your employee/frequent has been added",style: TextStyle(fontSize: 13,fontWeight: FontWeight.w300),),
 
                       ],
@@ -205,15 +207,14 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
                 ),
                 GestureDetector(
                   onTap: (){
-                    Navigator.push(
-                        context, MaterialPageRoute(builder: (BuildContext context) => Home()));
+                    Navigator.pop(context);Navigator.pop(context);Navigator.pop(context);
                   },
                   child: Container(
                     alignment: Alignment.center,
                     width: double.maxFinite,
                     height: 40,
                     margin: EdgeInsets.only(left: 40,right: 40),
-                    child:Text("OKAY",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
+                    child:Text('okay'.tr(),style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
                     decoration: BoxDecoration(
                         color: Colors.green,
                         borderRadius: BorderRadius.circular(30)
@@ -282,7 +283,7 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
                         child: Column(
                           children: [
                             Image.asset("assets/images/empty.png",width: 150,height: 150,),
-                            Text("No Employees")
+                            Text('noDataFound'.tr())
 
                           ],
                         ),
@@ -382,7 +383,7 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
                         child: Column(
                           children: [
                             Image.asset("assets/images/empty.png",width: 150,height: 150,),
-                            Text("No Frequents")
+                            Text('noDataFound'.tr(),)
 
                           ],
                         ),
@@ -468,7 +469,7 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
                           child: QrImage(
                             data: qrKey,
                             size: 200,
-                            embeddedImage: AssetImage('assets/images/qr_logo.png'),
+                            embeddedImage: AssetImage('assets/images/slogo.png'),
                             embeddedImageStyle: QrEmbeddedImageStyle(
                               size: Size(50, 50),
                             ),
@@ -513,7 +514,7 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
                     width: double.maxFinite,
                     height: 40,
                     margin: EdgeInsets.only(left: 40,right: 40),
-                    child:Text("Add Guest",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
+                    child:Text("Add Employee/Frequent",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
                     decoration: BoxDecoration(
                         color: kPrimaryColor,
                         borderRadius: BorderRadius.circular(30)
@@ -584,7 +585,7 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
                     width: double.maxFinite,
                     height: 40,
                     margin: EdgeInsets.only(left: 40,right: 40),
-                    child:Text("OKAY",style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
+                    child:Text('okay'.tr(),style: TextStyle(color:Colors.white,fontSize: 15,fontWeight: FontWeight.w400),),
                     decoration: BoxDecoration(
                         color: Colors.red,
                         borderRadius: BorderRadius.circular(30)
@@ -604,6 +605,8 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
 
   saveInfo(File QRfile) async{
     final ProgressDialog pr = ProgressDialog(context);
+    pr.style(message: "Please wait");
+
     await pr.show();
     User user=FirebaseAuth.instance.currentUser;
 
@@ -627,7 +630,21 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
         'type':employee?"Employee":"Frequent",
         'neighbourId': userModel.neighbourId
       }).then((value) {
+        FirebaseFirestore.instance.collection("access_control").doc(qrKey).set({
+          'type': employee?"Employee":"Frequent",
+          'qr_code':"none",
+          'requestedFor':nameText,
+          'requestedBy':"${userModel.firstName} ${userModel.lastName}",
+          'date':"$startDate",
+          'dateInMilli':dateInMilli,
+          'datePostedInMilli':DateTime.now().millisecondsSinceEpoch,
+          'status':"scheduled",
+          'requesterId':user.uid,
+          'qr':"",
+          'neighbourId': userModel.neighbourId
+        });
         pr.hide();
+
         _showSuccessDailog();
         sendNotification();
       })
@@ -721,7 +738,7 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
                   padding:
                   const EdgeInsets.only(left: 25.0, top: 40.0, bottom: 10.0),
                   child: Text(
-                    "Fill the Information",
+                    'fillTheInformation'.tr(),
                     style: TextStyle(
                         fontFamily: "Sofia",
                         fontWeight: FontWeight.w700,
@@ -798,6 +815,7 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
                                             onConfirm: (date) {
                                               print('confirm $date');
                                               setState(() {
+                                                dateInMilli=date.millisecondsSinceEpoch;
                                                 startDate = formatDate(date, [dd, '-', mm, '-', yyyy]);
                                               });
                                             },
@@ -832,6 +850,7 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
                                             onConfirm: (date) {
                                               print('confirm $date');
                                               setState(() {
+
                                                 endDate = formatDate(
                                                     date, [dd, '-', mm, '-', yyyy]);
                                               });
@@ -895,15 +914,22 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
                             if (_formKey.currentState.validate()) {
                               //_captureAndSharePng();
                               //saveInfo();
-                              if(emp!=null)
+
+                              if(emp!=null){
                                 _generateQRCode();
+                              }
+
+                              else{
+                                Toast.show("Please Select a Person", context, duration: Toast.LENGTH_LONG, gravity:  Toast.TOP);
+
+                              }
                             }
                           },
                           child: Container(
                             height: 50,
                             width: double.maxFinite,
                             alignment: Alignment.center,
-                            child: Text("Generate QR",textAlign: TextAlign.center,style: TextStyle(color: Colors.white,fontSize: 20),),
+                            child: Text('generateQR'.tr(),textAlign: TextAlign.center,style: TextStyle(color: Colors.white,fontSize: 20),),
                             decoration: BoxDecoration(
                                 color: kPrimaryColor,
                                 borderRadius: BorderRadius.circular(30)

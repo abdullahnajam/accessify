@@ -1,13 +1,18 @@
+import 'dart:io';
+
 import 'package:accessify/model/payment_model.dart';
 import 'package:accessify/payment/payment-service.dart';
 import 'package:awesome_card/credit_card.dart';
 import 'package:awesome_card/style/card_background.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:http/http.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:progress_dialog/progress_dialog.dart';
 
 import '../../constants.dart';
@@ -25,6 +30,128 @@ class _MyPaymentsState extends State<MyPayments> with SingleTickerProviderStateM
     StripeService.init();
 
   }
+  String photoUrl;
+  File _imageFile;
+  final picker = ImagePicker();
+
+  Future<void> _showchoiceDailog() async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: true, // user must tap button!
+      builder: (BuildContext context) {
+        return Card(
+          margin: EdgeInsets.only(top: MediaQuery.of(context).size.height*0.7),
+          shape: RoundedRectangleBorder(
+            borderRadius: const BorderRadius.only(
+              topRight: Radius.circular(30.0),
+              topLeft: Radius.circular(30.0),
+            ),
+          ),
+          elevation: 2,
+
+          child: Container(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  alignment: Alignment.center,
+                  width: double.maxFinite,
+                  height: 40,
+                  margin: EdgeInsets.only(left: 40,right: 40),
+                  child:Text("Send Receipt",style: TextStyle(color:Colors.black,fontSize: 15,fontWeight: FontWeight.w700),),
+                  decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(30)
+                  ),
+                ),
+                SizedBox(
+                  height: 15,
+                ),
+                GestureDetector(
+                  onTap: (){
+                    pickImage();
+                    Navigator.pop(context);
+                  },
+                  child: Container(
+                    alignment: Alignment.center,
+                    width: double.maxFinite,
+                    height: 40,
+                    margin: EdgeInsets.only(left: 40,right: 40),
+                    child:Text("Take Picture From Camera",style: TextStyle(color:Colors.black,fontSize: 15,fontWeight: FontWeight.w400),),
+                    decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(30)
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  height: 15,
+                ),
+                GestureDetector(
+                  onTap: (){
+                    Navigator.pop(context);
+                    pickImageFromGallery();
+                  },
+                  child: Container(
+                    alignment: Alignment.center,
+                    width: double.maxFinite,
+                    height: 40,
+                    margin: EdgeInsets.only(left: 40,right: 40),
+                    child:Text("Choose From Gallery",style: TextStyle(color:Colors.black,fontSize: 15,fontWeight: FontWeight.w400),),
+                    decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(30)
+                    ),
+                  ),
+                ),
+
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+  String selectedId="";
+  Future pickImage() async {
+    final pickedFile = await picker.getImage(source: ImageSource.camera);
+
+    setState(() {
+      _imageFile = File(pickedFile.path);
+    });
+    uploadImageToFirebase(context);
+  }
+
+  Future pickImageFromGallery() async {
+    final pickedFile = await picker.getImage(source: ImageSource.gallery);
+
+    setState(() {
+      _imageFile = File(pickedFile.path);
+    });
+    uploadImageToFirebase(context);
+  }
+
+  Future uploadImageToFirebase(BuildContext context) async {
+    final ProgressDialog pr = ProgressDialog(context);
+    pr.style(
+      message: 'Uploading Image',
+    );
+    pr.show();
+    var storage = FirebaseStorage.instance;
+    TaskSnapshot snapshot = await storage.ref().child('bookingPics/${DateTime.now().millisecondsSinceEpoch}').putFile(_imageFile);
+    if (snapshot.state == TaskState.success) {
+      final String downloadUrl = await snapshot.ref.getDownloadURL();
+      setState(() {
+        photoUrl = downloadUrl;
+      });
+      final f = new DateFormat('dd-MM-yyyy');
+      FirebaseFirestore.instance.collection('payment').doc(selectedId).update({
+        'status': "To Authorize",
+        'proofUrl': photoUrl,
+        'submissionDate': f.format(DateTime.now()).toString(),
+        'submissionInMilli': DateTime.now().millisecondsSinceEpoch,
+      });
+    }
+    pr.hide();
+  }
 
   payViaNewCard(BuildContext context,String id) async {
     ProgressDialog dialog = new ProgressDialog(context);
@@ -33,10 +160,10 @@ class _MyPaymentsState extends State<MyPayments> with SingleTickerProviderStateM
     );
     await dialog.show();
     
-    var response = await StripeService.payWithNewCard(
+    await StripeService.payWithNewCard(
         amount: '15000',
         currency: 'USD'
-    ).whenComplete(() {
+    ).then((value) {
       FirebaseFirestore.instance.collection("payment").doc(id).update({
         'status': "To Authorize",
         
@@ -122,7 +249,8 @@ class _MyPaymentsState extends State<MyPayments> with SingleTickerProviderStateM
 
                           child: TabBarView(children: <Widget>[
                             StreamBuilder<QuerySnapshot>(
-                            stream: FirebaseFirestore.instance.collection('payment').where('userId', isEqualTo: FirebaseAuth.instance.currentUser.uid).where('status',isEqualTo: "Pending").snapshots(),
+                            stream: FirebaseFirestore.instance.collection('payment')
+                                .where('userId', isEqualTo: FirebaseAuth.instance.currentUser.uid).where('status',isEqualTo: "Pending").snapshots(),
                             builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
                               if (snapshot.hasError) {
                                 return Center(
@@ -146,7 +274,7 @@ class _MyPaymentsState extends State<MyPayments> with SingleTickerProviderStateM
                                   child: Column(
                                     children: [
                                       Image.asset("assets/images/empty.png",width: 150,height: 150,),
-                                      Text("No Pending Payments")
+                                      Text('noDataFound'.tr(),)
 
                                     ],
                                   ),
@@ -158,19 +286,15 @@ class _MyPaymentsState extends State<MyPayments> with SingleTickerProviderStateM
                                 shrinkWrap: true,
                                 children: snapshot.data.docs.map((DocumentSnapshot document) {
                                   Map<String, dynamic> data = document.data() as Map<String, dynamic>;
-                                  PaymentModel model=new PaymentModel(
-                                    document.reference.id,
-                                    data['title'],
-                                    data['prefix'],
-                                    data['status'],
-                                    data['amount'],
-                                    data['userId'],
-                                  );
+                                  PaymentModel model=PaymentModel.fromMap(data, document.reference.id);
                                   return Padding(
                                       padding: const EdgeInsets.only(top: 15.0),
                                       child: InkWell(
                                         onTap: (){
-                                          payViaNewCard(context,model.id);
+                                          setState(() {
+                                            selectedId=model.id;
+                                          });
+                                          _showchoiceDailog();
                                         },
                                         child: Container(
 
@@ -201,7 +325,7 @@ class _MyPaymentsState extends State<MyPayments> with SingleTickerProviderStateM
 
                                                         Row(
                                                           children: [
-                                                            Text(model.title,style: TextStyle(fontSize: 15),),
+                                                            Text(model.concept,style: TextStyle(fontSize: 15),),
 
                                                           ],
                                                         ),
@@ -222,7 +346,7 @@ class _MyPaymentsState extends State<MyPayments> with SingleTickerProviderStateM
                                               Expanded(
                                                 flex: 1,
                                                 child: Container(
-                                                  child: Text("${model.prefix}${model.amount}",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w700,)
+                                                  child: Text("\$${model.amount}",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w700,)
                                                   ),
                                                 ),)
                                             ],
@@ -235,7 +359,9 @@ class _MyPaymentsState extends State<MyPayments> with SingleTickerProviderStateM
                             },
                           ),
                             StreamBuilder<QuerySnapshot>(
-                              stream: FirebaseFirestore.instance.collection('payment').where('userId', isEqualTo: FirebaseAuth.instance.currentUser.uid).where('status',isEqualTo: "To Authorize").snapshots(),
+                              stream: FirebaseFirestore.instance.collection('payment')
+                                  .where('userId', isEqualTo: FirebaseAuth.instance.currentUser.uid)
+                                  .where('status',isEqualTo: "To Authorize").snapshots(),
                               builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
                                 if (snapshot.hasError) {
                                   return Center(
@@ -259,7 +385,7 @@ class _MyPaymentsState extends State<MyPayments> with SingleTickerProviderStateM
                                     child: Column(
                                       children: [
                                         Image.asset("assets/images/empty.png",width: 150,height: 150,),
-                                        Text("No Payments to be authorized")
+                                        Text('noDataFound'.tr(),)
 
                                       ],
                                     ),
@@ -271,14 +397,7 @@ class _MyPaymentsState extends State<MyPayments> with SingleTickerProviderStateM
                                   shrinkWrap: true,
                                   children: snapshot.data.docs.map((DocumentSnapshot document) {
                                     Map<String, dynamic> data = document.data() as Map<String, dynamic>;
-                                    PaymentModel model=new PaymentModel(
-                                      document.reference.id,
-                                      data['title'],
-                                      data['prefix'],
-                                      data['status'],
-                                      data['amount'],
-                                      data['userId'],
-                                    );
+                                    PaymentModel model=PaymentModel.fromMap(data, document.reference.id);
                                     return Padding(
                                         padding: const EdgeInsets.only(top: 15.0),
                                         child: InkWell(
@@ -310,7 +429,7 @@ class _MyPaymentsState extends State<MyPayments> with SingleTickerProviderStateM
 
                                                           Row(
                                                             children: [
-                                                              Text(model.title,style: TextStyle(fontSize: 15),),
+                                                              Text(model.concept,style: TextStyle(fontSize: 15),),
 
                                                             ],
                                                           ),
@@ -331,7 +450,7 @@ class _MyPaymentsState extends State<MyPayments> with SingleTickerProviderStateM
                                                 Expanded(
                                                   flex: 1,
                                                   child: Container(
-                                                    child: Text("${model.prefix}${model.amount}",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w700,)
+                                                    child: Text("\$${model.amount}",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w700,)
                                                     ),
                                                   ),)
                                               ],
@@ -368,7 +487,7 @@ class _MyPaymentsState extends State<MyPayments> with SingleTickerProviderStateM
                                     child: Column(
                                       children: [
                                         Image.asset("assets/images/empty.png",width: 150,height: 150,),
-                                        Text("No Authorized Payments")
+                                        Text('noDataFound'.tr(),)
 
                                       ],
                                     ),
@@ -380,14 +499,7 @@ class _MyPaymentsState extends State<MyPayments> with SingleTickerProviderStateM
                                   shrinkWrap: true,
                                   children: snapshot.data.docs.map((DocumentSnapshot document) {
                                     Map<String, dynamic> data = document.data() as Map<String, dynamic>;
-                                    PaymentModel model=new PaymentModel(
-                                      document.reference.id,
-                                      data['title'],
-                                      data['prefix'],
-                                      data['status'],
-                                      data['amount'],
-                                      data['userId'],
-                                    );
+                                    PaymentModel model=PaymentModel.fromMap(data, document.reference.id);
                                     return Padding(
                                         padding: const EdgeInsets.only(top: 15.0),
                                         child: InkWell(
@@ -421,7 +533,7 @@ class _MyPaymentsState extends State<MyPayments> with SingleTickerProviderStateM
 
                                                           Row(
                                                             children: [
-                                                              Text(model.title,style: TextStyle(fontSize: 15),),
+                                                              Text(model.concept,style: TextStyle(fontSize: 15),),
 
                                                             ],
                                                           ),
@@ -442,7 +554,7 @@ class _MyPaymentsState extends State<MyPayments> with SingleTickerProviderStateM
                                                 Expanded(
                                                   flex: 1,
                                                   child: Container(
-                                                    child: Text("${model.prefix}${model.amount}",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w700,)
+                                                    child: Text("\$${model.amount}",style: TextStyle(color: Colors.black,fontSize: 20,fontWeight: FontWeight.w700,)
                                                     ),
                                                   ),)
                                               ],

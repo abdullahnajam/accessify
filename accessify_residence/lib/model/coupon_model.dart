@@ -3,9 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class CouponsModel{
   String id,price,title,description,image,expiration,status,phone,classification,userId,username;
 
-
+  String neighbourId;
   CouponsModel(this.id, this.price, this.title, this.description, this.image,
-      this.expiration, this.status, this.phone,this.classification,this.userId,this.username);
+      this.expiration, this.status, this.phone,this.classification,this.userId,this.username,this.neighbourId);
 
   CouponsModel.fromMap(Map<String,dynamic> map,String key)
       : id=key,
@@ -18,6 +18,7 @@ class CouponsModel{
         phone = map['phone'],
         classification = map['classification'],
         userId = map['userId'],
+        neighbourId = map['neighbourId'],
         username = map['username'];
 
 

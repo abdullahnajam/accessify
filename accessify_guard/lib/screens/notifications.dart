@@ -182,295 +182,217 @@ class _AccessControlState extends State<Notifications> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: bgColor,
       key: _drawerKey,
       drawer: MenuDrawer(),
-      body: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.all(Radius.circular(40)),
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Stack(
-                children: <Widget>[
-
-                  Container(
-                    width: double.infinity,
-                    height: 120.0,
-                    decoration: BoxDecoration(
-                        color: kPrimaryColor,
-                        borderRadius: BorderRadius.only(
-                            bottomLeft: Radius.circular(30.0),
-                            bottomRight: Radius.circular(30.0))
-                    ),
-                  ),
-
-                  Padding(
-                    padding: const EdgeInsets.only(top: 75.0),
-                    child: Center(
-                      child: Container(
-                        height: 120.0,
-                        width: 310.0,
-                        decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.all(Radius.circular(20.0)),
-                            boxShadow: [
-                              BoxShadow(color: Colors.black12.withOpacity(0.1)),
-                            ]),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: <Widget>[
-
-                            SizedBox(
-                              height: 5.0,
-                            ),
-                            Row(
-                              children: [
-                                Container(
-
-                                    height: 40,
-                                    width: 40,
-                                    decoration: BoxDecoration(
-                                        color: kPrimaryColor,
-                                        borderRadius: BorderRadius.circular(50)),
-                                    margin: EdgeInsets.only(top: 10, right: 10,left: 10),
-                                    child: GestureDetector(
-                                      onTap: _openDrawer,
-                                      child: Icon(
-                                        Icons.menu,
-                                        color: Colors.white,
-                                        size: 30,
-                                      ),
-                                    )),
-                                Text(
-                                  "Notifications",
-                                  style: TextStyle(
-                                      color: Colors.black,
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 25.0),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 10,),
-
-
-                          ],
-                        ),
-                      ),
-                    ),
+      body:SafeArea(
+        child: Column(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  bottom: BorderSide(width: 0.15, color: kPrimaryColor),
+                ),
+              ),
+              height:  AppBar().preferredSize.height,
+              child: Stack(
+                children: [
+                  Align(
+                    alignment: Alignment.center,
+                    child: Text('Notifications',style: TextStyle(color: kPrimaryColor),),
                   )
                 ],
               ),
-              Container(
-                child: StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance.collection('guard_notifications').snapshots(),
-                  builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
-                    if (snapshot.hasError) {
-                      return Center(
-                        child: Column(
-                          children: [
-                            Image.asset("assets/images/wrong.png",width: 150,height: 150,),
-                            Text("Something Went Wrong")
+            ),
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance.collection('guard_notifications').snapshots(),
+                builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Column(
+                        children: [
+                          Image.asset("assets/images/wrong.png",width: 150,height: 150,),
+                          Text("Something Went Wrong")
 
-                          ],
-                        ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+                  if (snapshot.data.size==0){
+                    return Center(
+                      child: Column(
+                        children: [
+                          Image.asset("assets/images/empty.png",width: 150,height: 150,),
+                          Text("No Notifications")
+
+                        ],
+                      ),
+                    );
+
+                  }
+
+                  return new ListView(
+                    shrinkWrap: true,
+                    children: snapshot.data.docs.map((DocumentSnapshot document) {
+                      Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+                      NotificationModel model=NotificationModel(
+                        document.reference.id,
+                        data['isOpened'],
+                        data['type'],
+                        data['date'],
+                        data['body'],
+                        data['title'],
+                        data['icon'],
+                        data['userId'],
+                        data['name'],
                       );
-                    }
-
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Center(
-                        child: CircularProgressIndicator(),
-                      );
-                    }
-                    if (snapshot.data.size==0){
-                      return Center(
-                        child: Column(
-                          children: [
-                            Image.asset("assets/images/empty.png",width: 150,height: 150,),
-                            Text("No Notifications")
-
-                          ],
-                        ),
-                      );
-
-                    }
-
-                    return new ListView(
-                      shrinkWrap: true,
-                      children: snapshot.data.docs.map((DocumentSnapshot document) {
-                        Map<String, dynamic> data = document.data() as Map<String, dynamic>;
-                        NotificationModel model=NotificationModel(
-                          document.reference.id,
-                          data['isOpened'],
-                          data['type'],
-                          data['date'],
-                          data['body'],
-                          data['title'],
-                          data['icon'],
-                          data['userId'],
-                          data['name'],
-                        );
-                        return Padding(
-                            padding: const EdgeInsets.only(top: 15.0),
-                            child: InkWell(
-                              onTap: (){
-                                if(model.type=="delivery" || model.type=="taxi"){
-                                  print("${model.id} id");
-                                  Navigator.push(context, new MaterialPageRoute(
-                                      builder: (context) => AddAccess(model.id, model.type,  model.userId,  model.name)));
-                                }
-                                else{
-                                  showDeliveryServiceDailog(model.type);
-                                }
-                              },
-                              child: Container(
-                                height: 60,
-                                decoration: BoxDecoration(
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 5.0),
+                        child: InkWell(
+                            child: Container(
+                              margin: EdgeInsets.all(10),
+                              decoration: BoxDecoration(
                                   color: Colors.white,
-                                  border: Border(
-                                    top: BorderSide(width: 0.2, color: Colors.grey[500]),
+                                  borderRadius: BorderRadius.circular(10)
+                              ),
+                              child: Column(
+                                children: [
+                                  Container(
+                                    width: MediaQuery.of(context).size.width,
+                                    padding: EdgeInsets.all(10),
+
+                                    decoration: BoxDecoration(
+                                        color: kPrimaryColor,
+                                        borderRadius: BorderRadius.only(
+                                            topLeft: Radius.circular(10),
+                                            topRight: Radius.circular(10)
+                                        )
+                                    ),
+                                    child: Text(model.type.toUpperCase(),style: TextStyle(color:whiteTextColor,fontWeight: FontWeight.w600),),
                                   ),
+                                  Container(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Container(
+                                              margin: EdgeInsets.all(10),
+                                              height: 30,width: 30,
+                                              decoration: BoxDecoration(
+                                                  borderRadius: BorderRadius.circular(100),
+                                                  image: DecorationImage(
+                                                      fit: BoxFit.cover,
+                                                      image: NetworkImage(model.icon)
+                                                  )
+                                              ),
 
-                                ),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                        flex: 2,
-                                        child:Container(
-                                            margin: EdgeInsets.all(10),
-                                            decoration: new BoxDecoration(
-                                                shape: BoxShape.circle,
-                                                image: new DecorationImage(
-                                                  fit: BoxFit.fill,
-                                                  image: new NetworkImage(model.icon),
-                                                )
+                                            ),
+                                            Expanded(
+                                              child: Text(model.title,style: TextStyle(fontWeight: FontWeight.w500),maxLines: 1,),
                                             )
+                                          ],
+                                        ),
+                                        Container(
+                                          margin: EdgeInsets.all(10),
+                                          child: Text(model.body),
                                         )
-
-
+                                      ],
                                     ),
-                                    Expanded(
-                                        flex: 5,
-                                        child: Container(
-                                          margin: EdgeInsets.only(left: 5),
-                                          child: Column(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(model.title,style: TextStyle(fontWeight: FontWeight.w400,fontSize: 15),),
-                                              Text(model.body,style: TextStyle(fontWeight: FontWeight.w300,fontSize: 10,color: Colors.grey[500]),)
-                                            ],
-                                          ),
-                                        )
-                                    ),
-                                    Expanded(
-                                        flex: 3,
-                                        child: Container(
-                                          margin: EdgeInsets.only(right: 5),
-                                          child: Column(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            crossAxisAlignment: CrossAxisAlignment.end,
-                                            children: [
-                                              model.date==null?Text(""):Text(timeAgoSinceDate(model.date),style: TextStyle(fontWeight: FontWeight.w400,fontSize: 10),),
-                                              Text(model.type,style: TextStyle(fontWeight: FontWeight.w300,fontSize: 10,color: Colors.grey[500]),)
-                                            ],
-                                          ),
-                                        )
-                                    ),
-
-                                  ],
-                                ),
+                                  )
+                                ],
                               ),
                             )
-                        );
-                      }).toList(),
-                    );
-                  },
-                ),
+                        ),
+                      );Padding(
+                          padding: const EdgeInsets.only(top: 15.0),
+                          child: InkWell(
+                            onTap: (){
+                              if(model.type=="delivery" || model.type=="taxi"){
+                                print("${model.id} id");
+                                Navigator.push(context, new MaterialPageRoute(
+                                    builder: (context) => AddAccess(model.id, model.type,  model.userId,  model.name)));
+                              }
+                              else{
+                                showDeliveryServiceDailog(model.type);
+                              }
+                            },
+                            child: Container(
+                              height: 60,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                border: Border(
+                                  top: BorderSide(width: 0.2, color: Colors.grey[500]),
+                                ),
+
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                      flex: 2,
+                                      child:Container(
+                                          margin: EdgeInsets.all(10),
+                                          decoration: new BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              image: new DecorationImage(
+                                                fit: BoxFit.fill,
+                                                image: new NetworkImage(model.icon),
+                                              )
+                                          )
+                                      )
+
+
+                                  ),
+                                  Expanded(
+                                      flex: 5,
+                                      child: Container(
+                                        margin: EdgeInsets.only(left: 5),
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(model.title,style: TextStyle(fontWeight: FontWeight.w400,fontSize: 15),),
+                                            Text(model.body,style: TextStyle(fontWeight: FontWeight.w300,fontSize: 10,color: Colors.grey[500]),)
+                                          ],
+                                        ),
+                                      )
+                                  ),
+                                  Expanded(
+                                      flex: 3,
+                                      child: Container(
+                                        margin: EdgeInsets.only(right: 5),
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          crossAxisAlignment: CrossAxisAlignment.end,
+                                          children: [
+                                            model.date==null?Text(""):Text(timeAgoSinceDate(model.date),style: TextStyle(fontWeight: FontWeight.w400,fontSize: 10),),
+                                            Text(model.type,style: TextStyle(fontWeight: FontWeight.w300,fontSize: 10,color: Colors.grey[500]),)
+                                          ],
+                                        ),
+                                      )
+                                  ),
+
+                                ],
+                              ),
+                            ),
+                          )
+                      );
+                    }).toList(),
+                  );
+                },
               ),
-
-
-
-
-
-              SizedBox(
-                height: 20.0,
-              )
-            ],
-          ),
+            ),
+          ],
         ),
-      ),
-    );
-  }
-  Widget _card() {
-    return Padding(
-        padding: const EdgeInsets.only(top: 15.0),
-        child: InkWell(
-          onTap: (){
-
-          },
-          child: Container(
-            height: 60,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(
-                top: BorderSide(width: 0.2, color: Colors.grey[500]),
-              ),
-
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                    flex: 2,
-                    child:Container(
-                        margin: EdgeInsets.all(10),
-                        decoration: new BoxDecoration(
-                            shape: BoxShape.circle,
-                            image: new DecorationImage(
-                              fit: BoxFit.fill,
-                              image: new NetworkImage("https://image.freepik.com/free-vector/society-concept-illustration_1284-8297.jpg"),
-                            )
-                        )
-                    )
-
-
-                ),
-                Expanded(
-                    flex: 5,
-                    child: Container(
-                      margin: EdgeInsets.only(left: 5),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("Title",style: TextStyle(fontWeight: FontWeight.w400,fontSize: 15),),
-                          Text("Description",style: TextStyle(fontWeight: FontWeight.w300,fontSize: 10,color: Colors.grey[500]),)
-                        ],
-                      ),
-                    )
-                ),
-                Expanded(
-                    flex: 3,
-                    child: Container(
-                      margin: EdgeInsets.only(right: 5),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("1 hour ago",style: TextStyle(fontWeight: FontWeight.w400,fontSize: 10),),
-                          Text("Announcement",style: TextStyle(fontWeight: FontWeight.w300,fontSize: 10,color: Colors.grey[500]),)
-                        ],
-                      ),
-                    )
-                ),
-
-              ],
-            ),
-          ),
-        )
+      )
     );
   }
 }

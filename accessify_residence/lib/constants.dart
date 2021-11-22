@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:accessify/size_config.dart';
 
-const kPrimaryColor = Color(0xFF0e3f9d);
+const kPrimaryColor = Colors.blue;
+const bgColor=Color(0xffeeeeee);
 const serverToken="AAAAO-nylpM:APA91bEoAIIpHaWsJJL_wogtFDG4yZKe_ahcFfVWOVW_ODdBcqayZq4ixa0k4-A6KPghn9ICwC8o3gWv7R0QyM4mZT_18vXdMlMwlXgPoSiSSJEZhsp7JVfHZl0QpLlCUsaLZ3cDymPz";
 const kPrimaryLightColor = Color(0xFF648ee4);
 const kPrimaryGradientColor = LinearGradient(

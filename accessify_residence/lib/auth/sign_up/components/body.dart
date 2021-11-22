@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:accessify/components/socal_card.dart';
 import 'package:accessify/constants.dart';
 import 'package:accessify/size_config.dart';

@@ -13,6 +13,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:share/share.dart';
 
@@ -241,7 +242,7 @@ class _TaxiAccessState extends State<TaxiAccess> with SingleTickerProviderStateM
                               height: 5.0,
                             ),
                             Text(
-                              "My Taxi",
+                              'myTaxi'.tr(),
                               style: TextStyle(
                                   color: Colors.black,
                                   fontWeight: FontWeight.w800,
@@ -274,7 +275,7 @@ class _TaxiAccessState extends State<TaxiAccess> with SingleTickerProviderStateM
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        "Click To Explore",
+                        'clickToExplore'.tr(),
                         style: TextStyle(
                             fontFamily: "Sofia",
                             fontWeight: FontWeight.w700,
@@ -315,8 +316,7 @@ class _TaxiAccessState extends State<TaxiAccess> with SingleTickerProviderStateM
                       child: Column(
                         children: [
                           Image.asset("assets/images/empty.png",width: 150,height: 150,),
-                          Text("No Taxi Added")
-
+                          Text('noDataFound'.tr(),)
                         ],
                       ),
                     );
@@ -363,13 +363,13 @@ class _TaxiAccessState extends State<TaxiAccess> with SingleTickerProviderStateM
                           secondaryActions: <Widget>[
 
                             IconSlideAction(
-                              caption: 'Edit',
+                              caption: 'edit'.tr(),
                               color: Colors.indigo,
                               icon: Icons.edit_outlined,
                               onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => EditTaxi(model))),
                             ),
                             IconSlideAction(
-                              caption: 'Delete',
+                              caption: 'delete'.tr(),
                               color: Colors.indigo,
                               icon: Icons.delete_forever_outlined,
                               onTap: () async{

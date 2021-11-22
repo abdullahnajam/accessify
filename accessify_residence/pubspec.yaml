@@ -57,6 +57,7 @@ dependencies:
   flashy_tab_bar: ^0.0.3
   easy_localization: 3.0.0
   cloud_firestore: ^2.3.0
+  curved_navigation_bar: ^1.0.1
 
 dev_dependencies:
   flutter_test:

@@ -7,6 +7,7 @@ import 'package:accessify/screens/access_control/taxi/view_taxi_list.dart';
 import 'package:accessify/shared_preference/shared_pref.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:toast/toast.dart';
 class AccessControl extends StatefulWidget {
   @override
@@ -74,7 +75,7 @@ class _AccessControlState extends State<AccessControl> {
                               height: 5.0,
                             ),
                             Text(
-                              "Access Control",
+                              'accessControl'.tr(),
                               style: TextStyle(
                                   color: Colors.black,
                                   fontWeight: FontWeight.w800,
@@ -83,7 +84,7 @@ class _AccessControlState extends State<AccessControl> {
                             SizedBox(height: 10,),
                             Container(
                               child: Text(
-                                "Keep control of your visit from anywhere",
+                               'accessTitle'.tr(),
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                     color: Colors.black38,
@@ -107,7 +108,7 @@ class _AccessControlState extends State<AccessControl> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        "Allow Visits",
+                        'allowVisits'.tr(),
                         style: TextStyle(
                             fontFamily: "Sofia",
                             fontWeight: FontWeight.w700,
@@ -127,7 +128,7 @@ class _AccessControlState extends State<AccessControl> {
                   )
               ),
 
-              _card(Icons.delivery_dining, "Delivery Service", () {
+              _card(Icons.delivery_dining, 'deliveryService'.tr(), () {
                 if(areVisitsAllowed){
                   Navigator.push(context, new MaterialPageRoute(builder: (context) => DeliveryAccess()));
                 }
@@ -137,7 +138,7 @@ class _AccessControlState extends State<AccessControl> {
                 }
 
               }),
-              _card(Icons.local_taxi, "My Taxi", () {
+              _card(Icons.local_taxi, 'myTaxi'.tr(), () {
                 if(areVisitsAllowed){
                   Navigator.push(context, new MaterialPageRoute(builder: (context) => TaxiAccess()));
                 }
@@ -147,7 +148,7 @@ class _AccessControlState extends State<AccessControl> {
                 }
 
               }),
-              _card(Icons.people, "Guest", () {
+              _card(Icons.people, 'guest'.tr(), () {
                 if(areVisitsAllowed){
                   Navigator.push(context, new MaterialPageRoute(builder: (context) => GuestAccess()));
                 }
@@ -157,7 +158,7 @@ class _AccessControlState extends State<AccessControl> {
                 }
 
               }),
-              _card(Icons.contact_mail_outlined, "Frecuent / Employee", () {
+              _card(Icons.contact_mail_outlined, 'employee/frequent'.tr(), () {
                 if(areVisitsAllowed){
                   Navigator.push(context, new MaterialPageRoute(builder: (context) => EmployeeFrequentAccess()));
                 }
@@ -167,7 +168,7 @@ class _AccessControlState extends State<AccessControl> {
                 }
 
               }),
-              _card(Icons.people_outline, "Event", () {
+              _card(Icons.people_outline, 'event'.tr(), () {
                 if(areVisitsAllowed){
                   Navigator.push(context, new MaterialPageRoute(builder: (context) => ViewEvents()));
                 }

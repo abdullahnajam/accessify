@@ -6,6 +6,7 @@ import 'package:accessify/screens/my_home/residence.dart';
 import 'package:accessify/screens/my_home/vehicle.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 class MyHome extends StatefulWidget {
   @override
   _MyHomeState createState() => _MyHomeState();
