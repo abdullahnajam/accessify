@@ -204,6 +204,7 @@ class _EditGuestState extends State<EditGuest> {
       'hour':time,
       'status':"scheduled",
       'userId':user.uid,
+
       'vehicle':vehicleController.text,
       'email':emailController.text,
       'qr':widget.model.qr
@@ -441,7 +442,7 @@ class _EditGuestState extends State<EditGuest> {
                           onTap: (){
                             DatePicker.showDatePicker(context,
                                 showTitleActions: true,
-                                minTime: DateTime(2021, 1, 1),
+                                minTime: DateTime.now(),
                                 maxTime: DateTime(2025, 1, 1),
                                 onChanged: (date) {
                                   print('change $date');

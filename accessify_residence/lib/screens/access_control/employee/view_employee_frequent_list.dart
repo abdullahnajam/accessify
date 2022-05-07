@@ -312,7 +312,8 @@ class _EmployeeFrequentAccessState extends State<EmployeeFrequentAccess> {
               ),
 
               StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance.collection('employee_access').where('userId', isEqualTo: FirebaseAuth.instance.currentUser.uid).snapshots(),
+                stream: FirebaseFirestore.instance.collection('employee_access')
+                    .where('userId', isEqualTo: FirebaseAuth.instance.currentUser.uid).snapshots(),
                 builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
                   if (snapshot.hasError) {
                     return Center(

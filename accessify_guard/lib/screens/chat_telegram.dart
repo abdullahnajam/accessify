@@ -49,12 +49,9 @@ class ChatTelegramRouteState extends State<ChatTelegramRoute> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text("Mary Jackson", style: MyText.medium(context).copyWith(
-                      color: Colors.white)
-                  ),
+                  Text("Mary Jackson", style: TextStyle(color: Colors.white)),
                   Container(height: 2),
-                  Text("Online", style: MyText.caption(context).copyWith(
-                      color: MyColors.grey_10)
+                  Text("Online", style: TextStyle(color: Colors.grey)
                   ),
                 ],
               )

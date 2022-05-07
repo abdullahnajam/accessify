@@ -9,6 +9,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:progress_dialog/progress_dialog.dart';
 
 import '../../constants.dart';
 class Survey extends StatefulWidget {
@@ -18,21 +19,43 @@ class Survey extends StatefulWidget {
 
 class _SurveyState extends State<Survey> {
   final GlobalKey<ScaffoldState> _drawerKey = GlobalKey();
-  Future<List<SurveyModel>> getQuestions(){
-    List<SurveyModel> surveys=[];
-    FirebaseFirestore.instance
-        .collection('survey')
-        .where("neighbourId",isEqualTo: userModel.neighbourId)
+  bool surveyLoad=false;
+  Future getQuestions()async{
+    setState(() {
+      surveyLoad=false;
+      surveys=[];
+      isChecked=[];
+      desController=[];
+    });
+    await FirebaseFirestore.instance.collection('survey').where("neighbourId",isEqualTo: userModel.neighbourId)
+        .where("status",isNotEqualTo: "Closed")
         .get().then((QuerySnapshot querySnapshot) {
           querySnapshot.docs.forEach((doc) {
             Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+            SurveyModel model = SurveyModel.fromMap(data, doc.reference.id);
+            print("al ${model.attempts.length}");
+            if(!model.attempts.contains(FirebaseAuth.instance.currentUser.uid)){
+              print("al ${model.attempts.length}");
+              setState(() {
+                surveys.add(model);
+                desController.add(TextEditingController());
+                List<bool> choices=[];
+                if(model.isMCQ){
+                  model.choices.forEach((element) => choices.add(false));
+                  isChecked.add(choices);
+                }
+                else{
+                  isChecked.add([]);
+                }
+              });
+            }
 
-            //surveys.add( SurveyModel.fromMap(data, doc.reference.id));
-            desController.add(TextEditingController());
-            isChecked.add(false);
+
         });
-          return surveys;
       });
+    setState(() {
+      surveyLoad=true;
+    });
   }
 
   static String timeAgoSinceDate(String dateString, {bool numericDates = true}) {
@@ -72,14 +95,15 @@ class _SurveyState extends State<Survey> {
   }
   List<TextEditingController> desController=[];
   int editingIndex=0;
-  List<bool> isChecked=[];
+  List<SurveyModel> surveys=[];
+  List<List<bool>> isChecked=[];
 
   UserModel userModel;
   bool isLoading=false;
 
-  getUserData()async{
+  Future getUserData()async{
     User user=FirebaseAuth.instance.currentUser;
-    FirebaseFirestore.instance
+    await FirebaseFirestore.instance
         .collection('homeowner')
         .doc(user.uid)
         .get()
@@ -88,9 +112,11 @@ class _SurveyState extends State<Survey> {
 
         Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
         userModel=UserModel.fromMap(data, documentSnapshot.reference.id);
+        print("id : ${userModel.neighbourId}");
         setState(() {
           isLoading=true;
         });
+        getQuestions();
       }
     });
 
@@ -109,7 +135,8 @@ class _SurveyState extends State<Survey> {
         key: _drawerKey,
         drawer: MenuDrawer(),
         body: SafeArea(
-          child: isLoading?ListView(
+          child: isLoading?
+          Column(
             children: [
               Container(
                 height: 60,
@@ -148,94 +175,71 @@ class _SurveyState extends State<Survey> {
               Container(
                   margin: EdgeInsets.all(5)
               ),
-              Container(
-                child: StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance.collection('survey')
-                      .where("neighbourId",isEqualTo: userModel.neighbourId).snapshots(),
-                  builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
-                    if (snapshot.hasError) {
-                      return Center(
-                        child: Column(
-                          children: [
-                            Image.asset("assets/images/wrong.png",width: 150,height: 150,),
-                            Text("Something Went Wrong")
-
-                          ],
-                        ),
-                      );
-                    }
-
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Center(
-                        child: CircularProgressIndicator(),
-                      );
-                    }
-                    if (snapshot.data.size==0){
-                      return Center(
-                        child: Column(
-                          children: [
-                            Image.asset("assets/images/empty.png",width: 150,height: 150,),
-                           Text('noDataFound'.tr(),)
-
-                          ],
-                        ),
-                      );
-
-                    }
-
-                    return new ListView(
-                      shrinkWrap: true,
-                      children: snapshot.data.docs.map((DocumentSnapshot document) {
-                        Map<String, dynamic> data = document.data() as Map<String, dynamic>;
-                        SurveyModel model=SurveyModel.fromMap(data,document.reference.id,);
-
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 5.0),
-                          child: Container(
-                            margin: EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(10)
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  width: MediaQuery.of(context).size.width,
-                                  padding: EdgeInsets.all(5),
-
-                                  decoration: BoxDecoration(
-                                      color: kPrimaryLightColor,
-                                      borderRadius: BorderRadius.only(
-                                          topLeft: Radius.circular(10),
-                                          topRight: Radius.circular(10)
-                                      )
-                                  ),
-                                  child: Text(model.question,style: TextStyle(color:Colors.white,fontSize:20,fontWeight: FontWeight.w600),),
+              if(surveys.length>0)
+                Expanded(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: surveys.length,
+                  itemBuilder: (BuildContext context,int index){
+                    return Padding(
+                        padding: const EdgeInsets.only(top: 5.0),
+                        child: Container(
+                          margin: EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                              border: Border.all(color: kPrimaryLightColor),
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10)
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: MediaQuery.of(context).size.width,
+                                padding: EdgeInsets.all(5),
+                                alignment: Alignment.centerRight,
+                                decoration: BoxDecoration(
+                                    color: kPrimaryLightColor,
+                                    borderRadius: BorderRadius.only(
+                                        topLeft: Radius.circular(10),
+                                        topRight: Radius.circular(10)
+                                    )
                                 ),
-                                if(model.isMCQ)
-                                  Container(
-                                      margin: EdgeInsets.all(10),
-                                      child: ListView.builder(
-                                        shrinkWrap: true,
-                                        itemCount: model.choices.length,
-                                        itemBuilder: (BuildContext context,int index){
-                                          return InkWell(
-                                            onTap: (){
-                                              setState(() {
-                                                isChecked[index]=true;
-                                              });
-                                            },
-                                            child: Container(
-                                              margin: EdgeInsets.only(top:10),
-                                              child:Text(model.choices[index],style: TextStyle(color:Colors.black,fontSize:17),),
-                                            ),
-                                          );
-                                        },
-                                      )
-                                  )
-                                else
-                                  Container(
+                                child: Text(surveys[index].status,style: TextStyle(color:Colors.white,fontSize:14,fontWeight: FontWeight.w300),),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(5),
+                                child: Text(surveys[index].question,style: TextStyle(color: Colors.black,fontSize:20,fontWeight: FontWeight.w500),),
+                              ),
+
+                              if(surveys[index].isMCQ)
+                                Container(
+                                    margin: EdgeInsets.all(10),
+                                    child: ListView.builder(
+                                      shrinkWrap: true,
+                                      physics: NeverScrollableScrollPhysics(),
+                                      itemCount: surveys[index].choices.length,
+                                      itemBuilder: (BuildContext context,int i){
+                                        return CheckboxListTile(
+                                          title: Text(surveys[index].choices[i]),
+                                          value: isChecked[index][i],
+                                          controlAffinity: ListTileControlAffinity.leading,
+                                          onChanged: (bool value) {
+                                            setState(() {
+                                              isChecked[index][i]=value;
+                                              for(int j=0;j<isChecked[index].length;j++){
+                                                if(j!=i)
+                                                  isChecked[index][j]=false;
+                                              }
+                                            });
+                                          },
+                                        );
+                                      },
+                                    )
+                                )
+                              else
+                                Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Container(
                                     child: TextFormField(
                                       maxLines: 3,
                                       validator: (value) {
@@ -244,6 +248,7 @@ class _SurveyState extends State<Survey> {
                                         }
                                         return null;
                                       },
+                                      controller: desController[index],
                                       decoration: InputDecoration(
                                         contentPadding: EdgeInsets.all(15),
                                         focusedBorder: OutlineInputBorder(
@@ -275,40 +280,59 @@ class _SurveyState extends State<Survey> {
                                       ),
                                     ),
                                   ),
-                                InkWell(
-                                  onTap:(){
-
-                                  },
-                                  child: Container(
-                                    height: 40,
-                                    margin: EdgeInsets.only(top:10,bottom:20,left: 20,right: 20),
-                                    alignment: Alignment.center,
-                                    color: kPrimaryColor,
-                                    child: Text("Submit",style: TextStyle(color:Colors.white,fontSize:15)),
-                                  ),
                                 ),
-                                Container(
-                                  width: MediaQuery.of(context).size.width,
-                                  padding: EdgeInsets.all(5),
-
-                                  decoration: BoxDecoration(
-                                      color: kPrimaryLightColor,
-                                      borderRadius: BorderRadius.only(
-                                          bottomLeft: Radius.circular(10),
-                                          bottomRight: Radius.circular(10)
-                                      )
-                                  ),
-                                  child: Text(model.status,style: TextStyle(color:Colors.white,fontSize:15),),
+                              InkWell(
+                                onTap:()async{
+                                  final ProgressDialog pr = ProgressDialog(context);
+                                  pr.style(message: "Please wait");
+                                  pr.show();
+                                  String selected="";
+                                  for(int i=0;i<surveys[index].choices.length;i++){
+                                    if(isChecked[index][i]){
+                                      selected=surveys[index].choices[i];
+                                    }
+                                  }
+                                  //audience,description,information,photo,expDate;bool neverExpire
+                                  await FirebaseFirestore.instance.collection('attempts').add({
+                                    'questionId': surveys[index].id,
+                                    'answer': desController[index].text,
+                                    'choiceSelected': selected,
+                                    'isMCQ':  surveys[index].isMCQ,
+                                    'userId': FirebaseAuth.instance.currentUser.uid,
+                                    'neighbourId': userModel.neighbourId,
+                                    'name': "${userModel.firstName} ${userModel.lastName}",
+                                  }).then((value) async{
+                                    List attempts=surveys[index].attempts;
+                                    attempts.add(FirebaseAuth.instance.currentUser.uid);
+                                    await FirebaseFirestore.instance.collection("survey").doc(surveys[index].id).update({
+                                      'attempts': attempts,
+                                    });
+                                    getQuestions();
+                                    pr.hide();
+                                    print("added");
+                                  });
+                                },
+                                child: Container(
+                                  height: 40,
+                                  margin: EdgeInsets.only(top:10,bottom:20,left: 20,right: 20),
+                                  alignment: Alignment.center,
+                                  color: kPrimaryColor,
+                                  child: Text("Submit",style: TextStyle(color:Colors.white,fontSize:15)),
                                 ),
-                              ],
-                            ),
-                          )
-                        );
-                      }).toList(),
+                              ),
+
+                            ],
+                          ),
+                        )
                     );
-                  },
+                  }
+                  ,
                 ),
-              ),
+              )
+              else
+                Center(
+                  child: Text("No Data"),
+                )
 
             ],
           ):Center(child: CircularProgressIndicator(),),

@@ -243,6 +243,7 @@ class _CreateDeliveryState extends State<CreateDelivery> {
       'date':startDate,
       'hour':time,
       'status':"scheduled",
+      'neighbourId':userModel.neighbourId,
       'userId':user.uid
     }).then((value) {
       print("id ${value.id}");
@@ -408,7 +409,7 @@ class _CreateDeliveryState extends State<CreateDelivery> {
                           onTap: (){
                             DatePicker.showDatePicker(context,
                                 showTitleActions: true,
-                                minTime: DateTime(2021, 1, 1),
+                                minTime: DateTime.now(),
                                 maxTime: DateTime(2025, 1, 1),
                                 onChanged: (date) {
                                   print('change $date');

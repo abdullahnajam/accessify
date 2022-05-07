@@ -1,3 +1,4 @@
+/*
 
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -61,4 +62,4 @@ class MyText{
   static TextStyle overline(BuildContext context){
     return Theme.of(context).textTheme.overline;
   }
-}
+}*/

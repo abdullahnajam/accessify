@@ -7,7 +7,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:guard/model/alert_model.dart';
+import 'package:guard/provider/UserDataProvider.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import '../constants.dart';
 import 'package:toast/toast.dart';
 class NotifyResidents extends StatefulWidget {
@@ -19,7 +21,7 @@ class _NotifyResidentsState extends State<NotifyResidents> {
   final _formKey = GlobalKey<FormState>();
   String startDate = formatDate(DateTime.now(), [dd, '-', mm, '-', yyyy]);
   String url;
-  sendNotification() async{
+  sendNotification(String nid,neighbour) async{
     String url='https://fcm.googleapis.com/fcm/send';
     Uri myUri = Uri.parse(url);
     await http.post(
@@ -53,6 +55,8 @@ class _NotifyResidentsState extends State<NotifyResidents> {
         'body':'$alertSelected scheduled at $startDate',
         'title':"Service Alert",
         'icon':url,
+        'neighbourId':nid,
+        'neighbourhood':neighbour,
         'userId':"all"
       });
 
@@ -60,7 +64,7 @@ class _NotifyResidentsState extends State<NotifyResidents> {
   }
 
   String alertSelected="Select Service List",selectedAlertId;
-  Future<void> _showAlertsDailog() async {
+  Future<void> _showAlertsDailog(nid) async {
     return showDialog<void>(
       context: context,
       barrierDismissible: true, // user must tap button!
@@ -87,7 +91,7 @@ class _NotifyResidentsState extends State<NotifyResidents> {
                   child: Text("Services List",textAlign: TextAlign.center,style: TextStyle(fontSize: 20,color:Colors.black,fontWeight: FontWeight.w600),),
                 ),
                 StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance.collection('services').snapshots(),
+                  stream: FirebaseFirestore.instance.collection('services').where("neighbourId",isEqualTo:nid).snapshots(),
                   builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
                     if (snapshot.hasError) {
                       return Center(
@@ -152,6 +156,7 @@ class _NotifyResidentsState extends State<NotifyResidents> {
   }
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<UserDataProvider>(context, listen: false);
     return Scaffold(
       body: SafeArea(
         child:  Column(
@@ -211,7 +216,7 @@ class _NotifyResidentsState extends State<NotifyResidents> {
                                   padding: EdgeInsets.only(left:12),
                                   child:InkWell(
                                       onTap: (){
-                                        _showAlertsDailog();
+                                        _showAlertsDailog(provider.userModel.neighbourId);
                                       },
                                       child:Text(alertSelected)
                                   ),
@@ -226,7 +231,7 @@ class _NotifyResidentsState extends State<NotifyResidents> {
                       onTap: (){
 
                         if (_formKey.currentState.validate()) {
-                          sendNotification();
+                          sendNotification(provider.userModel.neighbourId,provider.userModel.neighbourhood);
                         }
                       },
                       child: Container(

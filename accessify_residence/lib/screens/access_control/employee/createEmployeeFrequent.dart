@@ -36,8 +36,7 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
   access _access = access.employee;
   bool employee=true;
   bool frequent=false;
-  int dateInMilli=0;
-  String time=formatDate(DateTime.now(), [hh, ':', nn]);
+  int dateInMilli=DateTime.now().millisecondsSinceEpoch;
   String startDate = formatDate(DateTime.now(), [dd, '-', mm, '-', yyyy]);
   String endDate = formatDate(DateTime.now(), [dd, '-', mm, '-', yyyy]);
 
@@ -93,7 +92,7 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
     ).whenComplete(()  {
       User user=FirebaseAuth.instance.currentUser;
       FirebaseFirestore.instance.collection("guard_notifications").add({
-
+        'neighbourId':userModel.neighbourId,
         'isOpened': false,
         'type':"employee",
         'name':emp,
@@ -624,7 +623,7 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
         'name': nameText,
         'emp':nameText,
         'fromDate':startDate,
-        'expDate':time,
+        'expDate':endDate,
         'userId':user.uid,
         'qr':photoUrl,
         'type':employee?"Employee":"Frequent",
@@ -635,7 +634,7 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
           'qr_code':"none",
           'requestedFor':nameText,
           'requestedBy':"${userModel.firstName} ${userModel.lastName}",
-          'date':"$startDate",
+          'date':"$endDate",
           'dateInMilli':dateInMilli,
           'datePostedInMilli':DateTime.now().millisecondsSinceEpoch,
           'status':"scheduled",
@@ -807,7 +806,7 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
                                       onPressed: () {
                                         DatePicker.showDatePicker(context,
                                             showTitleActions: true,
-                                            minTime: DateTime(2021, 1, 1),
+                                            minTime: DateTime.now(),
                                             maxTime: DateTime(2025, 1, 1),
                                             onChanged: (date) {
                                               print('change $date');
@@ -815,7 +814,7 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
                                             onConfirm: (date) {
                                               print('confirm $date');
                                               setState(() {
-                                                dateInMilli=date.millisecondsSinceEpoch;
+
                                                 startDate = formatDate(date, [dd, '-', mm, '-', yyyy]);
                                               });
                                             },
@@ -842,7 +841,7 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
                                       onPressed: () {
                                         DatePicker.showDatePicker(context,
                                             showTitleActions: true,
-                                            minTime: DateTime(2021, 1, 1),
+                                            minTime: DateTime.now(),
                                             maxTime: DateTime(2025, 1, 1),
                                             onChanged: (date) {
                                               print('change $date');
@@ -850,9 +849,8 @@ class _CreateEmployeeFrequentState extends State<CreateEmployeeFrequent> {
                                             onConfirm: (date) {
                                               print('confirm $date');
                                               setState(() {
-
-                                                endDate = formatDate(
-                                                    date, [dd, '-', mm, '-', yyyy]);
+                                                dateInMilli=date.millisecondsSinceEpoch;
+                                                endDate = formatDate(date, [dd, '-', mm, '-', yyyy]);
                                               });
                                             },
                                             currentTime: DateTime.now(),

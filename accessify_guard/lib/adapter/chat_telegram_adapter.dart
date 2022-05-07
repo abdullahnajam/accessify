@@ -50,9 +50,7 @@ class ChatTelegramAdapter {
                 children: <Widget>[
                   Container(
                     constraints: BoxConstraints(minWidth: 150),
-                    child: Text(item.content, style: MyText.subhead(context).copyWith(
-                        color: Colors.black)
-                    ),
+                    child: Text(item.content, style: TextStyle(color: Colors.black)),
                   ),
                   Container(height: 3, width: 0),
                   Row(

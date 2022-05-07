@@ -422,6 +422,7 @@ class _CreateGuestState extends State<CreateGuest> {
         'name': nameController.text,
         'date':startDate,
         'hour':time,
+        'neighbourId': userModel.neighbourId,
         'status':"scheduled",
         'userId':user.uid,
         'vehicle':vehicleController.text,
@@ -680,7 +681,7 @@ class _CreateGuestState extends State<CreateGuest> {
                           onTap: (){
                             DatePicker.showDatePicker(context,
                                 showTitleActions: true,
-                                minTime: DateTime(2021, 1, 1),
+                                minTime: DateTime.now(),
                                 maxTime: DateTime(2025, 1, 1),
                                 onChanged: (date) {
                                   print('change $date');

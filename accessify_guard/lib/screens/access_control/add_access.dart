@@ -15,10 +15,12 @@ import 'package:guard/model/access/guest.dart';
 import 'package:guard/model/access/taxi_model.dart';
 import 'package:guard/model/notification_model.dart';
 import 'package:guard/model/user_model.dart';
+import 'package:guard/provider/UserDataProvider.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:lottie/lottie.dart';
 import 'package:progress_dialog/progress_dialog.dart';
+import 'package:provider/provider.dart';
 import 'package:toast/toast.dart';
 import '../../constants.dart';
 class AddAccess extends StatefulWidget {
@@ -162,7 +164,7 @@ class _AddAccessState extends State<AddAccess> {
   }
 
 
-  sendNotification(String userToken,userId) async{
+  sendNotification(String userToken,userId,String nid,String neighbour) async{
     String url='https://fcm.googleapis.com/fcm/send';
     Uri myUri = Uri.parse(url);
     await http.post(
@@ -197,13 +199,15 @@ class _AddAccessState extends State<AddAccess> {
         'body':'${widget.type} access granted ${widget.name}',
         'title':"${widget.type} access",
         'icon':'https://img.icons8.com/officel/80/000000/user-credentials.png',
-        'userId':userId
+        'userId':userId,
+        'neighbourId':nid,
+        'neighbourhood':neighbour
       }).whenComplete(() => Navigator.pop(context));
 
     });
   }
   List<String> urls=[];
-  addAccessToDb(String token,userId){
+  addAccessToDb(String token,userId,String nid,String neighbour){
    FirebaseFirestore.instance.collection("access_log").add({
       'name': widget.name,
       'id':widget.barcode,
@@ -212,9 +216,10 @@ class _AddAccessState extends State<AddAccess> {
       'userId':widget.userId,
       'scanId':idNumberController.text,
       'vehiclePlate':plateController.text,
+     'neighbourId':nid,
       'images':urls
     }).then((value) {
-     sendNotification(token,userId);
+     sendNotification(token,userId,nid,neighbour);
      String path;
      if(delivery!=null)
        path="delivery_access";
@@ -226,12 +231,14 @@ class _AddAccessState extends State<AddAccess> {
        path="taxi_access";
      else if(employee!=null)
        path="employee_access";
-     FirebaseFirestore.instance.collection(path).doc(widget.barcode).update({
-       "status":"Accessed"
-     });
-     FirebaseFirestore.instance.collection("access_control").doc(widget.barcode).update({
-       "status":"Accessed"
-     });
+     if(path!="employee_access"){
+       FirebaseFirestore.instance.collection(path).doc(widget.barcode).update({
+         "status":"Accessed"
+       });
+       FirebaseFirestore.instance.collection("access_control").doc(widget.barcode).update({
+         "status":"Accessed"
+       });
+     }
    }).catchError((onError){
       Toast.show(onError.toString(), context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM);
 
@@ -640,8 +647,8 @@ class _AddAccessState extends State<AddAccess> {
                       if (_formKey.currentState.validate()) {
                         print(urls.length);
                         if(urls.length>0){
-
-                          addAccessToDb(model.token,model.id);
+                          final provider = Provider.of<UserDataProvider>(context, listen: false);
+                          addAccessToDb(model.token,model.id,provider.userModel.neighbourId,provider.userModel.neighbourhood);
                         }
                         else{
                           if(_imageFiles.length==0)

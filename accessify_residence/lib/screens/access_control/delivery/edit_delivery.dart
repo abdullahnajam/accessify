@@ -344,7 +344,7 @@ class _EditDeliveryState extends State<EditDelivery> {
                           onTap: (){
                             DatePicker.showDatePicker(context,
                                 showTitleActions: true,
-                                minTime: DateTime(2021, 1, 1),
+                                minTime: DateTime.now(),
                                 maxTime: DateTime(2025, 1, 1),
                                 onChanged: (date) {
                                   print('change $date');

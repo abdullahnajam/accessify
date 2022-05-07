@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "site": "accesfyadmin-v3",
+    "site": "accesfyadmin-v4",
     "public": "build/web",
     "ignore": [
       "firebase.json",

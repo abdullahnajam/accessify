@@ -2,12 +2,14 @@ import 'package:accessify/model/announcement_model.dart';
 import 'package:accessify/model/notification_model.dart';
 import 'package:accessify/model/user_model.dart';
 import 'package:accessify/navigator/menu_drawer.dart';
+import 'package:accessify/provider/UserDataProvider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:provider/provider.dart';
 
 import '../../constants.dart';
 class Announcements extends StatefulWidget {
@@ -84,12 +86,13 @@ class _AnnouncementsState extends State<Announcements> {
 
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<UserDataProvider>(context, listen: false);
     return Scaffold(
       backgroundColor: Colors.grey[200],
         key: _drawerKey,
         drawer: MenuDrawer(),
         body: SafeArea(
-          child: isLoading?ListView(
+          child: ListView(
             children: [
               Container(
                 decoration: BoxDecoration(
@@ -114,9 +117,10 @@ class _AnnouncementsState extends State<Announcements> {
               Container(
                 child: StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance.collection('announcement')
-                      .where('audience', isEqualTo: "Residents")
-                      .where('neighbourId', isEqualTo: userModel.neighbourId).snapshots(),
+                      .where('audience', whereIn: ["Residents","Both"])
+                      .where('neighbourId', isEqualTo: provider.userModel.neighbourId).snapshots(),
                   builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                    print("nid ${userModel.neighbourId}");
                     if (snapshot.hasError) {
                       return Center(
                         child: Column(
@@ -213,7 +217,7 @@ class _AnnouncementsState extends State<Announcements> {
               ),
 
             ],
-          ):Center(child: CircularProgressIndicator(),),
+          ),
         )
     );
   }

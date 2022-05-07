@@ -1,11 +1,15 @@
 import 'dart:async';
 import 'package:accessify/auth/sign_in/sign_in_screen.dart';
+import 'package:accessify/model/user_model.dart';
 import 'package:accessify/navigator/bottom_navigation.dart';
+import 'package:accessify/provider/UserDataProvider.dart';
 import 'package:accessify/screens/home.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:lottie/lottie.dart';
+import 'package:provider/provider.dart';
 
 import '../constants.dart';
 import '../size_config.dart';
@@ -35,18 +39,32 @@ class _SplashScreenState extends State<SplashScreen> {
     return Timer(_duration, navigationPage);
   }
 
-  void navigationPage() {
-    FirebaseAuth.instance.authStateChanges().listen((User user) {
-      if (user == null) {
-        print('User is currently signed out!');
-        Navigator.pushNamed(context, SignInScreen.routeName);
-      }
-      else {
-        print('User is signed in!');
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => BottomBar()));
+  void navigationPage() async{
+    User user=FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      print('User is currently signed out!');
+      Navigator.pushNamed(context, SignInScreen.routeName);
+    }
+    else {
+      print('User is signed in!');
 
-      }
-    });
+      await FirebaseFirestore.instance
+          .collection('homeowner')
+          .doc(user.uid)
+          .get()
+          .then((DocumentSnapshot documentSnapshot) {
+        if (documentSnapshot.exists) {
+
+          Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
+          UserModel userModel=UserModel.fromMap(data, documentSnapshot.reference.id);
+          final provider = Provider.of<UserDataProvider>(context, listen: false);
+          provider.setUserData(userModel);
+
+        }
+      });
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => BottomBar()));
+
+    }
 
 
   }

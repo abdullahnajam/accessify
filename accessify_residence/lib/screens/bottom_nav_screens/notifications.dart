@@ -1,11 +1,13 @@
 import 'package:accessify/model/notification_model.dart';
 import 'package:accessify/navigator/menu_drawer.dart';
+import 'package:accessify/provider/UserDataProvider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:provider/provider.dart';
 
 import '../../constants.dart';
 class Notifications extends StatefulWidget {
@@ -57,6 +59,7 @@ class _NotificationsState extends State<Notifications> {
   }
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<UserDataProvider>(context, listen: false);
     return Scaffold(
       key: _drawerKey,
       backgroundColor: bgColor,
@@ -86,8 +89,9 @@ class _NotificationsState extends State<Notifications> {
           ),
             Container(
               child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance.collection('notifications').where('userId', isEqualTo: FirebaseAuth.instance.currentUser.uid).
-                  where('userId', isEqualTo: "all").snapshots(),
+                stream: FirebaseFirestore.instance.collection('notifications')
+                    .where('userId', whereIn: [FirebaseAuth.instance.currentUser.uid,"all"])
+                  .where('neighbourId', isEqualTo: provider.userModel.neighbourId).snapshots(),
                 builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
                   if (snapshot.hasError) {
                     return Center(

@@ -13,10 +13,12 @@ import 'package:guard/model/access/event.dart';
 import 'package:guard/model/access/guest.dart';
 import 'package:guard/model/notification_model.dart';
 import 'package:guard/navigator/menu_drawer.dart';
+import 'package:guard/provider/UserDataProvider.dart';
 import 'package:guard/screens/access_control/add_access.dart';
 import 'package:guard/screens/addAccessControlMember.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
 import 'package:qrscan/qrscan.dart' as scanner;
 import 'package:toast/toast.dart';
 class Notifications extends StatefulWidget {
@@ -181,6 +183,8 @@ class _AccessControlState extends State<Notifications> {
 
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<UserDataProvider>(context, listen: false);
+
     return Scaffold(
       backgroundColor: bgColor,
       key: _drawerKey,
@@ -207,7 +211,7 @@ class _AccessControlState extends State<Notifications> {
             ),
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance.collection('guard_notifications').snapshots(),
+                stream: FirebaseFirestore.instance.collection('guard_notifications').where("neighbourId",isEqualTo:provider.userModel.neighbourId).snapshots(),
                 builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
                   if (snapshot.hasError) {
                     return Center(

@@ -88,7 +88,7 @@ class _CreateEventState extends State<CreateEvent> {
                   child: Text("Amenities",textAlign: TextAlign.center,style: TextStyle(fontSize: 20,color:Colors.black,fontWeight: FontWeight.w600),),
                 ),
                 StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance.collection('amenities').snapshots(),
+                  stream: FirebaseFirestore.instance.collection('amenities').where("neighbourId",isEqualTo:userModel.neighbourId).snapshots(),
                   builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
                     if (snapshot.hasError) {
                       return Center(
@@ -463,6 +463,7 @@ class _CreateEventState extends State<CreateEvent> {
         'startTime':time,
         'userId':user.uid,
         'location':nameText,
+        'neighbourId': userModel.neighbourId,
         'qr':photoUrl,
       }).then((value) {
         pr.hide();
@@ -736,7 +737,7 @@ class _CreateEventState extends State<CreateEvent> {
                           onTap: (){
                             DatePicker.showDatePicker(context,
                                 showTitleActions: true,
-                                minTime: DateTime(2021, 1, 1),
+                                minTime: DateTime.now(),
                                 maxTime: DateTime(2025, 1, 1),
                                 onChanged: (date) {
                                   print('change $date');

@@ -1,12 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:guard/model/user_model.dart';
+import 'package:guard/provider/UserDataProvider.dart';
+import 'package:guard/screens/access_control/access_control.dart';
 import 'package:guard/screens/home.dart';
 import 'package:flutter/material.dart';
 import 'package:guard/components/custom_surfix_icon.dart';
 import 'package:guard/components/form_error.dart';
 import 'package:guard/helper/keyboard.dart';
 import 'package:guard/auth/forgot_password/forgot_password_screen.dart';
+import 'package:progress_dialog/progress_dialog.dart';
+import 'package:provider/provider.dart';
 import 'package:toast/toast.dart';
 
 import '../../../components/default_button.dart';
@@ -57,27 +62,43 @@ class _SignFormState extends State<SignForm> {
             press: ()async {
               if (_formKey.currentState.validate()) {
                 _formKey.currentState.save();
-                // if all are valid then go to success screen
+                final ProgressDialog pr = ProgressDialog(context);
+                pr.show();
                 KeyboardUtil.hideKeyboard(context);
                 try {
                   UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
                       email: email,
                       password: password
                   ).whenComplete(() {
-                    FirebaseAuth.instance
-                        .authStateChanges()
-                        .listen((User user) {
+                    pr.hide();
+                    FirebaseAuth.instance.authStateChanges().listen((User user) {
                       if (user == null) {
+
                         print('User is currently signed out!');
-                      } else {
+                      }
+                      else {
                         print('User is signed in!');
                         final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
                         _firebaseMessaging.subscribeToTopic('guard');
                         _firebaseMessaging.getToken().then((token){
                           FirebaseFirestore.instance.collection("guard").doc(user.uid).update({
                             "token":token,
-                          }).then((value){
-                            Navigator.pushNamed(context, Home.routeName);
+                          }).then((value)async{
+                            await FirebaseFirestore.instance
+                                .collection('guard')
+                                .doc(user.uid)
+                                .get()
+                                .then((DocumentSnapshot documentSnapshot) {
+                              if (documentSnapshot.exists) {
+
+                                Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
+                                UserModel userModel=UserModel.fromMap(data, documentSnapshot.reference.id);
+                                final provider = Provider.of<UserDataProvider>(context, listen: false);
+                                provider.setUserData(userModel);
+                              }
+                            });
+                            Navigator.pushReplacement(context, new MaterialPageRoute(builder: (context) => AccessControl()));
+
                           }).onError((error, stackTrace) {
                             Toast.show("DB Error : ${errors.toString()}", context, duration: Toast.LENGTH_LONG, gravity:  Toast.TOP);
                           });
@@ -89,7 +110,9 @@ class _SignFormState extends State<SignForm> {
                       }
                     });
                   });
-                } on FirebaseAuthException catch (e) {
+                }
+                on FirebaseAuthException catch (e) {
+                  pr.hide();
                   if (e.code == 'user-not-found') {
                     print('No user found for that email.');
                   } else if (e.code == 'wrong-password') {

@@ -7,11 +7,14 @@ import 'package:guard/model/access/event.dart';
 import 'package:guard/model/access/guest.dart';
 import 'package:guard/model/access/taxi_model.dart';
 import 'package:guard/model/access_control_model.dart';
+import 'package:guard/provider/UserDataProvider.dart';
 import 'package:guard/screens/access_control/add_access.dart';
 import 'package:guard/utils/custom_dailogs.dart';
+import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:progress_dialog/progress_dialog.dart';
+import 'package:provider/provider.dart';
 import 'package:qrscan/qrscan.dart' as scanner;
 import 'package:flutter/services.dart';
 import 'package:guard/components/default_button.dart';
@@ -73,6 +76,7 @@ class _AccessControlState extends State<AccessControl> {
             data['status'],
             data['userId']
         );
+        Navigator.pop(context);
         Navigator.push(context, new MaterialPageRoute(builder: (context) => AddAccess(id,"event",delivery.userId,delivery.name)));
 
       }
@@ -98,6 +102,7 @@ class _AccessControlState extends State<AccessControl> {
           data['omw'],
           data['pickup'],
         );
+        Navigator.pop(context);
         Navigator.push(context, new MaterialPageRoute(builder: (context) => AddAccess(id,"event",taxi.userId,taxi.name)));
       }
       else{
@@ -164,6 +169,7 @@ class _AccessControlState extends State<AccessControl> {
         Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
         AccessControlModel model=AccessControlModel.fromMap(data, documentSnapshot.reference.id);
         if(model.status=="scheduled"){
+          pr.hide();
           if(model.type=="Delivery"){
             getDeliveryList(model.id);
           }
@@ -172,10 +178,12 @@ class _AccessControlState extends State<AccessControl> {
           }
         }
         else{
+          pr.hide();
           customDailog.showFailuresDialog("This QR Code is expired", context);
         }
       }
       else {
+        pr.hide();
         print('Document does not exist on the database');
         customDailog.showFailuresDialog("Invalid QR Code", context);
 
@@ -199,7 +207,11 @@ class _AccessControlState extends State<AccessControl> {
         if (documentSnapshot.exists) {
           Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
           AccessControlModel model=AccessControlModel.fromMap(data, documentSnapshot.reference.id);
-          if(model.status=="scheduled"){
+          final f = new DateFormat('dd-MM-yyyy');
+          DateTime valEnd = DateTime.fromMillisecondsSinceEpoch(model.dateInMilli);
+          DateTime date =DateTime.now();
+          print("${model.status} ${f.format(date)} ${f.format(valEnd)} ${f.format(date)!=f.format(valEnd)} ${!date.isAfter(valEnd)}");
+          if(model.status=="scheduled" && (!date.isAfter(valEnd) || f.format(date)==f.format(valEnd))){
             if(model.type=="Event"){
               pr.hide();
               getEventList(model.id);
@@ -209,10 +221,6 @@ class _AccessControlState extends State<AccessControl> {
               getEmployeeFrequentList(model.id);
             }
 
-            else if(model.type=="Event"){
-              pr.hide();
-              getEventList(model.id);
-            }
             else if(model.type=="Guest"){
               pr.hide();
               getGuestList(model.id);
@@ -223,6 +231,22 @@ class _AccessControlState extends State<AccessControl> {
             }
           }
           else{
+            String path="";
+            if(model.type=="Event")
+              path="event_access";
+            else if(model.type=="Guest")
+              path="guest_access";
+            else if(model.type=="Employee" || model.type=="Frequent")
+              path="employee_access";
+
+            if((!date.isAfter(valEnd) || f.format(date)==f.format(valEnd))){
+              FirebaseFirestore.instance.collection(path).doc(barcode).update({
+                "status":"Accessed"
+              });
+              FirebaseFirestore.instance.collection("access_control").doc(barcode).update({
+                "status":"Accessed"
+              });
+            }
             pr.hide();
             customDailog.showFailuresDialog("This QR Code is expired", context);
           }
@@ -434,6 +458,8 @@ class _AccessControlState extends State<AccessControl> {
   }
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<UserDataProvider>(context, listen: false);
+
     return Scaffold(
       backgroundColor: bgColor,
       key: _drawerKey,
@@ -599,58 +625,61 @@ class _AccessControlState extends State<AccessControl> {
                                     margin: EdgeInsets.all(10),
                                     child: Text("Delivery",textAlign: TextAlign.center,style: TextStyle(fontSize: 20,color:Colors.black,fontWeight: FontWeight.w600),),
                                   ),
-                                  StreamBuilder<QuerySnapshot>(
-                                    stream: FirebaseFirestore.instance.collection('access_control')
-                                        .where("status", isEqualTo:"scheduled")
-                                        .where("type",isEqualTo:"Delivery").snapshots(),
-                                    builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
-                                      if (snapshot.hasError) {
-                                        return Center(
-                                          child: Column(
-                                            children: [
-                                              Image.asset("assets/images/wrong.png",width: 150,height: 150,),
-                                              Text("Something Went Wrong")
+                                  Expanded(
+                                    child: StreamBuilder<QuerySnapshot>(
+                                      stream: FirebaseFirestore.instance.collection('access_control')
+                                          .where("neighbourId",isEqualTo:provider.userModel.neighbourId)
+                                          .where("status", isEqualTo:"scheduled")
+                                          .where("type",isEqualTo:"Delivery").snapshots(),
+                                      builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                                        if (snapshot.hasError) {
+                                          return Center(
+                                            child: Column(
+                                              children: [
+                                                Image.asset("assets/images/wrong.png",width: 150,height: 150,),
+                                                Text("Something Went Wrong")
 
-                                            ],
-                                          ),
-                                        );
-                                      }
-
-                                      if (snapshot.connectionState == ConnectionState.waiting) {
-                                        return Center(
-                                          child: CircularProgressIndicator(),
-                                        );
-                                      }
-                                      if (snapshot.data.size==0){
-                                        return Center(
-                                          child: Column(
-                                            children: [
-                                              Image.asset("assets/images/empty.png",width: 150,height: 150,),
-                                              Text("No Deliveries")
-
-                                            ],
-                                          ),
-                                        );
-
-                                      }
-
-                                      return new ListView(
-                                        shrinkWrap: true,
-                                        children: snapshot.data.docs.map((DocumentSnapshot document) {
-                                          Map<String, dynamic> data = document.data() as Map<String, dynamic>;
-
-                                          return GestureDetector(
-                                            onTap: (){
-                                             searchDataForDeliveryOrTaxi(document.reference.id);
-                                            },
-                                            child: ListTile(
-                                              title: Text(data['requestedFor']),
-                                              subtitle: Text("${data['date']}"),
-                                            )
+                                              ],
+                                            ),
                                           );
-                                        }).toList(),
-                                      );
-                                    },
+                                        }
+
+                                        if (snapshot.connectionState == ConnectionState.waiting) {
+                                          return Center(
+                                            child: CircularProgressIndicator(),
+                                          );
+                                        }
+                                        if (snapshot.data.size==0){
+                                          return Center(
+                                            child: Column(
+                                              children: [
+                                                Image.asset("assets/images/empty.png",width: 150,height: 150,),
+                                                Text("No Deliveries")
+
+                                              ],
+                                            ),
+                                          );
+
+                                        }
+
+                                        return new ListView(
+                                          shrinkWrap: true,
+                                          children: snapshot.data.docs.map((DocumentSnapshot document) {
+                                            Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+
+                                            return GestureDetector(
+                                              onTap: (){
+                                               searchDataForDeliveryOrTaxi(document.reference.id);
+                                              },
+                                              child: ListTile(
+                                                title: Text(data['requestedFor']),
+                                                subtitle: Text("${data['date']}"),
+                                              )
+                                            );
+                                          }).toList(),
+                                        );
+                                      },
+                                    ),
                                   ),
                                   SizedBox(
                                     height: 15,
@@ -709,58 +738,61 @@ class _AccessControlState extends State<AccessControl> {
                                     margin: EdgeInsets.all(10),
                                     child: Text("Taxi",textAlign: TextAlign.center,style: TextStyle(fontSize: 20,color:Colors.black,fontWeight: FontWeight.w600),),
                                   ),
-                                  StreamBuilder<QuerySnapshot>(
-                                    stream: FirebaseFirestore.instance.collection('access_control')
-                                        .where("status", isEqualTo:"scheduled")
-                                        .where("type",isEqualTo:"Taxi").snapshots(),
-                                    builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
-                                      if (snapshot.hasError) {
-                                        return Center(
-                                          child: Column(
-                                            children: [
-                                              Image.asset("assets/images/wrong.png",width: 150,height: 150,),
-                                              Text("Something Went Wrong")
+                                  Expanded(
+                                    child: StreamBuilder<QuerySnapshot>(
+                                      stream: FirebaseFirestore.instance.collection('access_control')
+                                          .where("status", isEqualTo:"scheduled")
+                                          .where("neighbourId",isEqualTo:provider.userModel.neighbourId)
+                                          .where("type",isEqualTo:"Taxi").snapshots(),
+                                      builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                                        if (snapshot.hasError) {
+                                          return Center(
+                                            child: Column(
+                                              children: [
+                                                Image.asset("assets/images/wrong.png",width: 150,height: 150,),
+                                                Text("Something Went Wrong")
 
-                                            ],
-                                          ),
-                                        );
-                                      }
-
-                                      if (snapshot.connectionState == ConnectionState.waiting) {
-                                        return Center(
-                                          child: CircularProgressIndicator(),
-                                        );
-                                      }
-                                      if (snapshot.data.size==0){
-                                        return Center(
-                                          child: Column(
-                                            children: [
-                                              Image.asset("assets/images/empty.png",width: 150,height: 150,),
-                                              Text("No Taxi")
-
-                                            ],
-                                          ),
-                                        );
-
-                                      }
-
-                                      return new ListView(
-                                        shrinkWrap: true,
-                                        children: snapshot.data.docs.map((DocumentSnapshot document) {
-                                          Map<String, dynamic> data = document.data() as Map<String, dynamic>;
-
-                                          return GestureDetector(
-                                              onTap: (){
-                                                searchDataForDeliveryOrTaxi(document.reference.id);
-                                              },
-                                              child: ListTile(
-                                                title: Text(data['requestedFor']),
-                                                subtitle: Text("${data['date']}"),
-                                              )
+                                              ],
+                                            ),
                                           );
-                                        }).toList(),
-                                      );
-                                    },
+                                        }
+
+                                        if (snapshot.connectionState == ConnectionState.waiting) {
+                                          return Center(
+                                            child: CircularProgressIndicator(),
+                                          );
+                                        }
+                                        if (snapshot.data.size==0){
+                                          return Center(
+                                            child: Column(
+                                              children: [
+                                                Image.asset("assets/images/empty.png",width: 150,height: 150,),
+                                                Text("No Taxi")
+
+                                              ],
+                                            ),
+                                          );
+
+                                        }
+
+                                        return new ListView(
+                                          shrinkWrap: true,
+                                          children: snapshot.data.docs.map((DocumentSnapshot document) {
+                                            Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+
+                                            return GestureDetector(
+                                                onTap: (){
+                                                  searchDataForDeliveryOrTaxi(document.reference.id);
+                                                },
+                                                child: ListTile(
+                                                  title: Text(data['requestedFor']),
+                                                  subtitle: Text("${data['date']}"),
+                                                )
+                                            );
+                                          }).toList(),
+                                        );
+                                      },
+                                    ),
                                   ),
                                   SizedBox(
                                     height: 15,
@@ -798,6 +830,7 @@ class _AccessControlState extends State<AccessControl> {
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance.collection('access_control')
+                  .where("neighbourId",isEqualTo:provider.userModel.neighbourId)
                   .orderBy("datePostedInMilli",descending: true).snapshots(),
               builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
                 if (snapshot.hasError) {
@@ -846,13 +879,16 @@ class _AccessControlState extends State<AccessControl> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text("${model.type} - ${model.requestedFor}",style: TextStyle(fontSize: 16,fontWeight: FontWeight.w600),),
+                                Expanded(
+                                  flex:7,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text("${model.type} - ${model.requestedFor}",style: TextStyle(fontSize: 16,fontWeight: FontWeight.w600),),
 
 
-                                  ],
+                                    ],
+                                  ),
                                 ),
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.end,

@@ -637,7 +637,7 @@ class _CreateCouponState extends State<CreateCoupon> {
                           onTap: (){
                             DatePicker.showDatePicker(context,
                                 showTitleActions: true,
-                                minTime: DateTime(2021, 1, 1),
+                                minTime: DateTime.now(),
                                 maxTime: DateTime(2025, 1, 1),
                                 onChanged: (date) {
                                   print('change $date');
@@ -683,7 +683,8 @@ class _CreateCouponState extends State<CreateCoupon> {
                         ),
                         SizedBox(height: 20),
                         StreamBuilder<QuerySnapshot>(
-                            stream: FirebaseFirestore.instance.collection('classification_marketplace').snapshots(),
+                            stream: FirebaseFirestore.instance.collection('classification_marketplace').
+                            where("neighbourId",isEqualTo: userModel.neighbourId).snapshots(),
                             builder: (context, snapshot){
                               if (!snapshot.hasData)
                                 return const Center(child: const CircularProgressIndicator(),);

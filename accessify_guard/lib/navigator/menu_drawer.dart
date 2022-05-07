@@ -53,9 +53,7 @@ class MenuDrawerState extends State<MenuDrawer> {
                     ),
                   ),
                   Container(height: 7),
-                  Text("Accesfy Guard", style: MyText.body2(context).copyWith(
-                      color: Colors.blueGrey[800], fontWeight: FontWeight.w500
-                  )),
+                  Text("Accesfy Guard"),
 
                 ],
               ),
@@ -71,7 +69,7 @@ class MenuDrawerState extends State<MenuDrawer> {
                   children: <Widget>[
                     Icon(Icons.people_outline, color: MyColors.grey_20, size: 20),
                     Container(width: 20),
-                    Expanded(child: Text("Members", style: MyText.body2(context).copyWith(color: MyColors.grey_80))),
+                    Expanded(child: Text("Members",)),
                   ],
                 ),
               ),
@@ -87,7 +85,7 @@ class MenuDrawerState extends State<MenuDrawer> {
                   children: <Widget>[
                     Icon(Icons.vpn_key_outlined, color: MyColors.grey_20, size: 20),
                     Container(width: 20),
-                    Expanded(child: Text("Access Control", style: MyText.body2(context).copyWith(color: MyColors.grey_80))),
+                    Expanded(child: Text("Access Control",)),
                   ],
                 ),
               ),
@@ -102,7 +100,7 @@ class MenuDrawerState extends State<MenuDrawer> {
                   children: <Widget>[
                     Icon(Icons.notifications_active_outlined, color: MyColors.grey_20, size: 20),
                     Container(width: 20),
-                    Expanded(child: Text("Service Alerts", style: MyText.body2(context).copyWith(color: MyColors.grey_80))),
+                    Expanded(child: Text("Service Alerts",)),
                   ],
                 ),
               ),
@@ -117,7 +115,7 @@ class MenuDrawerState extends State<MenuDrawer> {
                   children: <Widget>[
                     Icon(Icons.calendar_today_outlined, color: MyColors.grey_20, size: 20),
                     Container(width: 20),
-                    Expanded(child: Text("Reservations", style: MyText.body2(context).copyWith(color: MyColors.grey_80))),
+                    Expanded(child: Text("Reservations",)),
                   ],
                 ),
               ),
@@ -132,7 +130,7 @@ class MenuDrawerState extends State<MenuDrawer> {
                   children: <Widget>[
                     Icon(Icons.message_outlined, color: MyColors.grey_20, size: 20),
                     Container(width: 20),
-                    Expanded(child: Text("Chats", style: MyText.body2(context).copyWith(color: MyColors.grey_80))),
+                    Expanded(child: Text("Chats",)),
                   ],
                 ),
               ),
@@ -147,7 +145,7 @@ class MenuDrawerState extends State<MenuDrawer> {
                   children: <Widget>[
                     Icon(Icons.category_outlined, color: MyColors.grey_20, size: 20),
                     Container(width: 20),
-                    Expanded(child: Text("Inventory", style: MyText.body2(context).copyWith(color: MyColors.grey_80))),
+                    Expanded(child: Text("Inventory",)),
                   ],
                 ),
               ),
@@ -162,7 +160,7 @@ class MenuDrawerState extends State<MenuDrawer> {
                   children: <Widget>[
                     Icon(Icons.notifications_none, color: MyColors.grey_20, size: 20),
                     Container(width: 20),
-                    Expanded(child: Text("Notifications", style: MyText.body2(context).copyWith(color: MyColors.grey_80))),
+                    Expanded(child: Text("Notifications",)),
                   ],
                 ),
               ),
@@ -179,7 +177,7 @@ class MenuDrawerState extends State<MenuDrawer> {
                   children: <Widget>[
                     Icon(Icons.power_settings_new, color: MyColors.grey_20, size: 20),
                     Container(width: 20),
-                    Expanded(child: Text("Logout", style: MyText.body2(context).copyWith(color: MyColors.grey_80))),
+                    Expanded(child: Text("Logout",)),
                   ],
                 ),
               ),

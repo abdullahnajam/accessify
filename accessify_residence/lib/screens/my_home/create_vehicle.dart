@@ -1,4 +1,5 @@
 import 'package:accessify/constants.dart';
+import 'package:accessify/provider/UserDataProvider.dart';
 import 'package:accessify/screens/home.dart';
 import 'package:accessify/screens/my_home/vehicle.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -9,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 import 'package:lottie/lottie.dart';
+import 'package:provider/provider.dart';
 class CreateVehicle extends StatefulWidget {
   @override
   _CreateVehicleState createState() => _CreateVehicleState();
@@ -167,7 +169,7 @@ class _CreateVehicleState extends State<CreateVehicle> {
     );
   }
 
-  saveInfo(){
+  saveInfo(nid){
     User user=FirebaseAuth.instance.currentUser;
     FirebaseFirestore.instance.collection('home').doc('vehicles').collection(user.uid).add({
       'make': makeController.text,
@@ -185,6 +187,8 @@ class _CreateVehicleState extends State<CreateVehicle> {
           'prefix': "\$",
           'amount': "not assigned",
           'status': "Requested",
+          'neighbourId':nid,
+
         });
       }
 
@@ -198,6 +202,8 @@ class _CreateVehicleState extends State<CreateVehicle> {
   }
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<UserDataProvider>(context, listen: false);
+
     return Scaffold(
       body: SafeArea(
         child:  Container(
@@ -536,7 +542,7 @@ class _CreateVehicleState extends State<CreateVehicle> {
                           onTap: (){
 
                             if (_formKey.currentState.validate()) {
-                              saveInfo();
+                              saveInfo(provider.userModel.neighbourId);
                             }
                           },
                           child: Container(

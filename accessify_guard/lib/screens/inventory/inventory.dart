@@ -7,8 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:guard/model/inventory/asset_model.dart';
 import 'package:guard/model/inventory/supply_model.dart';
 import 'package:guard/navigator/menu_drawer.dart';
+import 'package:guard/provider/UserDataProvider.dart';
 import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
 import 'package:qrscan/qrscan.dart' as scanner;
 import 'package:toast/toast.dart';
 class Inventory extends StatefulWidget {
@@ -307,6 +309,8 @@ class _InventoryState extends State<Inventory> with SingleTickerProviderStateMix
   }
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<UserDataProvider>(context, listen: false);
+
     return Scaffold(
       floatingActionButton: FloatingActionButton(
         backgroundColor: kPrimaryColor,
@@ -440,7 +444,7 @@ class _InventoryState extends State<Inventory> with SingleTickerProviderStateMix
 
                             child: TabBarView(children: <Widget>[
                               StreamBuilder<QuerySnapshot>(
-                                stream: FirebaseFirestore.instance.collection('inventory_assets').snapshots(),
+                                stream: FirebaseFirestore.instance.collection('inventory_assets').where("neighbourId",isEqualTo:provider.userModel.neighbourId).snapshots(),
                                 builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
                                   if (snapshot.hasError) {
                                     return Center(
@@ -520,7 +524,7 @@ class _InventoryState extends State<Inventory> with SingleTickerProviderStateMix
                                 },
                               ),
                               StreamBuilder<QuerySnapshot>(
-                                stream: FirebaseFirestore.instance.collection('inventory_supply').snapshots(),
+                                stream: FirebaseFirestore.instance.collection('inventory_supply').where("neighbourId",isEqualTo:provider.userModel.neighbourId).snapshots(),
                                 builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
                                   if (snapshot.hasError) {
                                     return Center(

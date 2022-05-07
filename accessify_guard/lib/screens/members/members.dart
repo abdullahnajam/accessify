@@ -7,6 +7,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:guard/model/user_model.dart';
 import 'package:guard/navigator/menu_drawer.dart';
+import 'package:guard/provider/UserDataProvider.dart';
+import 'package:provider/provider.dart';
 class Members extends StatefulWidget {
   @override
   _MembersState createState() => _MembersState();
@@ -59,6 +61,8 @@ class _MembersState extends State<Members> with SingleTickerProviderStateMixin{
 
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<UserDataProvider>(context, listen: false);
+
     return Scaffold(
       key: _drawerKey,
       drawer: MenuDrawer(),
@@ -229,7 +233,7 @@ class _MembersState extends State<Members> with SingleTickerProviderStateMixin{
                               ),
                               Container(
                                 child:  StreamBuilder<QuerySnapshot>(
-                                  stream: FirebaseFirestore.instance.collection('homeowner').snapshots(),
+                                  stream: FirebaseFirestore.instance.collection('homeowner').where("neighbourId",isEqualTo:provider.userModel.neighbourId).snapshots(),
                                   builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
                                     if (snapshot.hasError) {
                                       return Center(

@@ -1,5 +1,5 @@
 class FacilitiesModel{
-  String id,name,image;
+  String id,name;
 
-  FacilitiesModel(this.id, this.name, this.image);
+  FacilitiesModel(this.id, this.name);
 }

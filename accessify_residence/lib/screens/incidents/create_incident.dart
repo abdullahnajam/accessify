@@ -576,7 +576,7 @@ class _CreateIncidentState extends State<CreateIncident> {
                         ),
                         SizedBox(height: 20),
                         StreamBuilder<QuerySnapshot>(
-                            stream: FirebaseFirestore.instance.collection('classification_incident').snapshots(),
+                            stream: FirebaseFirestore.instance.collection('classification_incident').where("neighbourId",isEqualTo: userModel.neighbourId).snapshots(),
                             builder: (context, snapshot){
                               if (!snapshot.hasData)
                                 return const Center(child: const CircularProgressIndicator(),);

@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SurveyModel{
-  String id,question,status,attempts;
-  List choices;
+  String id,question,status;
+  List choices,attempts;
   bool isMCQ;
 
   SurveyModel(this.id, this.question, this.status, this.choices, this.isMCQ,this.attempts);

@@ -244,6 +244,7 @@ class _CreateTaxiState extends State<CreateTaxi> {
       'date':startDate,
       'hour':time,
       'status':"scheduled",
+      'neighbourId': userModel.neighbourId,
       'userId':user.uid,
       'description':desController.text,
       'pickup':pickup,
@@ -452,7 +453,7 @@ class _CreateTaxiState extends State<CreateTaxi> {
                           onTap: (){
                             DatePicker.showDatePicker(context,
                                 showTitleActions: true,
-                                minTime: DateTime(2021, 1, 1),
+                                minTime: DateTime.now(),
                                 maxTime: DateTime(2025, 1, 1),
                                 onChanged: (date) {
                                   print('change $date');

@@ -255,7 +255,8 @@ class _CreateReservationState extends State<CreateReservation> {
                   child: Text("facility",textAlign: TextAlign.center,style: TextStyle(fontSize: 20,color:Colors.black,fontWeight: FontWeight.w600),),
                 ),
                 StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance.collection('facility').snapshots(),
+                  stream: FirebaseFirestore.instance.collection('facility')
+                      .where("neighbourId",isEqualTo:userModel.neighbourId).snapshots(),
                   builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
                     if (snapshot.hasError) {
                       return Center(
@@ -293,8 +294,7 @@ class _CreateReservationState extends State<CreateReservation> {
                         Map<String, dynamic> data = document.data() as Map<String, dynamic>;
                         FacilitiesModel model=new FacilitiesModel(
                           document.reference.id,
-                          data['facilityName'],
-                          data['image'],
+                          data['facilityName']
 
                         );
                         return ListTile(
@@ -305,12 +305,7 @@ class _CreateReservationState extends State<CreateReservation> {
                             });
                             Navigator.pop(context);
                           },
-                          leading: CircleAvatar(
-                            radius: 25,
-                            backgroundImage: NetworkImage(model.image),
-                            backgroundColor: Colors.indigoAccent,
-                            foregroundColor: Colors.white,
-                          ),
+
                           //leading: Image.network(model.image),
                           title: Text(model.name,textAlign: TextAlign.center,style: TextStyle(fontSize: 16,color:Colors.black),
                           ),
@@ -385,6 +380,7 @@ class _CreateReservationState extends State<CreateReservation> {
       'totalGuests':numberController.text,
       'hourStart':timeLimit,
       'hourEnd':timeLimit,
+      'neighbourId':userModel.neighbourId,
       'user':user.uid,
       'status':"pending"
     }).then((value) {

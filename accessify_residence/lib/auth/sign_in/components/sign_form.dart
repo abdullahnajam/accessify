@@ -1,4 +1,6 @@
+import 'package:accessify/model/user_model.dart';
 import 'package:accessify/navigator/bottom_navigation.dart';
+import 'package:accessify/provider/UserDataProvider.dart';
 import 'package:accessify/screens/home.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -10,6 +12,7 @@ import 'package:accessify/components/form_error.dart';
 import 'package:accessify/helper/keyboard.dart';
 import 'package:accessify/auth/forgot_password/forgot_password_screen.dart';
 import 'package:progress_dialog/progress_dialog.dart';
+import 'package:provider/provider.dart';
 import 'package:toast/toast.dart';
 
 import '../../../components/default_button.dart';
@@ -82,7 +85,21 @@ class _SignFormState extends State<SignForm> {
                         _firebaseMessaging.getToken().then((token){
                           FirebaseFirestore.instance.collection("homeowner").doc(user.uid).update({
                             "token":token,
-                          }).then((value){
+                          }).then((value)async{
+                            await FirebaseFirestore.instance
+                                .collection('homeowner')
+                                .doc(user.uid)
+                                .get()
+                                .then((DocumentSnapshot documentSnapshot) {
+                              if (documentSnapshot.exists) {
+
+                                Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>;
+                                UserModel userModel=UserModel.fromMap(data, documentSnapshot.reference.id);
+                                final provider = Provider.of<UserDataProvider>(context, listen: false);
+                                provider.setUserData(userModel);
+
+                              }
+                            });
                             Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context) => BottomBar()));
                           }).onError((error, stackTrace) {
                             Toast.show("DB Error : ${errors.toString()}", context, duration: Toast.LENGTH_LONG, gravity:  Toast.TOP);

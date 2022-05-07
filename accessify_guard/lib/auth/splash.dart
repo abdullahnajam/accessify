@@ -1,10 +1,14 @@
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:guard/auth/sign_in/sign_in_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:guard/model/user_model.dart';
 import 'package:guard/navigator/bottom_navigation.dart';
+import 'package:guard/provider/UserDataProvider.dart';
 import 'package:guard/screens/home.dart';
 import 'package:lottie/lottie.dart';
+import 'package:provider/provider.dart';
 
 import '../constants.dart';
 import '../size_config.dart';
@@ -34,18 +38,9 @@ class _SplashScreenState extends State<SplashScreen> {
     return Timer(_duration, navigationPage);
   }
 
-  void navigationPage() {
-    FirebaseAuth.instance.authStateChanges().listen((User user) {
-      if (user == null) {
-        print('User is currently signed out!');
-        Navigator.pushReplacementNamed(context, SignInScreen.routeName);
-      }
-      else {
-        print('User is signed in!');
-        Navigator.pushReplacement(context, new MaterialPageRoute(
-            builder: (context) => BottomBar()));
-      }
-    });
+  void navigationPage() async{
+    Navigator.pushReplacement(context, new MaterialPageRoute(
+        builder: (context) => BottomBar()));
 
   }
 

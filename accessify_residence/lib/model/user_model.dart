@@ -2,7 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UserModel{
   String id,firstName,lastName,street,building,floor,apartmentUnit,additionalAddress,phone,cellPhone,email,comment,classification;
-  String neighbourId,neighbourhood;
+  String neighbourId,neighbourhood,password;
+  String status;
 
   UserModel(
       this.id,
@@ -19,14 +20,18 @@ class UserModel{
       this.comment,
       this.classification,
       this.neighbourId,
-      this.neighbourhood);
+      this.neighbourhood,
+      this.password,
+      this.status);
 
   UserModel.fromMap(Map<String,dynamic> map,String key)
       : id=key,
         firstName = map['firstName'],
         lastName = map['lastName'],
         street = map['street'],
+        password = map['password'],
         building = map['building'],
+        status = map['status'],
         floor = map['floor'],
         apartmentUnit = map['apartmentUnit'],
         additionalAddress = map['additionalAddress'],
